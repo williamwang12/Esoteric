@@ -1,39 +1,43 @@
 {
-  "name": "esoteric-loan-platform",
+  "name": "esoteric-backend",
   "version": "1.0.0",
-  "description": "Secure loan management platform for Esoteric Enterprises",
-  "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
+  "description": "Node.js backend API server for the Esoteric loan management platform",
+  "main": "server.js",
   "scripts": {
-    "install:frontend": "cd frontend && npm install",
-    "install:backend": "cd backend && npm install",
-    "install:all": "npm run install:frontend && npm run install:backend",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "cd frontend && npm start",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "db:setup": "cd backend && npm run db:setup",
-    "db:migrate": "cd backend && npm run db:migrate",
-    "test": "npm run test:frontend && npm run test:backend",
-    "test:frontend": "cd frontend && npm test",
-    "test:backend": "cd backend && npm test",
-    "lint": "npm run lint:frontend && npm run lint:backend",
-    "lint:frontend": "cd frontend && npm run lint",
-    "lint:backend": "cd backend && npm run lint"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:setup": "node scripts/setupDatabase.js",
+    "db:migrate": "node scripts/migrate.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "loan-management",
     "fintech",
-    "react",
     "nodejs",
+    "express",
     "postgresql"
   ],
   "author": "Esoteric Enterprises",
-  "license": "PRIVATE"
+  "license": "PRIVATE",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.13.1",
+    "speakeasy": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.5",
+    "@types/speakeasy": "^2.0.10",
+    "nodemon": "^3.1.10"
+  }
 } 
