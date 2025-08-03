@@ -207,6 +207,49 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
     }
 });
 
+// Update user profile (protected route)
+app.put('/api/user/profile', [
+    authenticateToken,
+    body('firstName').trim().isLength({ min: 1 }),
+    body('lastName').trim().isLength({ min: 1 }),
+    body('phone').optional().trim()
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { firstName, lastName, phone } = req.body;
+
+        const result = await pool.query(
+            'UPDATE users SET first_name = $1, last_name = $2, phone = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING id, email, first_name, last_name, phone, updated_at',
+            [firstName, lastName, phone, req.user.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = result.rows[0];
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                phone: user.phone,
+                updatedAt: user.updated_at
+            }
+        });
+
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get user's loan accounts
 app.get('/api/loans', authenticateToken, async (req, res) => {
     try {
@@ -219,6 +262,221 @@ app.get('/api/loans', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Loans error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get loan transactions with filtering
+app.get('/api/loans/:loanId/transactions', authenticateToken, async (req, res) => {
+    try {
+        const { loanId } = req.params;
+        const { type, startDate, endDate, limit = 50, offset = 0 } = req.query;
+
+        // Verify the loan belongs to the user
+        const loanCheck = await pool.query(
+            'SELECT id FROM loan_accounts WHERE id = $1 AND user_id = $2',
+            [loanId, req.user.userId]
+        );
+
+        if (loanCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        // Build query with filters
+        let query = `
+            SELECT lt.*, la.account_number 
+            FROM loan_transactions lt 
+            JOIN loan_accounts la ON lt.loan_account_id = la.id 
+            WHERE lt.loan_account_id = $1
+        `;
+        let queryParams = [loanId];
+        let paramCount = 1;
+
+        if (type) {
+            paramCount++;
+            query += ` AND lt.transaction_type = $${paramCount}`;
+            queryParams.push(type);
+        }
+
+        if (startDate) {
+            paramCount++;
+            query += ` AND lt.transaction_date >= $${paramCount}`;
+            queryParams.push(startDate);
+        }
+
+        if (endDate) {
+            paramCount++;
+            query += ` AND lt.transaction_date <= $${paramCount}`;
+            queryParams.push(endDate);
+        }
+
+        query += ` ORDER BY lt.transaction_date DESC, lt.created_at DESC`;
+        
+        paramCount++;
+        query += ` LIMIT $${paramCount}`;
+        queryParams.push(parseInt(limit));
+        
+        paramCount++;
+        query += ` OFFSET $${paramCount}`;
+        queryParams.push(parseInt(offset));
+
+        const result = await pool.query(query, queryParams);
+
+        // Get total count for pagination
+        let countQuery = `
+            SELECT COUNT(*) FROM loan_transactions lt 
+            WHERE lt.loan_account_id = $1
+        `;
+        let countParams = [loanId];
+        let countParamCount = 1;
+
+        if (type) {
+            countParamCount++;
+            countQuery += ` AND lt.transaction_type = $${countParamCount}`;
+            countParams.push(type);
+        }
+
+        if (startDate) {
+            countParamCount++;
+            countQuery += ` AND lt.transaction_date >= $${countParamCount}`;
+            countParams.push(startDate);
+        }
+
+        if (endDate) {
+            countParamCount++;
+            countQuery += ` AND lt.transaction_date <= $${countParamCount}`;
+            countParams.push(endDate);
+        }
+
+        const countResult = await pool.query(countQuery, countParams);
+        const totalCount = parseInt(countResult.rows[0].count);
+
+        res.json({
+            transactions: result.rows,
+            pagination: {
+                total: totalCount,
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                hasMore: (parseInt(offset) + parseInt(limit)) < totalCount
+            }
+        });
+
+    } catch (error) {
+        console.error('Loan transactions error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get loan performance analytics
+app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
+    try {
+        const { loanId } = req.params;
+        const { period = '12' } = req.query; // months
+
+        // Verify the loan belongs to the user
+        const loanCheck = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1 AND user_id = $2',
+            [loanId, req.user.userId]
+        );
+
+        if (loanCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        const loanAccount = loanCheck.rows[0];
+
+        // Get monthly aggregated data for the specified period
+        const analyticsQuery = `
+            SELECT 
+                DATE_TRUNC('month', transaction_date) as month,
+                SUM(CASE WHEN transaction_type = 'monthly_payment' THEN amount ELSE 0 END) as monthly_payments,
+                SUM(CASE WHEN transaction_type = 'bonus' THEN amount ELSE 0 END) as bonus_payments,
+                SUM(CASE WHEN transaction_type = 'withdrawal' THEN amount ELSE 0 END) as withdrawals,
+                COUNT(*) as transaction_count
+            FROM loan_transactions 
+            WHERE loan_account_id = $1 
+                AND transaction_date >= NOW() - INTERVAL '${parseInt(period)} months'
+                AND transaction_type IN ('monthly_payment', 'bonus', 'withdrawal')
+            GROUP BY DATE_TRUNC('month', transaction_date)
+            ORDER BY month ASC
+        `;
+
+        const analyticsResult = await pool.query(analyticsQuery, [loanId]);
+
+        // Calculate running balance over time
+        let runningBalance = parseFloat(loanAccount.principal_amount);
+        const balanceHistory = analyticsResult.rows.map(row => {
+            const monthlyPayment = parseFloat(row.monthly_payments || 0);
+            const bonusPayment = parseFloat(row.bonus_payments || 0);
+            const withdrawal = parseFloat(row.withdrawals || 0);
+            
+            runningBalance += monthlyPayment + bonusPayment + withdrawal;
+            
+            return {
+                month: row.month,
+                balance: runningBalance,
+                monthlyPayment,
+                bonusPayment,
+                withdrawal: Math.abs(withdrawal),
+                netGrowth: monthlyPayment + bonusPayment + withdrawal
+            };
+        });
+
+        res.json({
+            loanAccount,
+            analytics: {
+                balanceHistory,
+                currentBalance: parseFloat(loanAccount.current_balance),
+                totalPrincipal: parseFloat(loanAccount.principal_amount),
+                totalBonuses: parseFloat(loanAccount.total_bonuses),
+                totalWithdrawals: parseFloat(loanAccount.total_withdrawals),
+                monthlyRate: parseFloat(loanAccount.monthly_rate)
+            }
+        });
+
+    } catch (error) {
+        console.error('Loan analytics error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get transaction summary
+app.get('/api/loans/:loanId/summary', authenticateToken, async (req, res) => {
+    try {
+        const { loanId } = req.params;
+
+        // Verify the loan belongs to the user
+        const loanCheck = await pool.query(
+            'SELECT id FROM loan_accounts WHERE id = $1 AND user_id = $2',
+            [loanId, req.user.userId]
+        );
+
+        if (loanCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        // Get transaction summary
+        const summaryQuery = `
+            SELECT 
+                transaction_type,
+                COUNT(*) as count,
+                SUM(amount) as total_amount,
+                AVG(amount) as avg_amount,
+                MAX(transaction_date) as last_transaction
+            FROM loan_transactions 
+            WHERE loan_account_id = $1
+            GROUP BY transaction_type
+            ORDER BY transaction_type
+        `;
+
+        const summaryResult = await pool.query(summaryQuery, [loanId]);
+
+        res.json({
+            summary: summaryResult.rows
+        });
+
+    } catch (error) {
+        console.error('Transaction summary error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
