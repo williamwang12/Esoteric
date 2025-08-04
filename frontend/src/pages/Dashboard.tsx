@@ -14,8 +14,24 @@ import {
   Tabs,
   CircularProgress,
   Alert,
+  Fade,
+  Slide,
+  useTheme,
+  alpha,
 } from '@mui/material';
-import { ExitToApp, Person, TrendingUp, AccountBalance, History, Description, AdminPanelSettings } from '@mui/icons-material';
+import { 
+  ExitToApp, 
+  Person, 
+  TrendingUp, 
+  AccountBalance, 
+  History, 
+  Description, 
+  AdminPanelSettings,
+  AttachMoney,
+  Timeline,
+  AccountBalanceWallet,
+  CreditCard
+} from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import LoanGrowthChart from '../components/charts/LoanGrowthChart';
@@ -51,6 +67,7 @@ function TabPanel(props: TabPanelProps) {
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
   const [loanData, setLoanData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -58,6 +75,7 @@ const Dashboard: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false]);
 
   const handleLogout = () => {
     logout();
@@ -152,57 +170,206 @@ const Dashboard: React.FC = () => {
     fetchLoanData();
   }, []);
 
+  useEffect(() => {
+    // Animate cards sequentially when component mounts
+    const timeouts = [0, 1, 2, 3].map((index) => 
+      setTimeout(() => {
+        setCardAnimations(prev => {
+          const newAnimations = [...prev];
+          newAnimations[index] = true;
+          return newAnimations;
+        });
+      }, index * 150)
+    );
+    
+    return () => timeouts.forEach(clearTimeout);
+  }, []);
+
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', position: 'relative' }}>
       {/* Navigation Bar */}
-      <AppBar position="static" elevation={0}>
-        <Toolbar>
-          <Typography variant="h5" component="div" sx={{ flexGrow: 1, background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700 }}>
-            ESOTERIC ENTERPRISES
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32, fontSize: '0.875rem' }}>
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </Avatar>
-              <Typography variant="body2" color="text.primary">
-                {user?.firstName} {user?.lastName}
-              </Typography>
-            </Box>
-            <IconButton color="inherit" size="small">
-              <Person />
-            </IconButton>
-            <Button
-              color="inherit"
-              startIcon={<ExitToApp />}
-              onClick={handleLogout}
-              sx={{ color: 'text.primary' }}
+      <Slide direction="down" in={true} timeout={800}>
+        <AppBar position="static" elevation={0}>
+          <Toolbar sx={{ py: 1 }}>
+            <Typography 
+              variant="h5" 
+              component="div" 
+              sx={{ 
+                flexGrow: 1, 
+                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)', 
+                backgroundClip: 'text', 
+                WebkitBackgroundClip: 'text', 
+                WebkitTextFillColor: 'transparent', 
+                fontWeight: 800,
+                letterSpacing: '-0.01em',
+                fontSize: '1.75rem'
+              }}
             >
-              Logout
-            </Button>
-          </Box>
-        </Toolbar>
-      </AppBar>
+              ESOTERIC ENTERPRISES
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 2,
+                background: 'rgba(107, 70, 193, 0.1)',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                border: '1px solid rgba(107, 70, 193, 0.2)'
+              }}>
+                <Avatar sx={{ 
+                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)', 
+                  width: 36, 
+                  height: 36, 
+                  fontSize: '0.9rem',
+                  fontWeight: 600
+                }}>
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
+                    {user?.firstName} {user?.lastName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Account Holder
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton 
+                color="inherit" 
+                size="medium"
+                sx={{ 
+                  background: 'rgba(107, 70, 193, 0.1)',
+                  '&:hover': { 
+                    background: 'rgba(107, 70, 193, 0.2)',
+                    transform: 'scale(1.05)'
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                <Person />
+              </IconButton>
+              <Button
+                color="inherit"
+                startIcon={<ExitToApp />}
+                onClick={handleLogout}
+                sx={{ 
+                  color: 'text.primary',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: '10px',
+                  '&:hover': {
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    transform: 'translateY(-1px)'
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              >
+                Logout
+              </Button>
+            </Box>
+          </Toolbar>
+        </AppBar>
+      </Slide>
 
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         {/* Welcome Section */}
-        <Box mb={4}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Welcome back, {user?.firstName}!
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Here's an overview of your loan performance with Esoteric Enterprises.
-          </Typography>
-        </Box>
-
-
-
-        {/* Loading State */}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
+        <Fade in={true} timeout={1000}>
+          <Box mb={6}>
+            <Typography 
+              variant="h2" 
+              component="h1" 
+              gutterBottom
+              sx={{
+                background: 'linear-gradient(135deg, #F9FAFB 0%, #D1D5DB 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                mb: 2
+              }}
+            >
+              Welcome back, {user?.firstName}! 👋
+            </Typography>
+            <Typography 
+              variant="h6" 
+              color="text.secondary"
+              sx={{ 
+                fontSize: '1.1rem',
+                fontWeight: 400,
+                opacity: 0.9,
+                maxWidth: '600px'
+              }}
+            >
+              Here's an overview of your loan performance with Esoteric Enterprises. Track your growth, manage your investments, and explore your financial journey.
+            </Typography>
           </Box>
+        </Fade>
+
+
+
+        {/* Enhanced Loading State */}
+        {loading && (
+          <Fade in={loading} timeout={800}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              py: 8,
+              background: 'rgba(107, 70, 193, 0.02)',
+              borderRadius: '20px',
+              border: '1px solid rgba(107, 70, 193, 0.1)',
+              backdropFilter: 'blur(10px)',
+            }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {/* Outer ring */}
+                  <CircularProgress 
+                    size={80} 
+                    thickness={2}
+                    sx={{ 
+                      color: 'primary.main',
+                      opacity: 0.3,
+                      position: 'absolute',
+                    }}
+                  />
+                  {/* Inner ring */}
+                  <CircularProgress 
+                    size={60} 
+                    thickness={4}
+                    sx={{ 
+                      color: 'primary.main',
+                      filter: 'drop-shadow(0 0 10px rgba(107, 70, 193, 0.4))',
+                    }}
+                  />
+                </Box>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    mt: 3,
+                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 600
+                  }}
+                >
+                  Loading your financial data...
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, opacity: 0.8 }}>
+                  Just a moment while we prepare your dashboard
+                </Typography>
+              </Box>
+            </Box>
+          </Fade>
         )}
 
         {/* Error State */}
@@ -262,86 +429,219 @@ const Dashboard: React.FC = () => {
             {/* Tab Content */}
             <TabPanel value={tabValue} index={0}>
               {/* Overview Tab - Loan Summary Cards */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 3, mb: 4 }}>
-                <Card
-                  sx={{
-                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                    color: 'white',
-                  }}
-                >
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Current Balance
-                    </Typography>
-                    <Typography variant="h3" component="div" sx={{ fontWeight: 'bold' }}>
-                      ${parseFloat(loanData.current_balance).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8, mt: 1 }}>
-                      Principal: ${parseFloat(loanData.principal_amount).toLocaleString()}
-                    </Typography>
-                  </CardContent>
-                </Card>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 4, mb: 6 }}>
+                {/* Current Balance Card - Featured */}
+                <Fade in={cardAnimations[0]} timeout={800}>
+                  <Card
+                    sx={{
+                      background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                      color: 'white',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%)',
+                        pointerEvents: 'none'
+                      }
+                    }}
+                  >
+                    <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <AccountBalanceWallet sx={{ fontSize: 32, mr: 2, opacity: 0.9 }} />
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, opacity: 0.9 }}>
+                          Current Balance
+                        </Typography>
+                      </Box>
+                      <Typography variant="h2" component="div" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
+                        ${parseFloat(loanData.current_balance).toLocaleString()}
+                      </Typography>
+                      <Box sx={{ 
+                        background: 'rgba(255,255,255,0.2)', 
+                        borderRadius: '8px', 
+                        p: 2,
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                          Principal: ${parseFloat(loanData.principal_amount).toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          Growth: +${(parseFloat(loanData.current_balance) - parseFloat(loanData.principal_amount)).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
 
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom color="text.primary">
-                      Total Bonuses
-                    </Typography>
-                    <Typography variant="h3" component="div" color="secondary.main" sx={{ fontWeight: 'bold' }}>
-                      ${parseFloat(loanData.total_bonuses).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Performance rewards
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Fade in={cardAnimations[1]} timeout={1000}>
+                  <Card sx={{ position: 'relative' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #9333EA, #A855F7)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2 
+                        }}>
+                          <AttachMoney sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                          Total Bonuses
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" component="div" color="secondary.main" sx={{ fontWeight: 800, mb: 2 }}>
+                        ${parseFloat(loanData.total_bonuses).toLocaleString()}
+                      </Typography>
+                      <Box sx={{ 
+                        background: alpha(theme.palette.secondary.main, 0.1), 
+                        borderRadius: '8px', 
+                        p: 2,
+                        border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          🎯 Performance rewards
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
 
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom color="text.primary">
-                      Monthly Rate
-                    </Typography>
-                    <Typography variant="h3" component="div" color="success.main" sx={{ fontWeight: 'bold' }}>
-                      {(parseFloat(loanData.monthly_rate) * 100).toFixed(1)}%
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Base rate + bonuses
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Fade in={cardAnimations[2]} timeout={1200}>
+                  <Card sx={{ position: 'relative' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #10B981, #34D399)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2 
+                        }}>
+                          <Timeline sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                          Monthly Rate
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" component="div" color="success.main" sx={{ fontWeight: 800, mb: 2 }}>
+                        {(parseFloat(loanData.monthly_rate) * 100).toFixed(1)}%
+                      </Typography>
+                      <Box sx={{ 
+                        background: alpha(theme.palette.success.main, 0.1), 
+                        borderRadius: '8px', 
+                        p: 2,
+                        border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          📈 Base rate + bonuses
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
 
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom color="text.primary">
-                      Account Number
-                    </Typography>
-                    <Typography variant="h5" component="div" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                      {loanData.account_number}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Loan identifier
-                    </Typography>
-                  </CardContent>
-                </Card>
+                <Fade in={cardAnimations[3]} timeout={1400}>
+                  <Card sx={{ position: 'relative' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2 
+                        }}>
+                          <CreditCard sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                          Account Number
+                        </Typography>
+                      </Box>
+                      <Typography 
+                        variant="h4" 
+                        component="div" 
+                        sx={{ 
+                          fontWeight: 700, 
+                          fontFamily: '"JetBrains Mono", monospace',
+                          color: 'info.main',
+                          mb: 2,
+                          letterSpacing: '0.05em'
+                        }}
+                      >
+                        {loanData.account_number}
+                      </Typography>
+                      <Box sx={{ 
+                        background: alpha(theme.palette.info.main, 0.1), 
+                        borderRadius: '8px', 
+                        p: 2,
+                        border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          🆔 Loan identifier
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
               </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
               {/* Analytics Tab - Charts */}
               {analyticsData ? (
-                <Card>
-                  <CardContent>
-                    <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
-                  </CardContent>
-                </Card>
+                <Fade in={!!analyticsData} timeout={1000}>
+                  <Card>
+                    <CardContent sx={{ p: 4 }}>
+                      <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
+                    </CardContent>
+                  </Card>
+                </Fade>
               ) : (
                 <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      📈 Loading Analytics...
-                    </Typography>
-                    <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.100', borderRadius: 2 }}>
-                      <CircularProgress />
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ 
+                      textAlign: 'center', 
+                      py: 6,
+                      background: 'rgba(107, 70, 193, 0.02)',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(107, 70, 193, 0.1)',
+                    }}>
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          mb: 3,
+                        }}
+                      >
+                        <CircularProgress 
+                          size={60} 
+                          thickness={4}
+                          sx={{ 
+                            color: 'primary.main',
+                            filter: 'drop-shadow(0 0 10px rgba(107, 70, 193, 0.4))',
+                          }}
+                        />
+                      </Box>
+                      <Typography 
+                        variant="h6" 
+                        gutterBottom
+                        sx={{
+                          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                          backgroundClip: 'text',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          fontWeight: 600
+                        }}
+                      >
+                        📈 Loading Analytics...
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
+                        Preparing your loan performance charts
+                      </Typography>
                     </Box>
                   </CardContent>
                 </Card>
