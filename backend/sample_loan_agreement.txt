@@ -1,0 +1,19 @@
+Sample Loan Agreement
+
+Esoteric Enterprises
+Loan Agreement #ESO-001
+
+Date: Sat Aug  2 18:40:49 PDT 2025
+Customer: Demo User
+
+This is a sample loan agreement document for testing the document management system.
+
+Terms:
+- Principal: ,000.00
+- Monthly Rate: 1.0%
+- Performance Bonuses: As determined by company performance
+
+This document serves as a test file for the admin document upload system.
+
+Esoteric Enterprises
+© 2025

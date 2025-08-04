@@ -104,8 +104,9 @@ export const loansApi = {
 
 // Documents API
 export const documentsApi = {
-  getDocuments: async () => {
-    const response = await api.get('/documents');
+  getDocuments: async (category?: string) => {
+    const params = category ? { category } : {};
+    const response = await api.get('/documents', { params });
     return response.data;
   },
 
@@ -113,6 +114,38 @@ export const documentsApi = {
     const response = await api.get(`/documents/${documentId}/download`, {
       responseType: 'blob',
     });
+    return response.data;
+  },
+};
+
+// Admin API
+export const adminApi = {
+  getUsers: async () => {
+    const response = await api.get('/admin/users');
+    return response.data;
+  },
+
+  getUserLoans: async (userId: string) => {
+    const response = await api.get(`/admin/users/${userId}/loans`);
+    return response.data;
+  },
+
+  getUserDocuments: async (userId: string) => {
+    const response = await api.get(`/admin/users/${userId}/documents`);
+    return response.data;
+  },
+
+  uploadDocument: async (formData: FormData) => {
+    const response = await api.post('/admin/documents/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  deleteDocument: async (documentId: string) => {
+    const response = await api.delete(`/admin/documents/${documentId}`);
     return response.data;
   },
 };

@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +19,43 @@ const pool = new Pool({
     database: process.env.DB_NAME || 'esoteric_loans',
     password: process.env.DB_PASSWORD || 'password',
     port: process.env.DB_PORT || 5432,
+});
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+        // Generate unique filename with timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        // Allow common document types
+        const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|txt|csv/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only documents and images are allowed.'));
+        }
+    }
 });
 
 // Middleware
@@ -41,6 +81,45 @@ const authenticateToken = (req, res, next) => {
         req.user = user;
         next();
     });
+};
+
+// Admin Authentication Middleware
+const authenticateAdmin = async (req, res, next) => {
+    try {
+        // First authenticate the token
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ error: 'Access token required' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Check if user has admin privileges
+        const userResult = await pool.query(
+            'SELECT id, email, role FROM users WHERE id = $1',
+            [decoded.userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(403).json({ error: 'User not found' });
+        }
+
+        const user = userResult.rows[0];
+        
+        // For now, make demo user an admin, and check for admin role
+        if (user.role !== 'admin' && user.email !== 'demo@esoteric.com') {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        req.user = decoded;
+        req.adminUser = user;
+        next();
+    } catch (error) {
+        console.error('Admin auth error:', error);
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
 };
 
 // Test database connection
@@ -481,8 +560,248 @@ app.get('/api/loans/:loanId/summary', authenticateToken, async (req, res) => {
     }
 });
 
+// Document Management Routes
+
+// Get user's documents
+app.get('/api/documents', authenticateToken, async (req, res) => {
+    try {
+        const { category } = req.query;
+
+        let query = 'SELECT * FROM documents WHERE user_id = $1';
+        let queryParams = [req.user.userId];
+
+        if (category) {
+            query += ' AND category = $2';
+            queryParams.push(category);
+        }
+
+        query += ' ORDER BY upload_date DESC';
+
+        const result = await pool.query(query, queryParams);
+
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Documents error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Upload document (admin only)
+app.post('/api/admin/documents/upload', authenticateAdmin, upload.single('document'), async (req, res) => {
+    try {
+        const { title, category, userId } = req.body;
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Validate required fields
+        if (!title || !category || !userId) {
+            return res.status(400).json({ error: 'Title, category, and userId are required' });
+        }
+
+        // Verify user exists
+        const userCheck = await pool.query(
+            'SELECT id FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const result = await pool.query(
+            'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [userId, title, req.file.path, req.file.size, category]
+        );
+
+        res.status(201).json({
+            message: 'Document uploaded successfully',
+            document: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Document upload error:', error);
+        // Delete the uploaded file if database insertion fails
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Download document
+app.get('/api/documents/:documentId/download', authenticateToken, async (req, res) => {
+    try {
+        const { documentId } = req.params;
+
+        // Get document and verify ownership
+        const result = await pool.query(
+            'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+            [documentId, req.user.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        const document = result.rows[0];
+
+        // Check if file exists
+        if (!fs.existsSync(document.file_path)) {
+            return res.status(404).json({ error: 'File not found on server' });
+        }
+
+        // Set appropriate headers
+        res.setHeader('Content-Disposition', `attachment; filename="${document.title}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+
+        // Stream the file
+        const fileStream = fs.createReadStream(document.file_path);
+        fileStream.pipe(res);
+
+    } catch (error) {
+        console.error('Document download error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get all users (admin only)
+app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, email, first_name, last_name, phone, role, created_at FROM users ORDER BY created_at DESC'
+        );
+
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Admin users error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get user's loan accounts (admin only)
+app.get('/api/admin/users/:userId/loans', authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Verify user exists
+        const userCheck = await pool.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userCheck.rows[0];
+
+        // Get loan accounts
+        const loansResult = await pool.query(
+            'SELECT * FROM loan_accounts WHERE user_id = $1',
+            [userId]
+        );
+
+        res.json({
+            user: {
+                id: user.id,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                email: user.email
+            },
+            loans: loansResult.rows
+        });
+
+    } catch (error) {
+        console.error('Admin user loans error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get user's documents (admin only)
+app.get('/api/admin/users/:userId/documents', authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Verify user exists
+        const userCheck = await pool.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userCheck.rows[0];
+
+        // Get documents
+        const documentsResult = await pool.query(
+            'SELECT * FROM documents WHERE user_id = $1 ORDER BY upload_date DESC',
+            [userId]
+        );
+
+        res.json({
+            user: {
+                id: user.id,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                email: user.email
+            },
+            documents: documentsResult.rows
+        });
+
+    } catch (error) {
+        console.error('Admin user documents error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete document (admin only)
+app.delete('/api/admin/documents/:documentId', authenticateAdmin, async (req, res) => {
+    try {
+        const { documentId } = req.params;
+
+        // Get document
+        const documentResult = await pool.query(
+            'SELECT * FROM documents WHERE id = $1',
+            [documentId]
+        );
+
+        if (documentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        const document = documentResult.rows[0];
+
+        // Delete from database
+        await pool.query(
+            'DELETE FROM documents WHERE id = $1',
+            [documentId]
+        );
+
+        // Delete file from filesystem
+        if (fs.existsSync(document.file_path)) {
+            fs.unlinkSync(document.file_path);
+        }
+
+        res.json({ message: 'Document deleted successfully' });
+
+    } catch (error) {
+        console.error('Document delete error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(uploadsDir));
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Esoteric Backend Server running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`📁 Document uploads: ${uploadsDir}`);
 }); 

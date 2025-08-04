@@ -15,11 +15,12 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { ExitToApp, Person, TrendingUp, AccountBalance, History } from '@mui/icons-material';
+import { ExitToApp, Person, TrendingUp, AccountBalance, History, Description, AdminPanelSettings } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import LoanGrowthChart from '../components/charts/LoanGrowthChart';
 import TransactionHistory from '../components/TransactionHistory';
+import { documentsApi, adminApi } from '../services/api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -53,6 +54,8 @@ const Dashboard: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [loanData, setLoanData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +66,23 @@ const Dashboard: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handleDocumentDownload = async (documentId: string, title: string) => {
+    try {
+      const blob = await documentsApi.downloadDocument(documentId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = title;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      // You could show a toast notification here
+    }
   };
 
   const fetchLoanData = async () => {
@@ -102,6 +122,24 @@ const Dashboard: React.FC = () => {
       } else {
         setError('No loan accounts found');
       }
+
+      // Fetch documents
+      try {
+        const userDocuments = await documentsApi.getDocuments();
+        setDocuments(userDocuments);
+      } catch (docError) {
+        console.error('Documents fetch error:', docError);
+        // Don't set error state for documents, just log it
+      }
+
+      // Check if user is admin
+      try {
+        await adminApi.getUsers();
+        setIsAdmin(true);
+      } catch (adminError) {
+        setIsAdmin(false);
+      }
+
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch loan data');
@@ -204,6 +242,20 @@ const Dashboard: React.FC = () => {
                   id="dashboard-tab-2"
                   aria-controls="dashboard-tabpanel-2"
                 />
+                <Tab 
+                  icon={<Description />} 
+                  label="Documents" 
+                  id="dashboard-tab-3"
+                  aria-controls="dashboard-tabpanel-3"
+                />
+                {isAdmin && (
+                  <Tab 
+                    icon={<AdminPanelSettings />} 
+                    label="Admin" 
+                    id="dashboard-tab-4"
+                    aria-controls="dashboard-tabpanel-4"
+                  />
+                )}
               </Tabs>
             </Box>
 
@@ -300,6 +352,71 @@ const Dashboard: React.FC = () => {
               {/* Transactions Tab - Transaction History */}
               <TransactionHistory loanId={loanData.id.toString()} />
             </TabPanel>
+
+            <TabPanel value={tabValue} index={3}>
+              {/* Documents Tab */}
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    📄 Your Documents
+                  </Typography>
+                  {documents.length > 0 ? (
+                    <Box sx={{ display: 'grid', gap: 2 }}>
+                      {documents.map((doc) => (
+                        <Card key={doc.id} variant="outlined">
+                          <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box>
+                              <Typography variant="h6">{doc.title}</Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                Category: {doc.category} • Uploaded: {new Date(doc.upload_date).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              onClick={() => handleDocumentDownload(doc.id, doc.title)}
+                            >
+                              Download
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </Box>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No documents available yet.
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </TabPanel>
+
+            {isAdmin && (
+              <TabPanel value={tabValue} index={4}>
+                {/* Admin Tab */}
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      🔧 Admin Panel
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                      Administrative tools and customer management features.
+                    </Typography>
+                    <Box sx={{ display: 'grid', gap: 2 }}>
+                      <Button 
+                        variant="outlined" 
+                        onClick={() => window.open('/admin', '_blank')}
+                        startIcon={<AdminPanelSettings />}
+                      >
+                        Open Full Admin Dashboard
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </TabPanel>
+            )}
           </>
         )}
       </Container>
