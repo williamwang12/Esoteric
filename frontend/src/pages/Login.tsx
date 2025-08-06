@@ -12,6 +12,7 @@ import {
   CircularProgress,
   Fade,
   Slide,
+  IconButton,
   keyframes,
   styled,
 } from '@mui/material';
@@ -43,7 +44,7 @@ const GradientText = styled(Typography)(({ theme }) => ({
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, complete2FALogin, isLoading } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -52,6 +53,9 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [sessionToken, setSessionToken] = useState('');
+  const [totpCode, setTotpCode] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -72,10 +76,35 @@ const Login: React.FC = () => {
     }
 
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      const result = await login(formData.email, formData.password);
+      
+      if (result.requires2FA) {
+        // Show 2FA form
+        setShow2FA(true);
+        setSessionToken(result.sessionToken);
+        setError('');
+      } else {
+        // Direct login success
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
+    }
+  };
+
+  const handle2FASubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!totpCode || totpCode.length !== 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    try {
+      await complete2FALogin(sessionToken, totpCode);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Invalid 2FA code. Please try again.');
     }
   };
 
@@ -207,72 +236,115 @@ const Login: React.FC = () => {
 
               {/* Login Form */}
               <Slide direction="up" in={isVisible} timeout={1400}>
-                <Box component="form" onSubmit={handleSubmit} noValidate>
-                  <Box sx={{ mb: 3 }}>
-                    <TextField
-                      fullWidth
-                      id="email"
-                      name="email"
-                      label="Email Address"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      autoComplete="email"
-                      autoFocus
-                      disabled={isLoading}
-                      InputProps={{
-                        startAdornment: (
-                          <EmailOutlined sx={{ mr: 1, color: 'text.secondary' }} />
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
+                <Box component="form" onSubmit={show2FA ? handle2FASubmit : handleSubmit} noValidate>
+                  {show2FA ? (
+                    /* 2FA Form */
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
+                        Two-Factor Authentication
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 3, textAlign: 'center', color: 'text.secondary' }}>
+                        Enter the 6-digit code from your authenticator app
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        id="totpCode"
+                        name="totpCode"
+                        label="6-Digit Code"
+                        type="text"
+                        value={totpCode}
+                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                        autoComplete="one-time-code"
+                        autoFocus
+                        disabled={isLoading}
+                        inputProps={{ maxLength: 6, pattern: '[0-9]*' }}
+                        InputProps={{
+                          startAdornment: (
+                            <LockOutlined sx={{ mr: 1, color: 'text.secondary' }} />
+                          ),
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                            },
                           },
-                        },
-                      }}
-                    />
-                  </Box>
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    /* Login Form */
+                    <>
+                      <Box sx={{ mb: 3 }}>
+                        <TextField
+                          fullWidth
+                          id="email"
+                          name="email"
+                          label="Email Address"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          autoComplete="email"
+                          autoFocus
+                          disabled={isLoading}
+                          InputProps={{
+                            startAdornment: (
+                              <EmailOutlined sx={{ mr: 1, color: 'text.secondary' }} />
+                            ),
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                              },
+                            },
+                          }}
+                        />
+                      </Box>
                   
-                  <Box sx={{ mb: 4 }}>
-                    <TextField
-                      fullWidth
-                      id="password"
-                      name="password"
-                      label="Password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      autoComplete="current-password"
-                      disabled={isLoading}
-                      InputProps={{
-                        startAdornment: (
-                          <LockOutlined sx={{ mr: 1, color: 'text.secondary' }} />
-                        ),
-                        endAdornment: (
-                          <Button
-                            size="small"
-                            onClick={() => setShowPassword(!showPassword)}
-                            sx={{ minWidth: 'auto', p: 1 }}
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </Button>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          '&:hover': {
-                            transform: 'translateY(-2px)',
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
+                      <Box sx={{ mb: 4 }}>
+                        <TextField
+                          fullWidth
+                          id="password"
+                          name="password"
+                          label="Password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.password}
+                          onChange={handleChange}
+                          required
+                          autoComplete="current-password"
+                          disabled={isLoading}
+                          InputProps={{
+                            startAdornment: (
+                              <LockOutlined sx={{ mr: 1, color: 'text.secondary' }} />
+                            ),
+                            endAdornment: (
+                              <IconButton
+                                aria-label="toggle password visibility"
+                                onClick={() => setShowPassword(!showPassword)}
+                                edge="end"
+                                size="small"
+                              >
+                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                              </IconButton>
+                            ),
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                              },
+                            },
+                          }}
+                        />
+                      </Box>
+                    </>
+                  )}
 
                   <Button
                     type="submit"
@@ -307,7 +379,7 @@ const Login: React.FC = () => {
                         <Typography>Signing In...</Typography>
                       </Box>
                     ) : (
-                      'Sign In to Dashboard'
+                      show2FA ? 'Verify 2FA Code' : 'Sign In to Dashboard'
                     )}
                   </Button>
 
@@ -323,7 +395,7 @@ const Login: React.FC = () => {
                     }}
                   >
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      <strong>🚀 Demo Account:</strong><br />
+                      <strong>Demo Account:</strong><br />
                       Email: demo@esoteric.com<br />
                       Password: demo123456
                     </Typography>
@@ -351,7 +423,7 @@ const Login: React.FC = () => {
                         },
                       }}
                     >
-                      Don't have an account? Sign up 🎯
+                      Don't have an account? Sign up
                     </Link>
                   </Box>
                 </Box>

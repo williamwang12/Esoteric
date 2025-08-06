@@ -337,7 +337,7 @@ const AdminDashboard: React.FC = () => {
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      📄 Documents for {selectedUser.firstName} {selectedUser.lastName}
+                      Documents for {selectedUser.firstName} {selectedUser.lastName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                       {selectedUser.email}
@@ -406,7 +406,7 @@ const AdminDashboard: React.FC = () => {
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      💰 Loans for {selectedUser.firstName} {selectedUser.lastName}
+                      Loans for {selectedUser.firstName} {selectedUser.lastName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                       {selectedUser.email}

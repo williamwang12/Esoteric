@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
 // Create axios instance
 const api = axios.create({
@@ -56,8 +56,41 @@ export const authApi = {
     return response.data;
   },
 
+  complete2FALogin: async (sessionData: { session_token: string; totp_token: string }) => {
+    const response = await api.post('/auth/complete-2fa-login', sessionData);
+    return response.data;
+  },
+
   logout: async () => {
     const response = await api.post('/auth/logout');
+    return response.data;
+  },
+};
+
+// 2FA API
+export const twoFAApi = {
+  getStatus: async () => {
+    const response = await api.get('/2fa/status');
+    return response.data;
+  },
+
+  setup: async () => {
+    const response = await api.post('/2fa/setup');
+    return response.data;
+  },
+
+  verifySetup: async (token: string) => {
+    const response = await api.post('/2fa/verify-setup', { token });
+    return response.data;
+  },
+
+  disable: async (token: string) => {
+    const response = await api.post('/2fa/disable', { token });
+    return response.data;
+  },
+
+  generateBackupCodes: async () => {
+    const response = await api.post('/2fa/generate-backup-codes');
     return response.data;
   },
 };

@@ -147,7 +147,7 @@ const LoanGrowthChart: React.FC<LoanGrowthChartProps> = ({ analytics, height = 4
       },
       title: {
         display: true,
-        text: '📈 Loan Growth & Payment History',
+        text: 'Loan Growth & Payment History',
         color: theme.palette.text.primary,
         font: {
           size: 20,
@@ -176,17 +176,12 @@ const LoanGrowthChart: React.FC<LoanGrowthChartProps> = ({ analytics, height = 4
         padding: 16,
         callbacks: {
           title: function(tooltipItems) {
-            return `📅 ${tooltipItems[0].label}`;
+            return `${tooltipItems[0].label}`;
           },
           label: function(context: TooltipItem<'line' | 'bar'>) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            const icons: { [key: string]: string } = {
-              'Loan Balance': '💰',
-              'Monthly Payment': '📈',
-              'Bonus Payment': '🎁',
-            };
-            return `${icons[label] || '•'} ${label}: ${formatCurrency(value)}`;
+            return `${label}: ${formatCurrency(value)}`;
           },
         },
       },

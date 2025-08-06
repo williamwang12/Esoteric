@@ -113,7 +113,7 @@ const Dashboard: React.FC = () => {
       }
 
       // Fetch loans
-      const loansResponse = await fetch('http://localhost:5001/api/loans', {
+      const loansResponse = await fetch('http://localhost:5002/api/loans', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -127,7 +127,7 @@ const Dashboard: React.FC = () => {
         setLoanData(loans[0]);
         
         // Fetch analytics for the first loan
-        const analyticsResponse = await fetch(`http://localhost:5001/api/loans/${loans[0].id}/analytics`, {
+        const analyticsResponse = await fetch(`http://localhost:5002/api/loans/${loans[0].id}/analytics`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -291,7 +291,7 @@ const Dashboard: React.FC = () => {
                 mb: 2
               }}
             >
-              Welcome back, {user?.firstName}! 👋
+              Welcome back, {user?.firstName}!
             </Typography>
             <Typography 
               variant="h6" 
@@ -503,7 +503,7 @@ const Dashboard: React.FC = () => {
                         border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`
                       }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          🎯 Performance rewards
+                          Performance rewards
                         </Typography>
                       </Box>
                     </CardContent>
@@ -536,7 +536,7 @@ const Dashboard: React.FC = () => {
                         border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
                       }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          📈 Base rate + bonuses
+                          Base rate + bonuses
                         </Typography>
                       </Box>
                     </CardContent>
@@ -579,7 +579,7 @@ const Dashboard: React.FC = () => {
                         border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
                       }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          🆔 Loan identifier
+                          Loan identifier
                         </Typography>
                       </Box>
                     </CardContent>
@@ -637,7 +637,7 @@ const Dashboard: React.FC = () => {
                           fontWeight: 600
                         }}
                       >
-                        📈 Loading Analytics...
+                        Loading Analytics...
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
                         Preparing your loan performance charts
@@ -658,7 +658,7 @@ const Dashboard: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    📄 Your Documents
+                    Your Documents
                   </Typography>
                   {documents.length > 0 ? (
                     <Box sx={{ display: 'grid', gap: 2 }}>
@@ -699,7 +699,7 @@ const Dashboard: React.FC = () => {
                 <Card>
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      🔧 Admin Panel
+                      Admin Panel
                     </Typography>
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                       Administrative tools and customer management features.

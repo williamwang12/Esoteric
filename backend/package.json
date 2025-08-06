@@ -4,7 +4,9 @@
   "description": "This directory contains the Node.js backend API server for the Esoteric loan management platform.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch --detectOpenHandles",
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0",
     "sqlite3": "^5.1.7"
   },
@@ -29,6 +32,8 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^24.1.0",
     "@types/speakeasy": "^2.0.10",
-    "nodemon": "^3.1.10"
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }

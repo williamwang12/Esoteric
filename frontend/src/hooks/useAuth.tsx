@@ -12,7 +12,8 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
+  complete2FALogin: (sessionToken: string, totpToken: string) => Promise<any>;
   register: (userData: {
     email: string;
     password: string;
@@ -52,6 +53,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authApi.login({ email, password });
       
+      // Check if 2FA is required
+      if (response.requires_2fa) {
+        // Return 2FA data without storing anything yet
+        return {
+          requires2FA: true,
+          sessionToken: response.session_token,
+          user: response.user
+        };
+      }
+      
+      // Direct login (no 2FA)
       const { user: userData, token: authToken } = response;
       
       // Store in localStorage
@@ -61,6 +73,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update state
       setToken(authToken);
       setUser(userData);
+      
+      return { requires2FA: false };
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const complete2FALogin = async (sessionToken: string, totpToken: string) => {
+    try {
+      setIsLoading(true);
+      const response = await authApi.complete2FALogin({
+        session_token: sessionToken,
+        totp_token: totpToken
+      });
+      
+      const { user: userData, token: authToken } = response;
+      
+      // Store in localStorage
+      localStorage.setItem('authToken', authToken);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Update state
+      setToken(authToken);
+      setUser(userData);
+      
+      return response;
     } catch (error) {
       throw error;
     } finally {
@@ -117,6 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     token,
     isLoading,
     login,
+    complete2FALogin,
     register,
     logout,
     isAuthenticated,
