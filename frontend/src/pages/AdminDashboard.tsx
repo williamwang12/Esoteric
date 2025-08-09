@@ -85,6 +85,8 @@ const AdminDashboard: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [loadingUserTransactions, setLoadingUserTransactions] = useState(false);
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [loadingAllLoans, setLoadingAllLoans] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -128,6 +130,14 @@ const AdminDashboard: React.FC = () => {
   const [loanTransactions, setLoanTransactions] = useState<any[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
 
+  // Create loan dialog state
+  const [createLoanDialogOpen, setCreateLoanDialogOpen] = useState(false);
+  const [createLoanForm, setCreateLoanForm] = useState({
+    principalAmount: '',
+    monthlyRate: '1.0' // Default 1% monthly rate
+  });
+  const [creatingLoan, setCreatingLoan] = useState(false);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -164,14 +174,16 @@ const AdminDashboard: React.FC = () => {
 
   const fetchUserDetails = async (userId: string) => {
     try {
-      const [documentsData, loansData] = await Promise.all([
+      const [documentsData, loansData, transactionsData] = await Promise.all([
         adminApi.getUserDocuments(userId),
         adminApi.getUserLoans(userId),
+        adminApi.getUserTransactions(userId),
       ]);
       
       setSelectedUser(documentsData.user);
       setUserDocuments(documentsData.documents);
       setUserLoans(loansData.loans);
+      setUserTransactions(transactionsData.transactions);
     } catch (err) {
       console.error('User details fetch error:', err);
     }
@@ -228,7 +240,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleDocumentDownload = async (documentId: string, title: string) => {
     try {
-      const blob = await documentsApi.downloadDocument(documentId);
+      const blob = await adminApi.downloadDocument(documentId);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -371,6 +383,34 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleCreateLoan = async () => {
+    if (!selectedUser || !createLoanForm.principalAmount) return;
+
+    try {
+      setCreatingLoan(true);
+      await adminApi.createLoan({
+        userId: selectedUser.id,
+        principalAmount: parseFloat(createLoanForm.principalAmount),
+        monthlyRate: parseFloat(createLoanForm.monthlyRate) / 100 // Convert percentage to decimal
+      });
+      
+      // Refresh user loan data
+      await fetchUserDetails(selectedUser.id);
+      await fetchAllLoans(); // Also refresh all loans data
+      
+      // Reset form and close dialog
+      setCreateLoanForm({
+        principalAmount: '',
+        monthlyRate: '1.0'
+      });
+      setCreateLoanDialogOpen(false);
+    } catch (error) {
+      console.error('Loan creation error:', error);
+    } finally {
+      setCreatingLoan(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchAllLoans();
@@ -399,14 +439,6 @@ const AdminDashboard: React.FC = () => {
           <Typography variant="h5" component="div" sx={{ flexGrow: 1, background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700 }}>
             ESOTERIC ADMIN PANEL
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Upload />}
-            onClick={() => setUploadDialogOpen(true)}
-            sx={{ ml: 2 }}
-          >
-            Upload Document
-          </Button>
         </Toolbar>
       </AppBar>
 
@@ -710,9 +742,14 @@ const AdminDashboard: React.FC = () => {
                         id="user-tab-0"
                       />
                       <Tab 
+                        icon={<Receipt />} 
+                        label={`Transactions (${userTransactions.length})`}
+                        id="user-tab-1"
+                      />
+                      <Tab 
                         icon={<Description />} 
                         label={`Documents (${userDocuments.length})`}
-                        id="user-tab-1"
+                        id="user-tab-2"
                       />
                     </Tabs>
                   </Box>
@@ -825,10 +862,27 @@ const AdminDashboard: React.FC = () => {
                               </Table>
                             </TableContainer>
                           ) : (
-                            <Box sx={{ textAlign: 'center', py: 4 }}>
-                              <Typography variant="body1" color="text.secondary">
-                                No loan accounts found for this user.
+                            <Box sx={{ textAlign: 'center', py: 6 }}>
+                              <Typography variant="h6" color="text.secondary" gutterBottom>
+                                No Loan Account
                               </Typography>
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                                This user doesn't have a loan account yet.
+                              </Typography>
+                              <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => setCreateLoanDialogOpen(true)}
+                                size="large"
+                                sx={{ 
+                                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                  '&:hover': {
+                                    background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                                  }
+                                }}
+                              >
+                                Create Loan Account
+                              </Button>
                             </Box>
                           )}
 
@@ -900,13 +954,103 @@ const AdminDashboard: React.FC = () => {
                       </Card>
                     </TabPanel>
 
-                    {/* User Documents Subtab */}
+                    {/* User Transactions Subtab */}
                     <TabPanel value={userDetailsTabValue} index={1}>
                       <Card>
                         <CardContent>
                           <Typography variant="h6" gutterBottom>
-                            📄 Documents
+                            📋 All Transactions
                           </Typography>
+                          
+                          {userTransactions.length > 0 ? (
+                            <TableContainer component={Paper}>
+                              <Table>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>Date</TableCell>
+                                    <TableCell>Account</TableCell>
+                                    <TableCell>Type</TableCell>
+                                    <TableCell>Amount</TableCell>
+                                    <TableCell>Description</TableCell>
+                                    <TableCell>Bonus %</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {userTransactions.map((transaction) => (
+                                    <TableRow key={transaction.id} hover>
+                                      <TableCell>
+                                        {new Date(transaction.transaction_date).toLocaleDateString()}
+                                      </TableCell>
+                                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                        {transaction.account_number}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Chip 
+                                          label={transaction.transaction_type.replace('_', ' ')}
+                                          color={
+                                            transaction.transaction_type === 'withdrawal' ? 'error' :
+                                            transaction.transaction_type === 'bonus' ? 'success' :
+                                            transaction.transaction_type === 'loan' ? 'primary' :
+                                            'default'
+                                          }
+                                          size="small"
+                                        />
+                                      </TableCell>
+                                      <TableCell sx={{ 
+                                        color: transaction.transaction_type === 'withdrawal' ? 'error.main' : 'success.main',
+                                        fontWeight: 600
+                                      }}>
+                                        {transaction.transaction_type === 'withdrawal' ? '-' : '+'}
+                                        {formatCurrency(Math.abs(parseFloat(transaction.amount)))}
+                                      </TableCell>
+                                      <TableCell>{transaction.description || '-'}</TableCell>
+                                      <TableCell>
+                                        {transaction.bonus_percentage ? 
+                                          `${(parseFloat(transaction.bonus_percentage) * 100).toFixed(1)}%` : 
+                                          '-'
+                                        }
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          ) : (
+                            <Box sx={{ textAlign: 'center', py: 4 }}>
+                              <Typography variant="body1" color="text.secondary">
+                                No transactions found for this user.
+                              </Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TabPanel>
+
+                    {/* User Documents Subtab */}
+                    <TabPanel value={userDetailsTabValue} index={2}>
+                      <Card>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                              📄 Documents
+                            </Typography>
+                            <Button
+                              variant="contained"
+                              startIcon={<Upload />}
+                              onClick={() => {
+                                setUploadForm(prev => ({ ...prev, userId: selectedUser.id }));
+                                setUploadDialogOpen(true);
+                              }}
+                              sx={{ 
+                                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
+                                }
+                              }}
+                            >
+                              Upload Document
+                            </Button>
+                          </Box>
                           
                           {userDocuments.length > 0 ? (
                             <TableContainer component={Paper}>
@@ -1157,7 +1301,6 @@ const AdminDashboard: React.FC = () => {
                 label="Transaction Type"
                 onChange={(e) => setTransactionForm(prev => ({ ...prev, transactionType: e.target.value }))}
               >
-                <MenuItem value="loan">Initial Loan</MenuItem>
                 <MenuItem value="monthly_payment">Monthly Payment</MenuItem>
                 <MenuItem value="bonus">Bonus Payment</MenuItem>
                 <MenuItem value="withdrawal">Withdrawal</MenuItem>
@@ -1227,6 +1370,78 @@ const AdminDashboard: React.FC = () => {
             }}
           >
             {addingTransaction ? 'Adding...' : 'Add Transaction'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Loan Dialog */}
+      <Dialog open={createLoanDialogOpen} onClose={() => setCreateLoanDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <AccountBalance />
+          Create Loan Account
+        </DialogTitle>
+        <DialogContent>
+          {selectedUser && (
+            <Box sx={{ pt: 2 }}>
+              <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                <Typography variant="h6" gutterBottom>
+                  👤 {selectedUser.firstName} {selectedUser.lastName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedUser.email}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <TextField
+                  label="Principal Amount"
+                  type="number"
+                  value={createLoanForm.principalAmount}
+                  onChange={(e) => setCreateLoanForm(prev => ({ ...prev, principalAmount: e.target.value }))}
+                  fullWidth
+                  required
+                  InputProps={{
+                    startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+                  }}
+                  helperText="Initial loan amount"
+                />
+                
+                <TextField
+                  label="Monthly Interest Rate"
+                  type="number"
+                  value={createLoanForm.monthlyRate}
+                  onChange={(e) => setCreateLoanForm(prev => ({ ...prev, monthlyRate: e.target.value }))}
+                  fullWidth
+                  InputProps={{
+                    endAdornment: <Typography sx={{ ml: 1, color: 'text.secondary' }}>%</Typography>
+                  }}
+                  helperText="Monthly interest rate (e.g., 1.0 for 1% per month)"
+                />
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateLoanDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleCreateLoan}
+            variant="contained"
+            disabled={!createLoanForm.principalAmount || creatingLoan}
+            startIcon={creatingLoan ? <CircularProgress size={16} /> : <AccountBalance />}
+            sx={{ 
+              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+              }
+            }}
+          >
+            {creatingLoan ? 'Creating...' : 'Create Loan Account'}
           </Button>
         </DialogActions>
       </Dialog>

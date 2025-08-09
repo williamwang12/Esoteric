@@ -168,6 +168,13 @@ export const adminApi = {
     return response.data;
   },
 
+  getUserTransactions: async (userId: string, limit = 50, offset = 0) => {
+    const response = await api.get(`/admin/users/${userId}/transactions`, {
+      params: { limit, offset }
+    });
+    return response.data;
+  },
+
   uploadDocument: async (formData: FormData) => {
     const response = await api.post('/admin/documents/upload', formData, {
       headers: {
@@ -179,6 +186,13 @@ export const adminApi = {
 
   deleteDocument: async (documentId: string) => {
     const response = await api.delete(`/admin/documents/${documentId}`);
+    return response.data;
+  },
+
+  downloadDocument: async (documentId: string) => {
+    const response = await api.get(`/admin/documents/${documentId}/download`, {
+      responseType: 'blob',
+    });
     return response.data;
   },
 
@@ -220,6 +234,16 @@ export const adminApi = {
   // Get all loans across all users
   getAllLoans: async () => {
     const response = await api.get('/admin/loans');
+    return response.data;
+  },
+
+  // Create loan account for user
+  createLoan: async (loanData: {
+    userId: number;
+    principalAmount: number;
+    monthlyRate?: number;
+  }) => {
+    const response = await api.post('/admin/create-loan', loanData);
     return response.data;
   },
 };

@@ -5,6 +5,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -753,6 +754,139 @@ app.get('/api/admin/users/:userId/documents', authenticateAdmin, async (req, res
       console.error('Admin user documents error:', error);
       res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Download document (for regular users - must own the document)
+app.get('/api/documents/:documentId/download', authenticateToken, async (req, res) => {
+    try {
+        const { documentId } = req.params;
+
+        // Get document and verify ownership
+        const result = await pool.query(
+            'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+            [documentId, req.user.userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        const document = result.rows[0];
+
+        // Check if file exists
+        if (!fs.existsSync(document.file_path)) {
+            return res.status(404).json({ error: 'File not found on server' });
+        }
+
+        // Set appropriate headers
+        res.setHeader('Content-Disposition', `attachment; filename="${document.title}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+
+        // Stream the file
+        const fileStream = fs.createReadStream(document.file_path);
+        fileStream.pipe(res);
+
+    } catch (error) {
+        console.error('Document download error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin document download (can download any document)
+app.get('/api/admin/documents/:documentId/download', authenticateAdmin, async (req, res) => {
+    try {
+        const { documentId } = req.params;
+
+        // Get document (admin can access any document)
+        const result = await pool.query(
+            'SELECT * FROM documents WHERE id = $1',
+            [documentId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+
+        const document = result.rows[0];
+
+        // Check if file exists
+        if (!fs.existsSync(document.file_path)) {
+            return res.status(404).json({ error: 'File not found on server' });
+        }
+
+        // Set appropriate headers
+        res.setHeader('Content-Disposition', `attachment; filename="${document.title}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+
+        // Stream the file
+        const fileStream = fs.createReadStream(document.file_path);
+        fileStream.pipe(res);
+
+    } catch (error) {
+        console.error('Admin document download error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Get all transactions for a specific user
+app.get('/api/admin/users/:userId/transactions', authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { limit = 50, offset = 0 } = req.query;
+
+        // Verify user exists
+        const userCheck = await pool.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userCheck.rows[0];
+
+        // Get all transactions for user's loan accounts
+        const transactionsResult = await pool.query(`
+            SELECT 
+                lt.*,
+                la.account_number,
+                la.principal_amount,
+                la.current_balance
+            FROM loan_transactions lt
+            JOIN loan_accounts la ON lt.loan_account_id = la.id
+            WHERE la.user_id = $1
+            ORDER BY lt.transaction_date DESC, lt.created_at DESC
+            LIMIT $2 OFFSET $3
+        `, [userId, limit, offset]);
+
+        // Get total count
+        const countResult = await pool.query(`
+            SELECT COUNT(*)
+            FROM loan_transactions lt
+            JOIN loan_accounts la ON lt.loan_account_id = la.id
+            WHERE la.user_id = $1
+        `, [userId]);
+
+        const totalCount = parseInt(countResult.rows[0].count);
+
+        res.json({
+            user: {
+                id: user.id,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                email: user.email
+            },
+            transactions: transactionsResult.rows,
+            totalCount,
+            limit: parseInt(limit),
+            offset: parseInt(offset)
+        });
+
+    } catch (error) {
+        console.error('Admin user transactions error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Admin route - Get all loans across all users
