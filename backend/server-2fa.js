@@ -2,6 +2,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
 
 const app = express();
@@ -264,24 +266,55 @@ app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
     }
 });
 
-// Example admin route with enhanced protection
-app.get('/api/admin/users', authenticateToken, async (req, res) => {
+// Admin middleware for checking admin privileges
+const authenticateAdmin = async (req, res, next) => {
     try {
-        // Check admin privileges (this would be enhanced based on your role system)
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ error: 'Access token required' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Check if user has admin privileges
         const userResult = await pool.query(
-            'SELECT role FROM users WHERE id = $1',
-            [req.user.userId]
+            'SELECT id, email, role FROM users WHERE id = $1',
+            [decoded.userId]
         );
 
-        if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
+        if (userResult.rows.length === 0) {
+            return res.status(403).json({ error: 'User not found' });
+        }
+
+        const user = userResult.rows[0];
+        
+        // For now, make demo user an admin, and check for admin role
+        if (user.role !== 'admin' && user.email !== 'demo@esoteric.com') {
             return res.status(403).json({ error: 'Admin access required' });
         }
 
+        req.user = decoded;
+        req.adminUser = user;
+        next();
+    } catch (error) {
+        console.error('Admin auth error:', error);
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+};
+
+// Admin route - Get all users
+app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+    try {
         const result = await pool.query(`
             SELECT u.id, u.email, u.first_name, u.last_name, u.requires_2fa, u.last_login,
-                   u2fa.is_enabled as has_2fa_enabled, u2fa.last_used as last_2fa_use
+                   u2fa.is_enabled as has_2fa_enabled, u2fa.last_used as last_2fa_use,
+                   COUNT(la.id) as loan_accounts_count
             FROM users u
             LEFT JOIN user_2fa u2fa ON u.id = u2fa.user_id
+            LEFT JOIN loan_accounts la ON u.id = la.user_id
+            GROUP BY u.id, u2fa.is_enabled, u2fa.last_used
             ORDER BY u.created_at DESC
         `);
 
@@ -289,6 +322,84 @@ app.get('/api/admin/users', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Admin users fetch error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Create loan account for user
+app.post('/api/admin/create-loan', authenticateAdmin, [
+    body('userId').isInt().withMessage('Valid user ID required'),
+    body('principalAmount').isFloat({ min: 0 }).withMessage('Valid principal amount required'),
+    body('monthlyRate').optional().isFloat({ min: 0, max: 1 }).withMessage('Monthly rate must be between 0 and 1')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { userId, principalAmount, monthlyRate = 0.01 } = req.body;
+
+        // Verify user exists
+        const userResult = await pool.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userResult.rows[0];
+
+        // Check if user already has a loan account
+        const existingLoan = await pool.query(
+            'SELECT id FROM loan_accounts WHERE user_id = $1',
+            [userId]
+        );
+
+        if (existingLoan.rows.length > 0) {
+            return res.status(400).json({ error: 'User already has a loan account' });
+        }
+
+        // Generate unique account number
+        const accountNumber = `LOAN-${Date.now()}-${userId}`;
+
+        // Create loan account
+        const loanResult = await pool.query(
+            `INSERT INTO loan_accounts (user_id, account_number, principal_amount, current_balance, monthly_rate)
+             VALUES ($1, $2, $3, $3, $4) RETURNING *`,
+            [userId, accountNumber, principalAmount, monthlyRate]
+        );
+
+        const loanAccount = loanResult.rows[0];
+
+        // Create initial loan transaction
+        await pool.query(
+            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date)
+             VALUES ($1, $2, 'loan', 'Initial loan amount', CURRENT_DATE)`,
+            [loanAccount.id, principalAmount]
+        );
+
+        res.status(201).json({
+            message: 'Loan account created successfully',
+            loanAccount: {
+                id: loanAccount.id,
+                accountNumber: loanAccount.account_number,
+                principalAmount: parseFloat(loanAccount.principal_amount),
+                currentBalance: parseFloat(loanAccount.current_balance),
+                monthlyRate: parseFloat(loanAccount.monthly_rate),
+                user: {
+                    id: user.id,
+                    firstName: user.first_name,
+                    lastName: user.last_name,
+                    email: user.email
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Loan creation error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

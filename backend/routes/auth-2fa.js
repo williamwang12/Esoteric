@@ -241,6 +241,77 @@ router.post('/complete-2fa-login', [
 });
 
 /**
+ * Registration endpoint
+ */
+router.post('/register', [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('firstName').trim().isLength({ min: 1 }).withMessage('First name is required'),
+    body('lastName').trim().isLength({ min: 1 }).withMessage('Last name is required')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { pool } = req.app.locals;
+        const { email, password, firstName, lastName, phone } = req.body;
+
+        // Check if user already exists
+        const existingUser = await pool.query(
+            'SELECT id FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.status(400).json({ error: 'User already exists' });
+        }
+
+        // Hash password
+        const saltRounds = 12;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // Create user
+        const result = await pool.query(
+            'INSERT INTO users (email, password_hash, first_name, last_name, phone) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, first_name, last_name',
+            [email, hashedPassword, firstName, lastName, phone]
+        );
+
+        const user = result.rows[0];
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user.id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        // Create session
+        const sessionHash = hashToken(token);
+        await pool.query(`
+            INSERT INTO user_sessions (user_id, token_hash, is_2fa_complete, ip_address, user_agent, expires_at)
+            VALUES ($1, $2, true, $3, $4, NOW() + INTERVAL '24 hours')
+        `, [user.id, sessionHash, req.ip, req.get('User-Agent')]);
+
+        res.status(201).json({
+            message: 'User created successfully',
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name
+            },
+            token
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
  * Logout endpoint with session cleanup
  */
 router.post('/logout', async (req, res) => {
