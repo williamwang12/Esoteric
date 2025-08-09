@@ -22,6 +22,7 @@ interface AuthContextType {
     phone?: string;
   }) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
@@ -150,6 +151,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const isAuthenticated = !!user && !!token;
 
   const value: AuthContextType = {
@@ -160,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     complete2FALogin,
     register,
     logout,
+    updateUser,
     isAuthenticated,
   };
 

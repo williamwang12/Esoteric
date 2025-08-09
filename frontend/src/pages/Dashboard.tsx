@@ -238,6 +238,7 @@ const Dashboard: React.FC = () => {
               <IconButton 
                 color="inherit" 
                 size="medium"
+                onClick={() => navigate('/profile')}
                 sx={{ 
                   background: 'rgba(107, 70, 193, 0.1)',
                   '&:hover': { 

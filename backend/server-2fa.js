@@ -68,7 +68,7 @@ app.use('/api/2fa', authenticateBasicToken, twoFARoutes);
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, email, first_name, last_name, phone, requires_2fa, last_login FROM users WHERE id = $1',
+            'SELECT id, email, first_name, last_name, phone, requires_2fa, last_login, created_at FROM users WHERE id = $1',
             [req.user.userId]
         );
 
@@ -94,6 +94,90 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Profile fetch error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Update user profile
+app.put('/api/user/profile', authenticateToken, [
+    body('firstName').optional().trim().isLength({ min: 1 }).withMessage('First name is required'),
+    body('lastName').optional().trim().isLength({ min: 1 }).withMessage('Last name is required'),
+    body('phone').optional().trim().matches(/^\+?[\d\s\-\(\)]+$/).withMessage('Invalid phone number format')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { firstName, lastName, phone } = req.body;
+        const userId = req.user.userId;
+
+        // Build dynamic update query
+        const updates = [];
+        const values = [];
+        let paramCount = 0;
+
+        if (firstName !== undefined) {
+            paramCount++;
+            updates.push(`first_name = $${paramCount}`);
+            values.push(firstName);
+        }
+
+        if (lastName !== undefined) {
+            paramCount++;
+            updates.push(`last_name = $${paramCount}`);
+            values.push(lastName);
+        }
+
+        if (phone !== undefined) {
+            paramCount++;
+            updates.push(`phone = $${paramCount}`);
+            values.push(phone || null); // Allow clearing phone by sending empty string
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+
+        // Add user ID as the last parameter
+        values.push(userId);
+        paramCount++;
+
+        const query = `
+            UPDATE users 
+            SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $${paramCount}
+            RETURNING id, email, first_name, last_name, phone, requires_2fa, last_login, created_at
+        `;
+
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = result.rows[0];
+
+        // Get updated 2FA status
+        const twoFAResult = await pool.query(
+            'SELECT is_enabled, last_used FROM user_2fa WHERE user_id = $1',
+            [userId]
+        );
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                ...user,
+                twoFA: {
+                    enabled: twoFAResult.rows.length > 0 ? twoFAResult.rows[0].is_enabled : false,
+                    lastUsed: twoFAResult.rows.length > 0 ? twoFAResult.rows[0].last_used : null
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Profile update error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
