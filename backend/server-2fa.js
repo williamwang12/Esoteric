@@ -309,13 +309,13 @@ const authenticateAdmin = async (req, res, next) => {
 app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT u.id, u.email, u.first_name, u.last_name, u.requires_2fa, u.last_login,
+            SELECT u.id, u.email, u.first_name, u.last_name, u.requires_2fa, u.last_login, u.created_at,
                    u2fa.is_enabled as has_2fa_enabled, u2fa.last_used as last_2fa_use,
                    COUNT(la.id) as loan_accounts_count
             FROM users u
             LEFT JOIN user_2fa u2fa ON u.id = u2fa.user_id
             LEFT JOIN loan_accounts la ON u.id = la.user_id
-            GROUP BY u.id, u2fa.is_enabled, u2fa.last_used
+            GROUP BY u.id, u2fa.is_enabled, u2fa.last_used, u.created_at
             ORDER BY u.created_at DESC
         `);
 

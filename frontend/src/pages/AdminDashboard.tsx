@@ -129,6 +129,8 @@ const AdminDashboard: React.FC = () => {
   // Loan transactions state
   const [loanTransactions, setLoanTransactions] = useState<any[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [transactionsModalOpen, setTransactionsModalOpen] = useState(false);
+  const [selectedLoanForTransactionView, setSelectedLoanForTransactionView] = useState<any>(null);
 
   // Create loan dialog state
   const [createLoanDialogOpen, setCreateLoanDialogOpen] = useState(false);
@@ -150,6 +152,11 @@ const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       const usersData = await adminApi.getUsers();
+      console.log('Users data received:', usersData);
+      if (usersData.length > 0) {
+        console.log('First user object:', usersData[0]);
+        console.log('Created at field:', usersData[0].created_at);
+      }
       setUsers(usersData);
     } catch (err) {
       setError('Failed to fetch users');
@@ -327,6 +334,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleAddTransaction = (loan: any) => {
+    console.log('Adding transaction for loan:', loan);
     setSelectedLoanForTransaction(loan);
     setTransactionForm({
       amount: '',
@@ -371,11 +379,17 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchLoanTransactions = async (loanId: string) => {
+  const fetchLoanTransactions = async (loanId: string, loanData?: any) => {
     try {
       setLoadingTransactions(true);
       const data = await adminApi.getLoanTransactions(loanId);
       setLoanTransactions(data.transactions);
+      
+      // If loanData is provided, open the modal to view transactions
+      if (loanData) {
+        setSelectedLoanForTransactionView(loanData);
+        setTransactionsModalOpen(true);
+      }
     } catch (error) {
       console.error('Transactions fetch error:', error);
     } finally {
@@ -525,7 +539,10 @@ const AdminDashboard: React.FC = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              {new Date(user.created_at).toLocaleDateString()}
+                              {(() => {
+                                console.log('Processing user:', user);
+                                return user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
+                              })()}
                             </TableCell>
                             <TableCell>
                               <Button
@@ -654,19 +671,11 @@ const AdminDashboard: React.FC = () => {
                                   </IconButton>
                                   <IconButton
                                     size="small"
-                                    onClick={() => fetchLoanTransactions(loan.id)}
+                                    onClick={() => fetchLoanTransactions(loan.id, loan)}
                                     color="info"
                                     title="View Transactions"
                                   >
                                     <Receipt />
-                                  </IconButton>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleDeleteLoan(loan.id)}
-                                    color="error"
-                                    title="Delete Loan"
-                                  >
-                                    <Delete />
                                   </IconButton>
                                   <IconButton
                                     size="small"
@@ -762,21 +771,6 @@ const AdminDashboard: React.FC = () => {
                             <Typography variant="h6" gutterBottom>
                               💳 Loan Accounts
                             </Typography>
-                            {userLoans.length > 0 && (
-                              <Button
-                                variant="contained"
-                                startIcon={<Add />}
-                                onClick={() => handleAddTransaction(userLoans[0])}
-                                sx={{ 
-                                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                                  '&:hover': {
-                                    background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                                  }
-                                }}
-                              >
-                                Add Transaction
-                              </Button>
-                            )}
                           </Box>
                           
                           {userLoans.length > 0 ? (
@@ -958,9 +952,26 @@ const AdminDashboard: React.FC = () => {
                     <TabPanel value={userDetailsTabValue} index={1}>
                       <Card>
                         <CardContent>
-                          <Typography variant="h6" gutterBottom>
-                            📋 All Transactions
-                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                              📋 All Transactions
+                            </Typography>
+                            {userLoans.length > 0 && (
+                              <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => handleAddTransaction(userLoans[0])}
+                                sx={{ 
+                                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                  '&:hover': {
+                                    background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                                  }
+                                }}
+                              >
+                                Add Transaction
+                              </Button>
+                            )}
+                          </Box>
                           
                           {userTransactions.length > 0 ? (
                             <TableContainer component={Paper}>
@@ -1042,9 +1053,9 @@ const AdminDashboard: React.FC = () => {
                                 setUploadDialogOpen(true);
                               }}
                               sx={{ 
-                                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
                                 '&:hover': {
-                                  background: 'linear-gradient(135deg, #047857 0%, #059669 100%)',
+                                  background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
                                 }
                               }}
                             >
@@ -1293,6 +1304,19 @@ const AdminDashboard: React.FC = () => {
           Add Transaction
         </DialogTitle>
         <DialogContent>
+          {selectedLoanForTransaction && (
+            <Box sx={{ mb: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="h6" gutterBottom>
+                📋 Account: {selectedLoanForTransaction.account_number}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedLoanForTransaction.user?.firstName || selectedLoanForTransaction.first_name} {selectedLoanForTransaction.user?.lastName || selectedLoanForTransaction.last_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current Balance: {formatCurrency(selectedLoanForTransaction.current_balance)}
+              </Typography>
+            </Box>
+          )}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <FormControl fullWidth>
               <InputLabel>Transaction Type</InputLabel>
@@ -1443,6 +1467,107 @@ const AdminDashboard: React.FC = () => {
           >
             {creatingLoan ? 'Creating...' : 'Create Loan Account'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Transactions Modal */}
+      <Dialog open={transactionsModalOpen} onClose={() => setTransactionsModalOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Receipt />
+          Loan Transactions
+        </DialogTitle>
+        <DialogContent>
+          {selectedLoanForTransactionView && (
+            <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="h6" gutterBottom>
+                📋 Account: {selectedLoanForTransactionView.account_number}
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Account Holder:</strong> {selectedLoanForTransactionView.first_name} {selectedLoanForTransactionView.last_name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Email:</strong> {selectedLoanForTransactionView.email}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Principal Amount:</strong> {formatCurrency(selectedLoanForTransactionView.principal_amount)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Current Balance:</strong> {formatCurrency(selectedLoanForTransactionView.current_balance)}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          
+          {loadingTransactions ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : loanTransactions.length > 0 ? (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Bonus %</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {loanTransactions.map((transaction) => (
+                    <TableRow key={transaction.id} hover>
+                      <TableCell>
+                        {new Date(transaction.transaction_date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={transaction.transaction_type.replace('_', ' ')}
+                          color={
+                            transaction.transaction_type === 'withdrawal' ? 'error' :
+                            transaction.transaction_type === 'bonus' ? 'success' :
+                            transaction.transaction_type === 'loan' ? 'primary' :
+                            'default'
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell sx={{ 
+                        color: transaction.transaction_type === 'withdrawal' ? 'error.main' : 'success.main',
+                        fontWeight: 600
+                      }}>
+                        {transaction.transaction_type === 'withdrawal' ? '-' : '+'}
+                        {formatCurrency(Math.abs(parseFloat(transaction.amount)))}
+                      </TableCell>
+                      <TableCell>{transaction.description || '-'}</TableCell>
+                      <TableCell>
+                        {transaction.bonus_percentage ? 
+                          `${(parseFloat(transaction.bonus_percentage) * 100).toFixed(1)}%` : 
+                          '-'
+                        }
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                No transactions found for this loan account.
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTransactionsModalOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
