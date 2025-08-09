@@ -40,6 +40,13 @@ import {
   People,
   Description,
   AccountBalance,
+  Edit,
+  Add,
+  Save,
+  Cancel,
+  AttachMoney,
+  TrendingUp,
+  Receipt,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, documentsApi } from '../services/api';
@@ -73,10 +80,13 @@ function TabPanel(props: TabPanelProps) {
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [userDetailsTabValue, setUserDetailsTabValue] = useState(0);
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
+  const [allLoans, setAllLoans] = useState<any[]>([]);
+  const [loadingAllLoans, setLoadingAllLoans] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -90,8 +100,40 @@ const AdminDashboard: React.FC = () => {
   });
   const [uploading, setUploading] = useState(false);
 
+  // Loan editing state
+  const [editingLoan, setEditingLoan] = useState<any>(null);
+  const [loanEditForm, setLoanEditForm] = useState({
+    principalAmount: '',
+    currentBalance: '',
+    monthlyRate: '',
+    totalBonuses: '',
+    totalWithdrawals: ''
+  });
+  const [loanEditDialogOpen, setLoanEditDialogOpen] = useState(false);
+  const [savingLoan, setSavingLoan] = useState(false);
+
+  // Transaction dialog state
+  const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
+  const [selectedLoanForTransaction, setSelectedLoanForTransaction] = useState<any>(null);
+  const [transactionForm, setTransactionForm] = useState({
+    amount: '',
+    transactionType: 'monthly_payment',
+    description: '',
+    transactionDate: '',
+    bonusPercentage: ''
+  });
+  const [addingTransaction, setAddingTransaction] = useState(false);
+
+  // Loan transactions state
+  const [loanTransactions, setLoanTransactions] = useState<any[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handleUserDetailsTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setUserDetailsTabValue(newValue);
   };
 
   const fetchUsers = async () => {
@@ -104,6 +146,19 @@ const AdminDashboard: React.FC = () => {
       console.error('Users fetch error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllLoans = async () => {
+    try {
+      setLoadingAllLoans(true);
+      const loansData = await adminApi.getAllLoans();
+      setAllLoans(loansData.loans);
+    } catch (err) {
+      console.error('All loans fetch error:', err);
+      setError('Failed to fetch loans');
+    } finally {
+      setLoadingAllLoans(false);
     }
   };
 
@@ -187,8 +242,138 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleEditLoan = (loan: any) => {
+    setEditingLoan(loan);
+    setLoanEditForm({
+      principalAmount: loan.principal_amount,
+      currentBalance: loan.current_balance,
+      monthlyRate: (parseFloat(loan.monthly_rate) * 100).toString(),
+      totalBonuses: loan.total_bonuses,
+      totalWithdrawals: loan.total_withdrawals
+    });
+    setLoanEditDialogOpen(true);
+  };
+
+  const handleSaveLoan = async () => {
+    if (!editingLoan) return;
+
+    try {
+      setSavingLoan(true);
+      const updateData: any = {};
+
+      if (loanEditForm.principalAmount !== editingLoan.principal_amount) {
+        updateData.principalAmount = parseFloat(loanEditForm.principalAmount);
+      }
+      if (loanEditForm.currentBalance !== editingLoan.current_balance) {
+        updateData.currentBalance = parseFloat(loanEditForm.currentBalance);
+      }
+      if ((parseFloat(loanEditForm.monthlyRate) / 100).toString() !== editingLoan.monthly_rate) {
+        updateData.monthlyRate = parseFloat(loanEditForm.monthlyRate) / 100;
+      }
+      if (loanEditForm.totalBonuses !== editingLoan.total_bonuses) {
+        updateData.totalBonuses = parseFloat(loanEditForm.totalBonuses);
+      }
+      if (loanEditForm.totalWithdrawals !== editingLoan.total_withdrawals) {
+        updateData.totalWithdrawals = parseFloat(loanEditForm.totalWithdrawals);
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await adminApi.updateLoan(editingLoan.id, updateData);
+        
+        // Refresh loan data
+        if (selectedUser) {
+          await fetchUserDetails(selectedUser.id);
+        }
+        await fetchAllLoans(); // Refresh all loans data
+      }
+
+      setLoanEditDialogOpen(false);
+      setEditingLoan(null);
+    } catch (error) {
+      console.error('Loan update error:', error);
+    } finally {
+      setSavingLoan(false);
+    }
+  };
+
+  const handleDeleteLoan = async (loanId: string) => {
+    if (!window.confirm('Are you sure you want to delete this loan account? This action cannot be undone and will delete all associated transactions.')) {
+      return;
+    }
+
+    try {
+      await adminApi.deleteLoan(loanId);
+      
+      // Refresh loan data
+      if (selectedUser) {
+        await fetchUserDetails(selectedUser.id);
+      }
+      await fetchAllLoans(); // Refresh all loans data
+    } catch (error) {
+      console.error('Loan deletion error:', error);
+    }
+  };
+
+  const handleAddTransaction = (loan: any) => {
+    setSelectedLoanForTransaction(loan);
+    setTransactionForm({
+      amount: '',
+      transactionType: 'monthly_payment',
+      description: '',
+      transactionDate: new Date().toISOString().split('T')[0],
+      bonusPercentage: ''
+    });
+    setTransactionDialogOpen(true);
+  };
+
+  const handleSaveTransaction = async () => {
+    if (!selectedLoanForTransaction || !transactionForm.amount) return;
+
+    try {
+      setAddingTransaction(true);
+      const transactionData: any = {
+        amount: parseFloat(transactionForm.amount),
+        transactionType: transactionForm.transactionType,
+        description: transactionForm.description,
+        transactionDate: transactionForm.transactionDate
+      };
+
+      if (transactionForm.bonusPercentage && transactionForm.transactionType === 'bonus') {
+        transactionData.bonusPercentage = parseFloat(transactionForm.bonusPercentage) / 100;
+      }
+
+      await adminApi.addTransaction(selectedLoanForTransaction.id, transactionData);
+      
+      // Refresh loan data
+      if (selectedUser) {
+        await fetchUserDetails(selectedUser.id);
+      }
+      await fetchAllLoans(); // Refresh all loans data
+
+      setTransactionDialogOpen(false);
+      setSelectedLoanForTransaction(null);
+    } catch (error) {
+      console.error('Transaction creation error:', error);
+    } finally {
+      setAddingTransaction(false);
+    }
+  };
+
+  const fetchLoanTransactions = async (loanId: string) => {
+    try {
+      setLoadingTransactions(true);
+      const data = await adminApi.getLoanTransactions(loanId);
+      setLoanTransactions(data.transactions);
+    } catch (error) {
+      console.error('Transactions fetch error:', error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchAllLoans();
   }, []);
 
   const formatCurrency = (value: string | number) => {
@@ -258,19 +443,19 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-0"
                 />
                 <Tab 
-                  icon={<Description />} 
-                  label="Documents" 
+                  icon={<AccountBalance />} 
+                  label="All Loans" 
                   id="admin-tab-1"
                   aria-controls="admin-tabpanel-1"
-                  disabled={!selectedUser}
                 />
-                <Tab 
-                  icon={<AccountBalance />} 
-                  label="Loans" 
-                  id="admin-tab-2"
-                  aria-controls="admin-tabpanel-2"
-                  disabled={!selectedUser}
-                />
+                {selectedUser && (
+                  <Tab 
+                    icon={<Visibility />} 
+                    label={`${selectedUser.firstName} ${selectedUser.lastName}`}
+                    id="admin-tab-2"
+                    aria-controls="admin-tabpanel-2"
+                  />
+                )}
               </Tabs>
             </Box>
 
@@ -316,7 +501,7 @@ const AdminDashboard: React.FC = () => {
                                 startIcon={<Visibility />}
                                 onClick={() => {
                                   fetchUserDetails(user.id);
-                                  setTabValue(1);
+                                  setTabValue(2);
                                 }}
                               >
                                 View Details
@@ -332,129 +517,454 @@ const AdminDashboard: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              {/* Documents Tab */}
-              {selectedUser && (
-                <Card>
-                  <CardContent>
+              {/* All Loans Tab */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h6" gutterBottom>
-                      Documents for {selectedUser.firstName} {selectedUser.lastName}
+                      🏦 All Loan Accounts
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                      {selectedUser.email}
-                    </Typography>
-                    
-                    {userDocuments.length > 0 ? (
-                      <TableContainer component={Paper}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Title</TableCell>
-                              <TableCell>Category</TableCell>
-                              <TableCell>Size</TableCell>
-                              <TableCell>Upload Date</TableCell>
-                              <TableCell>Actions</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {userDocuments.map((doc) => (
-                              <TableRow key={doc.id} hover>
-                                <TableCell>{doc.title}</TableCell>
-                                <TableCell>
-                                  <Chip label={doc.category} size="small" />
-                                </TableCell>
-                                <TableCell>
-                                  {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : 'Unknown'}
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(doc.upload_date).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
+                    <Button
+                      variant="outlined"
+                      onClick={fetchAllLoans}
+                      disabled={loadingAllLoans}
+                    >
+                      {loadingAllLoans ? <CircularProgress size={20} /> : 'Refresh'}
+                    </Button>
+                  </Box>
+                  
+                  {loadingAllLoans ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : allLoans.length > 0 ? (
+                    <TableContainer component={Paper}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Account Number</TableCell>
+                            <TableCell>User</TableCell>
+                            <TableCell>Principal</TableCell>
+                            <TableCell>Current Balance</TableCell>
+                            <TableCell>Monthly Rate</TableCell>
+                            <TableCell>Total Bonuses</TableCell>
+                            <TableCell>Total Withdrawals</TableCell>
+                            <TableCell>Transactions</TableCell>
+                            <TableCell>Created</TableCell>
+                            <TableCell>Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {allLoans.map((loan) => (
+                            <TableRow key={loan.id} hover>
+                              <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                                {loan.account_number}
+                              </TableCell>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {loan.user.firstName} {loan.user.lastName}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {loan.user.email}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>{formatCurrency(loan.principal_amount)}</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                {formatCurrency(loan.current_balance)}
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={`${(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%`}
+                                  color="info"
+                                  size="small"
+                                />
+                              </TableCell>
+                              <TableCell sx={{ color: 'success.main', fontWeight: 600 }}>
+                                {formatCurrency(loan.total_bonuses)}
+                              </TableCell>
+                              <TableCell sx={{ color: 'warning.main', fontWeight: 600 }}>
+                                {formatCurrency(loan.total_withdrawals)}
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={`${loan.transactionCount} txns`}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                                {loan.lastTransactionDate && (
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    Last: {new Date(loan.lastTransactionDate).toLocaleDateString()}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {new Date(loan.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleDocumentDownload(doc.id, doc.title)}
+                                    onClick={() => handleEditLoan(loan)}
+                                    color="primary"
+                                    title="Edit Loan"
                                   >
-                                    <Download />
+                                    <Edit />
                                   </IconButton>
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    onClick={() => handleAddTransaction(loan)}
+                                    color="secondary"
+                                    title="Add Transaction"
+                                  >
+                                    <Add />
+                                  </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => fetchLoanTransactions(loan.id)}
+                                    color="info"
+                                    title="View Transactions"
+                                  >
+                                    <Receipt />
+                                  </IconButton>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteLoan(loan.id)}
                                     color="error"
+                                    title="Delete Loan"
                                   >
                                     <Delete />
                                   </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    ) : (
-                      <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <Typography variant="body1" color="text.secondary">
-                          No documents found for this user.
-                        </Typography>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      fetchUserDetails(loan.user_id);
+                                      setTabValue(2);
+                                      setUserDetailsTabValue(0); // Start with loans tab
+                                    }}
+                                    color="primary"
+                                    title="View User Details"
+                                  >
+                                    <Visibility />
+                                  </IconButton>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        No loan accounts found in the system.
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
-              {/* Loans Tab */}
+              {/* User Details Tab */}
               {selectedUser && (
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Loans for {selectedUser.firstName} {selectedUser.lastName}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                      {selectedUser.email}
-                    </Typography>
-                    
-                    {userLoans.length > 0 ? (
-                      <TableContainer component={Paper}>
-                        <Table>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Account Number</TableCell>
-                              <TableCell>Principal</TableCell>
-                              <TableCell>Current Balance</TableCell>
-                              <TableCell>Monthly Rate</TableCell>
-                              <TableCell>Total Bonuses</TableCell>
-                              <TableCell>Created</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {userLoans.map((loan) => (
-                              <TableRow key={loan.id} hover>
-                                <TableCell sx={{ fontFamily: 'monospace' }}>
-                                  {loan.account_number}
-                                </TableCell>
-                                <TableCell>{formatCurrency(loan.principal_amount)}</TableCell>
-                                <TableCell>{formatCurrency(loan.current_balance)}</TableCell>
-                                <TableCell>
-                                  {(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%
-                                </TableCell>
-                                <TableCell>{formatCurrency(loan.total_bonuses)}</TableCell>
-                                <TableCell>
-                                  {new Date(loan.created_at).toLocaleDateString()}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    ) : (
-                      <Box sx={{ textAlign: 'center', py: 4 }}>
-                        <Typography variant="body1" color="text.secondary">
-                          No loan accounts found for this user.
-                        </Typography>
+                <Box>
+                  {/* User Header */}
+                  <Card sx={{ mb: 3 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                            👤 {selectedUser.firstName} {selectedUser.lastName}
+                          </Typography>
+                          <Typography variant="body1" color="text.secondary">
+                            {selectedUser.email}
+                          </Typography>
+                        </Box>
+                        <Button
+                          variant="outlined"
+                          startIcon={<ArrowBack />}
+                          onClick={() => {
+                            setSelectedUser(null);
+                            setTabValue(0);
+                            setUserDetailsTabValue(0);
+                          }}
+                        >
+                          Back to Users
+                        </Button>
                       </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+
+                  {/* User Details Subtabs */}
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                    <Tabs 
+                      value={userDetailsTabValue} 
+                      onChange={handleUserDetailsTabChange}
+                      aria-label="user details tabs"
+                    >
+                      <Tab 
+                        icon={<AccountBalance />} 
+                        label={`Loans (${userLoans.length})`}
+                        id="user-tab-0"
+                      />
+                      <Tab 
+                        icon={<Description />} 
+                        label={`Documents (${userDocuments.length})`}
+                        id="user-tab-1"
+                      />
+                    </Tabs>
+                  </Box>
+
+                    {/* User Loans Subtab */}
+                    <TabPanel value={userDetailsTabValue} index={0}>
+                      <Card>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                              💳 Loan Accounts
+                            </Typography>
+                            {userLoans.length > 0 && (
+                              <Button
+                                variant="contained"
+                                startIcon={<Add />}
+                                onClick={() => handleAddTransaction(userLoans[0])}
+                                sx={{ 
+                                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                  '&:hover': {
+                                    background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                                  }
+                                }}
+                              >
+                                Add Transaction
+                              </Button>
+                            )}
+                          </Box>
+                          
+                          {userLoans.length > 0 ? (
+                            <TableContainer component={Paper} sx={{ mb: 4 }}>
+                              <Table>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>Account Number</TableCell>
+                                    <TableCell>Principal</TableCell>
+                                    <TableCell>Current Balance</TableCell>
+                                    <TableCell>Monthly Rate</TableCell>
+                                    <TableCell>Total Bonuses</TableCell>
+                                    <TableCell>Total Withdrawals</TableCell>
+                                    <TableCell>Created</TableCell>
+                                    <TableCell>Actions</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {userLoans.map((loan) => (
+                                    <TableRow key={loan.id} hover>
+                                      <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                                        {loan.account_number}
+                                      </TableCell>
+                                      <TableCell>{formatCurrency(loan.principal_amount)}</TableCell>
+                                      <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                        {formatCurrency(loan.current_balance)}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Chip 
+                                          label={`${(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%`}
+                                          color="info"
+                                          size="small"
+                                        />
+                                      </TableCell>
+                                      <TableCell sx={{ color: 'success.main', fontWeight: 600 }}>
+                                        {formatCurrency(loan.total_bonuses)}
+                                      </TableCell>
+                                      <TableCell sx={{ color: 'warning.main', fontWeight: 600 }}>
+                                        {formatCurrency(loan.total_withdrawals)}
+                                      </TableCell>
+                                      <TableCell>
+                                        {new Date(loan.created_at).toLocaleDateString()}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleEditLoan(loan)}
+                                            color="primary"
+                                            title="Edit Loan"
+                                          >
+                                            <Edit />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleAddTransaction(loan)}
+                                            color="secondary"
+                                            title="Add Transaction"
+                                          >
+                                            <Add />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => fetchLoanTransactions(loan.id)}
+                                            color="info"
+                                            title="View Transactions"
+                                          >
+                                            <Receipt />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleDeleteLoan(loan.id)}
+                                            color="error"
+                                            title="Delete Loan"
+                                          >
+                                            <Delete />
+                                          </IconButton>
+                                        </Box>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          ) : (
+                            <Box sx={{ textAlign: 'center', py: 4 }}>
+                              <Typography variant="body1" color="text.secondary">
+                                No loan accounts found for this user.
+                              </Typography>
+                            </Box>
+                          )}
+
+                          {/* Recent Transactions */}
+                          {loanTransactions.length > 0 && (
+                            <Card variant="outlined" sx={{ mt: 3 }}>
+                              <CardContent>
+                                <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Receipt color="primary" />
+                                  Recent Transactions
+                                </Typography>
+                                {loadingTransactions ? (
+                                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                                    <CircularProgress />
+                                  </Box>
+                                ) : (
+                                  <TableContainer>
+                                    <Table size="small">
+                                      <TableHead>
+                                        <TableRow>
+                                          <TableCell>Date</TableCell>
+                                          <TableCell>Type</TableCell>
+                                          <TableCell>Amount</TableCell>
+                                          <TableCell>Description</TableCell>
+                                          <TableCell>Bonus %</TableCell>
+                                        </TableRow>
+                                      </TableHead>
+                                      <TableBody>
+                                        {loanTransactions.slice(0, 10).map((transaction) => (
+                                          <TableRow key={transaction.id}>
+                                            <TableCell>
+                                              {new Date(transaction.transaction_date).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell>
+                                              <Chip 
+                                                label={transaction.transaction_type.replace('_', ' ')}
+                                                color={
+                                                  transaction.transaction_type === 'withdrawal' ? 'error' :
+                                                  transaction.transaction_type === 'bonus' ? 'success' :
+                                                  'default'
+                                                }
+                                                size="small"
+                                              />
+                                            </TableCell>
+                                            <TableCell sx={{ 
+                                              color: transaction.transaction_type === 'withdrawal' ? 'error.main' : 'success.main',
+                                              fontWeight: 600
+                                            }}>
+                                              {transaction.transaction_type === 'withdrawal' ? '-' : '+'}
+                                              {formatCurrency(Math.abs(parseFloat(transaction.amount)))}
+                                            </TableCell>
+                                            <TableCell>{transaction.description}</TableCell>
+                                            <TableCell>
+                                              {transaction.bonus_percentage ? 
+                                                `${(parseFloat(transaction.bonus_percentage) * 100).toFixed(1)}%` : 
+                                                '-'
+                                              }
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </TableContainer>
+                                )}
+                              </CardContent>
+                            </Card>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TabPanel>
+
+                    {/* User Documents Subtab */}
+                    <TabPanel value={userDetailsTabValue} index={1}>
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            📄 Documents
+                          </Typography>
+                          
+                          {userDocuments.length > 0 ? (
+                            <TableContainer component={Paper}>
+                              <Table>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>Title</TableCell>
+                                    <TableCell>Category</TableCell>
+                                    <TableCell>Size</TableCell>
+                                    <TableCell>Upload Date</TableCell>
+                                    <TableCell>Actions</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {userDocuments.map((doc) => (
+                                    <TableRow key={doc.id} hover>
+                                      <TableCell>{doc.title}</TableCell>
+                                      <TableCell>
+                                        <Chip label={doc.category} size="small" />
+                                      </TableCell>
+                                      <TableCell>
+                                        {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : 'Unknown'}
+                                      </TableCell>
+                                      <TableCell>
+                                        {new Date(doc.upload_date).toLocaleDateString()}
+                                      </TableCell>
+                                      <TableCell>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleDocumentDownload(doc.id, doc.title)}
+                                        >
+                                          <Download />
+                                        </IconButton>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleDeleteDocument(doc.id)}
+                                          color="error"
+                                        >
+                                          <Delete />
+                                        </IconButton>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          ) : (
+                            <Box sx={{ textAlign: 'center', py: 4 }}>
+                              <Typography variant="body1" color="text.secondary">
+                                No documents found for this user.
+                              </Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </TabPanel>
+                  </Box>
+                )}
             </TabPanel>
           </>
         )}
@@ -531,6 +1041,192 @@ const AdminDashboard: React.FC = () => {
             disabled={!uploadForm.file || !uploadForm.title || !uploadForm.category || !uploadForm.userId || uploading}
           >
             {uploading ? <CircularProgress size={20} /> : 'Upload'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Loan Edit Dialog */}
+      <Dialog open={loanEditDialogOpen} onClose={() => setLoanEditDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Edit />
+          Edit Loan Account
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mt: 2 }}>
+            <TextField
+              label="Principal Amount"
+              type="number"
+              value={loanEditForm.principalAmount}
+              onChange={(e) => setLoanEditForm(prev => ({ ...prev, principalAmount: e.target.value }))}
+              fullWidth
+              InputProps={{
+                startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+              }}
+            />
+            
+            <TextField
+              label="Current Balance"
+              type="number"
+              value={loanEditForm.currentBalance}
+              onChange={(e) => setLoanEditForm(prev => ({ ...prev, currentBalance: e.target.value }))}
+              fullWidth
+              InputProps={{
+                startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+              }}
+            />
+
+            <TextField
+              label="Monthly Rate"
+              type="number"
+              value={loanEditForm.monthlyRate}
+              onChange={(e) => setLoanEditForm(prev => ({ ...prev, monthlyRate: e.target.value }))}
+              fullWidth
+              InputProps={{
+                endAdornment: <Typography sx={{ ml: 1, color: 'text.secondary' }}>%</Typography>
+              }}
+              helperText="Enter percentage (e.g., 1.5 for 1.5%)"
+            />
+
+            <TextField
+              label="Total Bonuses"
+              type="number"
+              value={loanEditForm.totalBonuses}
+              onChange={(e) => setLoanEditForm(prev => ({ ...prev, totalBonuses: e.target.value }))}
+              fullWidth
+              InputProps={{
+                startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+              }}
+            />
+
+            <TextField
+              label="Total Withdrawals"
+              type="number"
+              value={loanEditForm.totalWithdrawals}
+              onChange={(e) => setLoanEditForm(prev => ({ ...prev, totalWithdrawals: e.target.value }))}
+              fullWidth
+              InputProps={{
+                startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+              }}
+              sx={{ gridColumn: 'span 2' }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLoanEditDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveLoan}
+            variant="contained"
+            disabled={savingLoan}
+            startIcon={savingLoan ? <CircularProgress size={16} /> : <Save />}
+            sx={{ 
+              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+              }
+            }}
+          >
+            {savingLoan ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Transaction Dialog */}
+      <Dialog open={transactionDialogOpen} onClose={() => setTransactionDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <AttachMoney />
+          Add Transaction
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel>Transaction Type</InputLabel>
+              <Select
+                value={transactionForm.transactionType}
+                label="Transaction Type"
+                onChange={(e) => setTransactionForm(prev => ({ ...prev, transactionType: e.target.value }))}
+              >
+                <MenuItem value="loan">Initial Loan</MenuItem>
+                <MenuItem value="monthly_payment">Monthly Payment</MenuItem>
+                <MenuItem value="bonus">Bonus Payment</MenuItem>
+                <MenuItem value="withdrawal">Withdrawal</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Amount"
+              type="number"
+              value={transactionForm.amount}
+              onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: e.target.value }))}
+              fullWidth
+              required
+              InputProps={{
+                startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+              }}
+            />
+
+            <TextField
+              label="Description"
+              value={transactionForm.description}
+              onChange={(e) => setTransactionForm(prev => ({ ...prev, description: e.target.value }))}
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Optional description for this transaction"
+            />
+
+            <TextField
+              label="Transaction Date"
+              type="date"
+              value={transactionForm.transactionDate}
+              onChange={(e) => setTransactionForm(prev => ({ ...prev, transactionDate: e.target.value }))}
+              fullWidth
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            {transactionForm.transactionType === 'bonus' && (
+              <TextField
+                label="Bonus Percentage"
+                type="number"
+                value={transactionForm.bonusPercentage}
+                onChange={(e) => setTransactionForm(prev => ({ ...prev, bonusPercentage: e.target.value }))}
+                fullWidth
+                InputProps={{
+                  endAdornment: <Typography sx={{ ml: 1, color: 'text.secondary' }}>%</Typography>
+                }}
+                helperText="Enter percentage (e.g., 0.5 for 0.5%)"
+              />
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTransactionDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveTransaction}
+            variant="contained"
+            disabled={!transactionForm.amount || addingTransaction}
+            startIcon={addingTransaction ? <CircularProgress size={16} /> : <Add />}
+            sx={{ 
+              background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+              }
+            }}
+          >
+            {addingTransaction ? 'Adding...' : 'Add Transaction'}
           </Button>
         </DialogActions>
       </Dialog>

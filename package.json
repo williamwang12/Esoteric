@@ -4,7 +4,7 @@
   "description": "Node.js backend API server for the Esoteric loan management platform",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "cd backend && node server-2fa.js",
     "dev": "nodemon server.js",
     "db:setup": "node scripts/setupDatabase.js",
     "db:migrate": "node scripts/migrate.js",

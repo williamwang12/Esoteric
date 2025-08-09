@@ -372,8 +372,104 @@ const Dashboard: React.FC = () => {
           </Fade>
         )}
 
-        {/* Error State */}
-        {error && (
+        {/* Error State - Special handling for new users */}
+        {error && error === 'No loan accounts found' && (
+          <Fade in={true} timeout={1000}>
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
+                border: '2px solid rgba(107, 70, 193, 0.2)',
+                borderRadius: '20px',
+                overflow: 'hidden',
+                position: 'relative',
+                mb: 4,
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(45deg, rgba(107, 70, 193, 0.05) 0%, transparent 50%, rgba(147, 51, 234, 0.05) 100%)',
+                  pointerEvents: 'none'
+                }
+              }}
+            >
+              <CardContent sx={{ p: 6, textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                <Box sx={{ mb: 4 }}>
+                  <AccountBalance 
+                    sx={{ 
+                      fontSize: 80, 
+                      color: 'primary.main',
+                      filter: 'drop-shadow(0 4px 8px rgba(107, 70, 193, 0.3))',
+                      mb: 2
+                    }} 
+                  />
+                </Box>
+                <Typography 
+                  variant="h3" 
+                  component="h2" 
+                  gutterBottom
+                  sx={{
+                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 800,
+                    mb: 3
+                  }}
+                >
+                  Welcome to Esoteric Enterprises!
+                </Typography>
+                <Typography 
+                  variant="h6" 
+                  color="text.secondary" 
+                  sx={{ mb: 4, maxWidth: '600px', mx: 'auto', lineHeight: 1.6 }}
+                >
+                  Your account has been successfully created. To get started with your loan management experience, 
+                  please contact our team to set up your loan account.
+                </Typography>
+                
+                <Box sx={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, 
+                  gap: 3, 
+                  mt: 4,
+                  maxWidth: '600px',
+                  mx: 'auto'
+                }}>
+                  <Card variant="outlined" sx={{ p: 3, background: 'rgba(255, 255, 255, 0.8)' }}>
+                    <Typography variant="h6" gutterBottom color="primary.main" sx={{ fontWeight: 600 }}>
+                      📞 Contact Our Team
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Reach out to our loan specialists to discuss your investment opportunities and set up your account.
+                    </Typography>
+                  </Card>
+                  
+                  <Card variant="outlined" sx={{ p: 3, background: 'rgba(255, 255, 255, 0.8)' }}>
+                    <Typography variant="h6" gutterBottom color="secondary.main" sx={{ fontWeight: 600 }}>
+                      📋 Prepare Documents
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Gather your financial documents and identification for a smooth onboarding process.
+                    </Typography>
+                  </Card>
+                </Box>
+
+                <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(107, 70, 193, 0.2)' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                    Once your loan account is activated, you'll have access to our comprehensive dashboard with 
+                    real-time analytics, transaction history, and performance tracking.
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Fade>
+        )}
+
+        {/* Other Error States */}
+        {error && error !== 'No loan accounts found' && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>

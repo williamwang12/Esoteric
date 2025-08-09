@@ -181,6 +181,47 @@ export const adminApi = {
     const response = await api.delete(`/admin/documents/${documentId}`);
     return response.data;
   },
+
+  // Loan management
+  updateLoan: async (loanId: string, loanData: {
+    principalAmount?: number;
+    currentBalance?: number;
+    monthlyRate?: number;
+    totalBonuses?: number;
+    totalWithdrawals?: number;
+  }) => {
+    const response = await api.put(`/admin/loans/${loanId}`, loanData);
+    return response.data;
+  },
+
+  deleteLoan: async (loanId: string) => {
+    const response = await api.delete(`/admin/loans/${loanId}`);
+    return response.data;
+  },
+
+  addTransaction: async (loanId: string, transactionData: {
+    amount: number;
+    transactionType: 'loan' | 'monthly_payment' | 'bonus' | 'withdrawal';
+    description?: string;
+    transactionDate?: string;
+    bonusPercentage?: number;
+  }) => {
+    const response = await api.post(`/admin/loans/${loanId}/transactions`, transactionData);
+    return response.data;
+  },
+
+  getLoanTransactions: async (loanId: string, limit = 50, offset = 0) => {
+    const response = await api.get(`/admin/loans/${loanId}/transactions`, {
+      params: { limit, offset }
+    });
+    return response.data;
+  },
+
+  // Get all loans across all users
+  getAllLoans: async () => {
+    const response = await api.get('/admin/loans');
+    return response.data;
+  },
 };
 
 // Health check
