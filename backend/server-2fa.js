@@ -404,6 +404,429 @@ app.post('/api/admin/create-loan', authenticateAdmin, [
     }
 });
 
+// Admin route - Update loan account
+app.put('/api/admin/loans/:loanId', authenticateAdmin, [
+    body('principalAmount').optional().isFloat({ min: 0 }).withMessage('Valid principal amount required'),
+    body('currentBalance').optional().isFloat({ min: 0 }).withMessage('Valid current balance required'),
+    body('monthlyRate').optional().isFloat({ min: 0, max: 1 }).withMessage('Monthly rate must be between 0 and 1'),
+    body('totalBonuses').optional().isFloat({ min: 0 }).withMessage('Valid total bonuses required'),
+    body('totalWithdrawals').optional().isFloat({ min: 0 }).withMessage('Valid total withdrawals required')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { loanId } = req.params;
+        const { principalAmount, currentBalance, monthlyRate, totalBonuses, totalWithdrawals } = req.body;
+
+        // Verify loan exists
+        const loanResult = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1',
+            [loanId]
+        );
+
+        if (loanResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        const currentLoan = loanResult.rows[0];
+
+        // Build update query dynamically
+        const updates = [];
+        const values = [];
+        let paramCount = 0;
+
+        if (principalAmount !== undefined) {
+            paramCount++;
+            updates.push(`principal_amount = $${paramCount}`);
+            values.push(principalAmount);
+        }
+
+        if (currentBalance !== undefined) {
+            paramCount++;
+            updates.push(`current_balance = $${paramCount}`);
+            values.push(currentBalance);
+        }
+
+        if (monthlyRate !== undefined) {
+            paramCount++;
+            updates.push(`monthly_rate = $${paramCount}`);
+            values.push(monthlyRate);
+        }
+
+        if (totalBonuses !== undefined) {
+            paramCount++;
+            updates.push(`total_bonuses = $${paramCount}`);
+            values.push(totalBonuses);
+        }
+
+        if (totalWithdrawals !== undefined) {
+            paramCount++;
+            updates.push(`total_withdrawals = $${paramCount}`);
+            values.push(totalWithdrawals);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        paramCount++;
+        values.push(loanId);
+
+        const updateQuery = `
+            UPDATE loan_accounts 
+            SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = $${paramCount} 
+            RETURNING *
+        `;
+
+        const updatedLoan = await pool.query(updateQuery, values);
+
+        res.json({
+            message: 'Loan account updated successfully',
+            loanAccount: updatedLoan.rows[0],
+            changes: {
+                principalAmount: principalAmount !== undefined ? { from: parseFloat(currentLoan.principal_amount), to: principalAmount } : undefined,
+                currentBalance: currentBalance !== undefined ? { from: parseFloat(currentLoan.current_balance), to: currentBalance } : undefined,
+                monthlyRate: monthlyRate !== undefined ? { from: parseFloat(currentLoan.monthly_rate), to: monthlyRate } : undefined,
+                totalBonuses: totalBonuses !== undefined ? { from: parseFloat(currentLoan.total_bonuses), to: totalBonuses } : undefined,
+                totalWithdrawals: totalWithdrawals !== undefined ? { from: parseFloat(currentLoan.total_withdrawals), to: totalWithdrawals } : undefined
+            }
+        });
+
+    } catch (error) {
+        console.error('Loan update error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Add transaction to loan account
+app.post('/api/admin/loans/:loanId/transactions', authenticateAdmin, [
+    body('amount').isFloat().withMessage('Valid amount required'),
+    body('transactionType').isIn(['loan', 'monthly_payment', 'bonus', 'withdrawal']).withMessage('Valid transaction type required'),
+    body('description').optional().isString().withMessage('Description must be a string'),
+    body('transactionDate').optional().isISO8601().withMessage('Valid transaction date required'),
+    body('bonusPercentage').optional().isFloat({ min: 0, max: 1 }).withMessage('Bonus percentage must be between 0 and 1')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { loanId } = req.params;
+        const { amount, transactionType, description, transactionDate, bonusPercentage } = req.body;
+
+        // Verify loan exists
+        const loanResult = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1',
+            [loanId]
+        );
+
+        if (loanResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        const loan = loanResult.rows[0];
+
+        // Create transaction
+        const transactionResult = await pool.query(
+            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, bonus_percentage)
+             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [
+                loanId,
+                amount,
+                transactionType,
+                description || `${transactionType} transaction`,
+                transactionDate || new Date().toISOString().split('T')[0],
+                bonusPercentage
+            ]
+        );
+
+        // Update loan account totals based on transaction type
+        let balanceUpdate = 0;
+        let bonusUpdate = 0;
+        let withdrawalUpdate = 0;
+
+        switch (transactionType) {
+            case 'loan':
+            case 'monthly_payment':
+            case 'bonus':
+                balanceUpdate = amount;
+                if (transactionType === 'bonus') {
+                    bonusUpdate = amount;
+                }
+                break;
+            case 'withdrawal':
+                balanceUpdate = -Math.abs(amount);
+                withdrawalUpdate = Math.abs(amount);
+                break;
+        }
+
+        // Update loan account
+        await pool.query(
+            `UPDATE loan_accounts 
+             SET current_balance = current_balance + $1,
+                 total_bonuses = total_bonuses + $2,
+                 total_withdrawals = total_withdrawals + $3
+             WHERE id = $4`,
+            [balanceUpdate, bonusUpdate, withdrawalUpdate, loanId]
+        );
+
+        // Get updated loan data
+        const updatedLoanResult = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1',
+            [loanId]
+        );
+
+        res.status(201).json({
+            message: 'Transaction added successfully',
+            transaction: transactionResult.rows[0],
+            updatedLoan: updatedLoanResult.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Transaction creation error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Get loan transactions
+app.get('/api/admin/loans/:loanId/transactions', authenticateAdmin, async (req, res) => {
+    try {
+        const { loanId } = req.params;
+        const { limit = 50, offset = 0 } = req.query;
+
+        // Verify loan exists
+        const loanResult = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1',
+            [loanId]
+        );
+
+        if (loanResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        // Get transactions
+        const transactionsResult = await pool.query(
+            `SELECT * FROM loan_transactions 
+             WHERE loan_account_id = $1 
+             ORDER BY transaction_date DESC, created_at DESC 
+             LIMIT $2 OFFSET $3`,
+            [loanId, limit, offset]
+        );
+
+        // Get total count
+        const countResult = await pool.query(
+            'SELECT COUNT(*) as total FROM loan_transactions WHERE loan_account_id = $1',
+            [loanId]
+        );
+
+        res.json({
+            transactions: transactionsResult.rows,
+            pagination: {
+                total: parseInt(countResult.rows[0].total),
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                hasMore: (parseInt(offset) + parseInt(limit)) < parseInt(countResult.rows[0].total)
+            }
+        });
+
+    } catch (error) {
+        console.error('Transactions fetch error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Delete loan account
+app.delete('/api/admin/loans/:loanId', authenticateAdmin, async (req, res) => {
+    try {
+        const { loanId } = req.params;
+
+        // Verify loan exists
+        const loanResult = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1',
+            [loanId]
+        );
+
+        if (loanResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+
+        // Delete associated transactions first
+        await pool.query(
+            'DELETE FROM loan_transactions WHERE loan_account_id = $1',
+            [loanId]
+        );
+
+        // Delete loan account
+        await pool.query(
+            'DELETE FROM loan_accounts WHERE id = $1',
+            [loanId]
+        );
+
+        res.json({
+            message: 'Loan account and associated transactions deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Loan deletion error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Get user's loan accounts
+app.get('/api/admin/users/:userId/loans', authenticateAdmin, async (req, res) => {
+  try {
+      const { userId } = req.params;
+
+      // Verify user exists
+      const userCheck = await pool.query(
+          'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+          [userId]
+      );
+
+      if (userCheck.rows.length === 0) {
+          return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = userCheck.rows[0];
+
+      // Get loan accounts
+      const loansResult = await pool.query(
+          'SELECT * FROM loan_accounts WHERE user_id = $1',
+          [userId]
+      );
+
+      res.json({
+          user: {
+              id: user.id,
+              firstName: user.first_name,
+              lastName: user.last_name,
+              email: user.email
+          },
+          loans: loansResult.rows
+      });
+
+  } catch (error) {
+      console.error('Admin user loans error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin route - Get user's documents  
+app.get('/api/admin/users/:userId/documents', authenticateAdmin, async (req, res) => {
+  try {
+      const { userId } = req.params;
+
+      // Verify user exists
+      const userCheck = await pool.query(
+          'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+          [userId]
+      );
+
+      if (userCheck.rows.length === 0) {
+          return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = userCheck.rows[0];
+
+      // Get documents
+      const documentsResult = await pool.query(
+          'SELECT * FROM documents WHERE user_id = $1 ORDER BY upload_date DESC',
+          [userId]
+      );
+
+      res.json({
+          user: {
+              id: user.id,
+              firstName: user.first_name,
+              lastName: user.last_name,
+              email: user.email
+          },
+          documents: documentsResult.rows
+      });
+
+  } catch (error) {
+      console.error('Admin user documents error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin route - Get all loans across all users
+app.get('/api/admin/loans', authenticateAdmin, async (req, res) => {
+    try {
+        // Get all loan accounts with user information
+        const loansResult = await pool.query(`
+            SELECT 
+                la.id,
+                la.user_id,
+                la.account_number,
+                la.principal_amount,
+                la.current_balance,
+                la.monthly_rate,
+                la.total_bonuses,
+                la.total_withdrawals,
+                la.created_at,
+                la.updated_at,
+                u.first_name,
+                u.last_name,
+                u.email
+            FROM loan_accounts la
+            JOIN users u ON la.user_id = u.id
+            ORDER BY la.created_at DESC
+        `);
+
+        // Get transaction counts for each loan
+        const loanIds = loansResult.rows.map(loan => loan.id);
+        let transactionCounts = {};
+        
+        if (loanIds.length > 0) {
+            const transactionCountsResult = await pool.query(`
+                SELECT 
+                    loan_account_id,
+                    COUNT(*) as transaction_count,
+                    MAX(transaction_date) as last_transaction_date
+                FROM loan_transactions 
+                WHERE loan_account_id = ANY($1)
+                GROUP BY loan_account_id
+            `, [loanIds]);
+
+            transactionCounts = transactionCountsResult.rows.reduce((acc, row) => {
+                acc[row.loan_account_id] = {
+                    count: parseInt(row.transaction_count),
+                    lastTransactionDate: row.last_transaction_date
+                };
+                return acc;
+            }, {});
+        }
+
+        // Enhance loan data with transaction info and user details
+        const enhancedLoans = loansResult.rows.map(loan => ({
+            ...loan,
+            user: {
+                id: loan.user_id,
+                firstName: loan.first_name,
+                lastName: loan.last_name,
+                email: loan.email
+            },
+            transactionCount: transactionCounts[loan.id]?.count || 0,
+            lastTransactionDate: transactionCounts[loan.id]?.lastTransactionDate || null
+        }));
+
+        res.json({
+            loans: enhancedLoans,
+            totalCount: enhancedLoans.length
+        });
+
+    } catch (error) {
+        console.error('Admin all loans error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error('Unhandled error:', error);
