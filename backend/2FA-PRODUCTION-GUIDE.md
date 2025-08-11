@@ -7,7 +7,7 @@ Your 2FA system is **production-ready**! Here's how to test and deploy it safely
 ```bash
 # Run interactive production tests
 cd /Users/williamwang/Esoteric/backend
-node test-2fa-production.js
+node dev-tests/test-2fa-production.js
 ```
 
 ## 📱 Step-by-Step Testing

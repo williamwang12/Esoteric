@@ -71,19 +71,14 @@ if [ ! -f "package.json" ] || [ ! -d "backend" ] || [ ! -d "frontend" ]; then
 fi
 
 # Check if .env files exist
-if [ ! -f ".env" ]; then
-    print_warning ".env file not found. Creating from template..."
-    cp env.example .env
-fi
-
 if [ ! -f "backend/.env" ]; then
     print_warning "backend/.env file not found. Creating from template..."
     cp backend/env.example backend/.env
 fi
 
-if [ ! -f "frontend/.env" ]; then
-    print_warning "frontend/.env file not found. Creating from template..."
-    cp frontend-env.example frontend/.env
+if [ ! -f "frontend/.env.local" ]; then
+    print_warning "frontend/.env.local file not found. Creating from template..."
+    cp frontend-env.example frontend/.env.local
 fi
 
 # Check for port conflicts and kill if necessary
