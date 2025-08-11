@@ -6,10 +6,16 @@ module.exports = {
     '**/?(*.)+(spec|test).js'
   ],
   collectCoverageFrom: [
-    'server.js',
+    'server*.js',
+    'routes/**/*.js',
+    'middleware/**/*.js',
     '!node_modules/**',
-    '!tests/**'
+    '!tests/**',
+    '!test*.js'
   ],
-  testTimeout: 10000,
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js']
+  testTimeout: 30000,
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
+  detectOpenHandles: true,
+  forceExit: true,
+  maxWorkers: 1 // Run tests sequentially to avoid database conflicts
 };

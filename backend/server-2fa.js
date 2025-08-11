@@ -801,6 +801,29 @@ app.get('/api/admin/users/:userId/loans', authenticateAdmin, async (req, res) =>
   }
 });
 
+// Get user's documents
+app.get('/api/documents', authenticateToken, async (req, res) => {
+    try {
+        const { category } = req.query;
+        let query = 'SELECT * FROM documents WHERE user_id = $1';
+        let params = [req.user.userId];
+
+        if (category) {
+            query += ' AND category = $2';
+            params.push(category);
+        }
+
+        query += ' ORDER BY upload_date DESC';
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Documents fetch error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Admin route - Get user's documents  
 app.get('/api/admin/users/:userId/documents', authenticateAdmin, async (req, res) => {
   try {

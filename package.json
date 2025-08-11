@@ -2,10 +2,10 @@
   "name": "esoteric-backend",
   "version": "1.0.0",
   "description": "Node.js backend API server for the Esoteric loan management platform",
-  "main": "server.js",
+  "main": "backend/server-2fa.js",
   "scripts": {
     "start": "cd backend && node server-2fa.js",
-    "dev": "nodemon server.js",
+    "dev": "cd backend && nodemon server-2fa.js",
     "db:setup": "node scripts/setupDatabase.js",
     "db:migrate": "node scripts/migrate.js",
     "test": "echo \"Error: no test specified\" && exit 1"

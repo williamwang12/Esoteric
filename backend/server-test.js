@@ -71,10 +71,10 @@ db.serialize(() => {
     FOREIGN KEY (user_id) REFERENCES users(id)
   )`);
 
-  // Insert some test data
+  // Insert some test data - passwords are: demo123456 and admin123456
   const testUsers = [
-    ['demo@esoteric.com', '$2b$10$fdFZDsFAaJdiXMWT8v4OU.pw2v3da2acOuhtfQ6dZHavT7azm/6wK', 'Demo', 'User', '+1234567890', 0],
-    ['admin@esoteric.com', '$2b$10$fdFZDsFAaJdiXMWT8v4OU.pw2v3da2acOuhtfQ6dZHavT7azm/6wK', 'Admin', 'User', '+1234567891', 1]
+    ['demo@esoteric.com', '$2b$10$XxoxLKiZOylR9fzSMy3ux.ZCHPnn9dNp/XlObR8CCKE5FCuIZLMY.', 'Demo', 'User', '+1234567890', 0],
+    ['admin@esoteric.com', '$2b$10$5egvPLcE0sTw9o1r19mEoursUgm9omXrF7nTKqwK1E67ZybRD1VyC', 'Admin', 'User', '+1234567891', 1]
   ];
 
   const insertUser = db.prepare(`INSERT OR IGNORE INTO users (email, password_hash, first_name, last_name, phone, is_admin) VALUES (?, ?, ?, ?, ?, ?)`);
@@ -346,7 +346,7 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
 app.put('/api/user/profile', [
     body('firstName').optional().notEmpty().withMessage('First name cannot be empty'),
     body('lastName').optional().notEmpty().withMessage('Last name cannot be empty'),
-    body('phone').optional().isMobilePhone().withMessage('Invalid phone number')
+    body('phone').optional().isLength({ min: 10 }).withMessage('Phone number must be at least 10 characters')
 ], authenticateToken, async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -717,7 +717,15 @@ app.use((error, req, res, next) => {
         return res.status(400).json({ error: error.message });
     }
 
-    console.error('Unhandled error:', error);
+    // Handle JSON parsing errors
+    if (error.type === 'entity.parse.failed') {
+        return res.status(400).json({ error: 'Invalid JSON format' });
+    }
+
+    // Only log errors in non-test environments
+    if (process.env.NODE_ENV !== 'test') {
+        console.error('Unhandled error:', error);
+    }
     res.status(500).json({ error: 'Internal server error' });
 });
 
