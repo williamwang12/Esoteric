@@ -35,6 +35,8 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import LoanGrowthChart from '../components/charts/LoanGrowthChart';
+import PortfolioDashboard from '../components/charts/PortfolioDashboard';
+import AdvancedMetrics from '../components/charts/AdvancedMetrics';
 import TransactionHistory from '../components/TransactionHistory';
 import { documentsApi, adminApi } from '../services/api';
 
@@ -118,6 +120,12 @@ const Dashboard: React.FC = () => {
       });
       
       if (!loansResponse.ok) {
+        if (loansResponse.status === 403 || loansResponse.status === 401) {
+          // Invalid or expired token - redirect to login
+          logout();
+          navigate('/login');
+          return;
+        }
         throw new Error(`HTTP ${loansResponse.status}: ${loansResponse.statusText}`);
       }
       
@@ -132,6 +140,12 @@ const Dashboard: React.FC = () => {
         });
         
         if (!analyticsResponse.ok) {
+          if (analyticsResponse.status === 403 || analyticsResponse.status === 401) {
+            // Invalid or expired token - redirect to login
+            logout();
+            navigate('/login');
+            return;
+          }
           throw new Error(`Analytics HTTP ${analyticsResponse.status}: ${analyticsResponse.statusText}`);
         }
         
@@ -686,14 +700,64 @@ const Dashboard: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              {/* Analytics Tab - Charts */}
+              {/* Enhanced Analytics Tab */}
               {analyticsData ? (
                 <Fade in={!!analyticsData} timeout={1000}>
-                  <Card>
-                    <CardContent sx={{ p: 4 }}>
-                      <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
-                    </CardContent>
-                  </Card>
+                  <Box>
+                    {/* Analytics Navigation */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      mb: 4,
+                      p: 3,
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.secondary.main, 0.1)} 100%)`,
+                      borderRadius: '16px',
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    }}>
+                      <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                          Portfolio Analytics
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                          Comprehensive performance insights and advanced metrics
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 800 }}>
+                            {((analyticsData.analytics.currentBalance - analyticsData.analytics.totalPrincipal) / analyticsData.analytics.totalPrincipal * 100).toFixed(1)}%
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Total Return
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Portfolio Dashboard */}
+                    <PortfolioDashboard analytics={analyticsData.analytics} loanData={loanData} />
+                    
+                    {/* Advanced Metrics */}
+                    <Box sx={{ mt: 6 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
+                        Advanced Analytics
+                      </Typography>
+                      <AdvancedMetrics analytics={analyticsData.analytics} loanData={loanData} />
+                    </Box>
+
+                    {/* Original Chart - Now as Historical Overview */}
+                    <Box sx={{ mt: 6 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
+                        Historical Growth Overview
+                      </Typography>
+                      <Card>
+                        <CardContent sx={{ p: 4 }}>
+                          <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
+                        </CardContent>
+                      </Card>
+                    </Box>
+                  </Box>
                 </Fade>
               ) : (
                 <Card>
@@ -734,10 +798,10 @@ const Dashboard: React.FC = () => {
                           fontWeight: 600
                         }}
                       >
-                        Loading Analytics...
+                        Loading Advanced Analytics...
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
-                        Preparing your loan performance charts
+                        Preparing comprehensive performance insights
                       </Typography>
                     </Box>
                   </CardContent>
