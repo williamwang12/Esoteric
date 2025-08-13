@@ -18,7 +18,9 @@ import {
   AttachMoney,
   Timeline,
   AccountBalanceWallet,
-  CreditCard
+  CreditCard,
+  Payment,
+  TrendingUp
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -66,7 +68,7 @@ const Dashboard: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false]);
+  const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false, false, false]);
 
   const handleLogout = () => {
     logout();
@@ -172,7 +174,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     // Animate cards sequentially when component mounts
-    const timeouts = [0, 1, 2, 3].map((index) => 
+    const timeouts = [0, 1, 2, 3, 4, 5].map((index) => 
       setTimeout(() => {
         setCardAnimations(prev => {
           const newAnimations = [...prev];
@@ -554,6 +556,72 @@ const Dashboard: React.FC = () => {
                       }}>
                         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                           Loan identifier
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
+
+                <Fade in={cardAnimations[4]} timeout={1600}>
+                  <Card sx={{ position: 'relative' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #EF4444, #F87171)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2 
+                        }}>
+                          <Payment sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                          Monthly Payment
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" component="div" color="error.main" sx={{ fontWeight: 800, mb: 2 }}>
+                        ${(parseFloat(loanData.current_balance) * parseFloat(loanData.monthly_rate)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </Typography>
+                      <Box sx={{ 
+                        background: alpha(theme.palette.error.main, 0.1), 
+                        borderRadius: '8px', 
+                        p: 2,
+                        border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Monthly earnings at {(parseFloat(loanData.monthly_rate) * 100).toFixed(1)}%
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
+
+                <Fade in={cardAnimations[5]} timeout={1800}>
+                  <Card sx={{ position: 'relative' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #F59E0B, #FBBF24)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2 
+                        }}>
+                          <TrendingUp sx={{ fontSize: 28, color: 'white', transform: 'rotate(180deg)' }} />
+                        </Box>
+                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                          Total Withdrawals
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" component="div" color="warning.main" sx={{ fontWeight: 800, mb: 2 }}>
+                        ${parseFloat(loanData.total_withdrawals || '0').toLocaleString()}
+                      </Typography>
+                      <Box sx={{ 
+                        background: alpha(theme.palette.warning.main, 0.1), 
+                        borderRadius: '8px', 
+                        p: 2,
+                        border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`
+                      }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Funds withdrawn from account
                         </Typography>
                       </Box>
                     </CardContent>
