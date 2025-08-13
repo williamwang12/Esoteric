@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  AppBar,
-  Toolbar,
   Typography,
   Button,
   Container,
   Card,
   CardContent,
-  IconButton,
   Divider,
   Chip,
   TextField,
@@ -23,7 +20,6 @@ import {
   alpha,
 } from '@mui/material';
 import {
-  ArrowBack,
   Person,
   Email,
   Phone,
@@ -36,17 +32,14 @@ import {
   Security,
   TrendingUp,
   AttachMoney,
-  Timeline,
   AccountBalanceWallet,
-  ShowChart,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { userApi, loansApi, twoFAApi } from '../services/api';
+import AppNavigation from '../components/AppNavigation';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
-  const navigate = useNavigate();
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -275,31 +268,7 @@ const Profile: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Navigation Bar */}
-      <AppBar position="static" elevation={0}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            onClick={() => navigate('/dashboard')}
-            sx={{ mr: 2 }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Typography 
-            variant="h5" 
-            component="div" 
-            sx={{ 
-              flexGrow: 1, 
-              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)', 
-              backgroundClip: 'text', 
-              WebkitBackgroundClip: 'text', 
-              WebkitTextFillColor: 'transparent', 
-              fontWeight: 700 
-            }}
-          >
-            PROFILE
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <AppNavigation />
 
       <Container maxWidth="lg" sx={{ mt: 3, mb: 3 }}>
         {loading && (

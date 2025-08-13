@@ -50,6 +50,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, documentsApi } from '../services/api';
+import AppNavigation from '../components/AppNavigation';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -441,20 +442,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Navigation Bar */}
-      <AppBar position="static" elevation={0}>
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            onClick={() => navigate('/dashboard')}
-            sx={{ mr: 2 }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Typography variant="h5" component="div" sx={{ flexGrow: 1, background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 700 }}>
-            ESOTERIC ADMIN PANEL
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <AppNavigation />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         {/* Error State */}

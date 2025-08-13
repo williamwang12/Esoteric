@@ -1,27 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  AppBar,
-  Toolbar,
   Typography,
   Button,
   Container,
   Card,
   CardContent,
-  Avatar,
-  IconButton,
   Tab,
   Tabs,
   CircularProgress,
   Alert,
   Fade,
-  Slide,
   useTheme,
   alpha,
 } from '@mui/material';
 import { 
-  ExitToApp, 
-  Person, 
   TrendingUp, 
   AccountBalance, 
   History, 
@@ -38,6 +31,7 @@ import LoanGrowthChart from '../components/charts/LoanGrowthChart';
 import PortfolioDashboard from '../components/charts/PortfolioDashboard';
 import AdvancedMetrics from '../components/charts/AdvancedMetrics';
 import TransactionHistory from '../components/TransactionHistory';
+import AppNavigation from '../components/AppNavigation';
 import { documentsApi, adminApi } from '../services/api';
 
 interface TabPanelProps {
@@ -202,90 +196,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative' }}>
       {/* Navigation Bar */}
-      <Slide direction="down" in={true} timeout={800}>
-        <AppBar position="static" elevation={0}>
-          <Toolbar sx={{ py: 1 }}>
-            <Typography 
-              variant="h5" 
-              component="div" 
-              sx={{ 
-                flexGrow: 1, 
-                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)', 
-                backgroundClip: 'text', 
-                WebkitBackgroundClip: 'text', 
-                WebkitTextFillColor: 'transparent', 
-                fontWeight: 800,
-                letterSpacing: '-0.01em',
-                fontSize: '1.75rem'
-              }}
-            >
-              ESOTERIC ENTERPRISES
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 2,
-                background: 'rgba(107, 70, 193, 0.1)',
-                padding: '8px 16px',
-                borderRadius: '12px',
-                border: '1px solid rgba(107, 70, 193, 0.2)'
-              }}>
-                <Avatar sx={{ 
-                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)', 
-                  width: 36, 
-                  height: 36, 
-                  fontSize: '0.9rem',
-                  fontWeight: 600
-                }}>
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600 }}>
-                    {user?.firstName} {user?.lastName}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Account Holder
-                  </Typography>
-                </Box>
-              </Box>
-              <IconButton 
-                color="inherit" 
-                size="medium"
-                onClick={() => navigate('/profile')}
-                sx={{ 
-                  background: 'rgba(107, 70, 193, 0.1)',
-                  '&:hover': { 
-                    background: 'rgba(107, 70, 193, 0.2)',
-                    transform: 'scale(1.05)'
-                  },
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-              >
-                <Person />
-              </IconButton>
-              <Button
-                color="inherit"
-                startIcon={<ExitToApp />}
-                onClick={handleLogout}
-                sx={{ 
-                  color: 'text.primary',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                  borderRadius: '10px',
-                  '&:hover': {
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    transform: 'translateY(-1px)'
-                  },
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-              >
-                Logout
-              </Button>
-            </Box>
-          </Toolbar>
-        </AppBar>
-      </Slide>
+      <AppNavigation onLogout={handleLogout} />
 
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
