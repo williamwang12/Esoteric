@@ -60,6 +60,11 @@ const Profile: React.FC = () => {
     phone: ''
   });
   const [saving, setSaving] = useState(false);
+  const [twoFADialogOpen, setTwoFADialogOpen] = useState(false);
+  const [twoFASetupData, setTwoFASetupData] = useState<any>(null);
+  const [twoFAToken, setTwoFAToken] = useState('');
+  const [twoFALoading, setTwoFALoading] = useState(false);
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
 
   const fetchProfileData = async () => {
     try {
@@ -145,6 +150,64 @@ const Profile: React.FC = () => {
       setError('Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSetup2FA = async () => {
+    try {
+      setTwoFALoading(true);
+      setTwoFAError(null);
+      const setupData = await twoFAApi.setup();
+      setTwoFASetupData(setupData);
+      setTwoFADialogOpen(true);
+    } catch (error) {
+      console.error('2FA setup error:', error);
+      setTwoFAError('Failed to setup 2FA. Please try again.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    try {
+      setTwoFALoading(true);
+      setTwoFAError(null);
+      await twoFAApi.verifySetup(twoFAToken);
+      
+      // Update 2FA status
+      setTwoFAStatus({ isEnabled: true });
+      setTwoFADialogOpen(false);
+      setTwoFAToken('');
+      setTwoFASetupData(null);
+      
+      // Refresh profile data to get updated 2FA status
+      await fetchProfileData();
+    } catch (error) {
+      console.error('2FA verification error:', error);
+      setTwoFAError('Invalid verification code. Please try again.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    try {
+      setTwoFALoading(true);
+      setTwoFAError(null);
+      await twoFAApi.disable(twoFAToken);
+      
+      // Update 2FA status
+      setTwoFAStatus({ isEnabled: false });
+      setTwoFADialogOpen(false);
+      setTwoFAToken('');
+      
+      // Refresh profile data to get updated 2FA status
+      await fetchProfileData();
+    } catch (error) {
+      console.error('2FA disable error:', error);
+      setTwoFAError('Invalid verification code. Please try again.');
+    } finally {
+      setTwoFALoading(false);
     }
   };
 
@@ -571,9 +634,25 @@ const Profile: React.FC = () => {
                         color={twoFAStatus?.isEnabled ? "success" : "warning"}
                         sx={{ mb: 2, fontWeight: 600 }}
                       />
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                         Two-factor authentication status
                       </Typography>
+                      <Button
+                        variant={twoFAStatus?.isEnabled ? "outlined" : "contained"}
+                        color={twoFAStatus?.isEnabled ? "error" : "primary"}
+                        size="small"
+                        onClick={twoFAStatus?.isEnabled ? () => setTwoFADialogOpen(true) : handleSetup2FA}
+                        disabled={twoFALoading}
+                        startIcon={twoFALoading ? <CircularProgress size={16} /> : <Security />}
+                        sx={{ 
+                          background: twoFAStatus?.isEnabled ? undefined : 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                          '&:hover': twoFAStatus?.isEnabled ? undefined : {
+                            background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                          }
+                        }}
+                      >
+                        {twoFAStatus?.isEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                      </Button>
                     </Box>
                     
                     <Box sx={{ textAlign: 'center', p: 3 }}>
@@ -594,6 +673,145 @@ const Profile: React.FC = () => {
             </Box>
           </Fade>
         )}
+
+        {/* 2FA Setup Dialog */}
+        <Dialog 
+          open={twoFADialogOpen} 
+          onClose={() => {
+            setTwoFADialogOpen(false);
+            setTwoFAToken('');
+            setTwoFAError(null);
+            setTwoFASetupData(null);
+          }} 
+          maxWidth="md" 
+          fullWidth
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Security />
+            {twoFAStatus?.isEnabled ? 'Disable Two-Factor Authentication' : 'Setup Two-Factor Authentication'}
+          </DialogTitle>
+          <DialogContent>
+            {twoFAError && (
+              <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
+                {twoFAError}
+              </Alert>
+            )}
+            
+            {!twoFAStatus?.isEnabled && twoFASetupData ? (
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Scan QR Code with your Authenticator App
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Use Google Authenticator, Authy, or any compatible TOTP app
+                </Typography>
+                
+                {/* QR Code Display */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  mb: 3,
+                  p: 3,
+                  background: 'white',
+                  borderRadius: '12px',
+                  border: '2px solid #E5E7EB'
+                }}>
+                  <img 
+                    src={twoFASetupData.qrCode} 
+                    alt="2FA QR Code"
+                    style={{ maxWidth: '200px', height: 'auto' }}
+                  />
+                </Box>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Can't scan? Enter this key manually:
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    fontFamily: 'monospace', 
+                    background: 'rgba(107, 70, 193, 0.1)',
+                    p: 2,
+                    borderRadius: '8px',
+                    mb: 3,
+                    wordBreak: 'break-all'
+                  }}
+                >
+                  {twoFASetupData.manualEntryKey}
+                </Typography>
+                
+                <TextField
+                  label="Enter 6-digit code from your app"
+                  value={twoFAToken}
+                  onChange={(e) => setTwoFAToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  fullWidth
+                  placeholder="123456"
+                  inputProps={{ 
+                    style: { textAlign: 'center', fontSize: '1.2rem', letterSpacing: '0.5em' },
+                    maxLength: 6
+                  }}
+                  sx={{ mb: 2 }}
+                />
+              </Box>
+            ) : twoFAStatus?.isEnabled ? (
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Disable Two-Factor Authentication
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Enter a verification code from your authenticator app to disable 2FA
+                </Typography>
+                
+                <TextField
+                  label="Enter 6-digit verification code"
+                  value={twoFAToken}
+                  onChange={(e) => setTwoFAToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  fullWidth
+                  placeholder="123456"
+                  inputProps={{ 
+                    style: { textAlign: 'center', fontSize: '1.2rem', letterSpacing: '0.5em' },
+                    maxLength: 6
+                  }}
+                  sx={{ mb: 2 }}
+                />
+              </Box>
+            ) : null}
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => {
+                setTwoFADialogOpen(false);
+                setTwoFAToken('');
+                setTwoFAError(null);
+                setTwoFASetupData(null);
+              }}
+              startIcon={<Cancel />}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={twoFAStatus?.isEnabled ? handleDisable2FA : handleVerify2FA}
+              variant="contained"
+              disabled={twoFALoading || twoFAToken.length !== 6}
+              startIcon={twoFALoading ? <CircularProgress size={16} /> : <Security />}
+              color={twoFAStatus?.isEnabled ? "error" : "primary"}
+              sx={!twoFAStatus?.isEnabled ? { 
+                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                }
+              } : undefined}
+            >
+              {twoFALoading ? 'Processing...' : (twoFAStatus?.isEnabled ? 'Disable 2FA' : 'Verify & Enable')}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Edit Profile Dialog */}
         <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
