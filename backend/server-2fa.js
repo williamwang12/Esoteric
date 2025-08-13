@@ -68,7 +68,7 @@ app.use('/api/2fa', authenticateBasicToken, twoFARoutes);
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, email, first_name, last_name, phone, requires_2fa, last_login, created_at FROM users WHERE id = $1',
+            'SELECT id, email, first_name, last_name, phone, requires_2fa, last_login, created_at, email_verified FROM users WHERE id = $1',
             [req.user.userId]
         );
 
@@ -178,6 +178,102 @@ app.put('/api/user/profile', authenticateToken, [
 
     } catch (error) {
         console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Send email verification
+app.post('/api/user/send-email-verification', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        
+        // Check if user email is already verified
+        const userResult = await pool.query(
+            'SELECT email, email_verified FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const { email, email_verified } = userResult.rows[0];
+
+        if (email_verified) {
+            return res.status(400).json({ error: 'Email is already verified' });
+        }
+
+        // Generate verification token
+        const crypto = require('crypto');
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        // Store verification token
+        await pool.query(
+            'UPDATE users SET email_verification_token = $1, email_verification_expires_at = $2 WHERE id = $3',
+            [verificationToken, expiresAt, userId]
+        );
+
+        // In a real application, you would send an email here
+        // For this demo, we'll just return the token
+        console.log(`Email verification token for ${email}: ${verificationToken}`);
+        
+        res.json({ 
+            message: 'Verification email sent successfully',
+            // In production, don't include the token in the response
+            // This is only for testing purposes
+            token: verificationToken
+        });
+
+    } catch (error) {
+        console.error('Send email verification error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Verify email
+app.post('/api/user/verify-email', async (req, res) => {
+    try {
+        const { token } = req.body;
+
+        if (!token) {
+            return res.status(400).json({ error: 'Verification token is required' });
+        }
+
+        // Find user with the verification token
+        const userResult = await pool.query(
+            'SELECT id, email, email_verified, email_verification_expires_at FROM users WHERE email_verification_token = $1',
+            [token]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Invalid verification token' });
+        }
+
+        const { id: userId, email, email_verified, email_verification_expires_at } = userResult.rows[0];
+
+        if (email_verified) {
+            return res.status(400).json({ error: 'Email is already verified' });
+        }
+
+        // Check if token has expired
+        if (new Date() > new Date(email_verification_expires_at)) {
+            return res.status(400).json({ error: 'Verification token has expired' });
+        }
+
+        // Mark email as verified and clear verification token
+        await pool.query(
+            'UPDATE users SET email_verified = true, email_verification_token = NULL, email_verification_expires_at = NULL WHERE id = $1',
+            [userId]
+        );
+
+        res.json({ 
+            message: 'Email verified successfully',
+            email: email
+        });
+
+    } catch (error) {
+        console.error('Email verification error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

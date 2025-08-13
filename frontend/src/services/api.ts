@@ -110,6 +110,16 @@ export const userApi = {
     const response = await api.put('/user/profile', userData);
     return response.data;
   },
+
+  sendEmailVerification: async () => {
+    const response = await api.post('/user/send-email-verification');
+    return response.data;
+  },
+
+  verifyEmail: async (token: string) => {
+    const response = await api.post('/user/verify-email', { token });
+    return response.data;
+  },
 };
 
 // Loans API

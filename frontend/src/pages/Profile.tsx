@@ -65,6 +65,11 @@ const Profile: React.FC = () => {
   const [twoFAToken, setTwoFAToken] = useState('');
   const [twoFALoading, setTwoFALoading] = useState(false);
   const [twoFAError, setTwoFAError] = useState<string | null>(null);
+  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [emailVerificationDialogOpen, setEmailVerificationDialogOpen] = useState(false);
+  const [emailVerificationToken, setEmailVerificationToken] = useState('');
+  const [emailVerificationError, setEmailVerificationError] = useState<string | null>(null);
 
   const fetchProfileData = async () => {
     try {
@@ -211,6 +216,42 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleSendEmailVerification = async () => {
+    try {
+      setEmailVerificationLoading(true);
+      const response = await userApi.sendEmailVerification();
+      setEmailVerificationSent(true);
+      setEmailVerificationDialogOpen(true);
+      setError(null);
+      // For demo purposes, auto-fill the token from the response
+      if (response.token) {
+        setEmailVerificationToken(response.token);
+      }
+    } catch (error) {
+      console.error('Send email verification error:', error);
+      setError('Failed to send verification email. Please try again.');
+    } finally {
+      setEmailVerificationLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    try {
+      setEmailVerificationLoading(true);
+      setEmailVerificationError(null);
+      await userApi.verifyEmail(emailVerificationToken);
+      setEmailVerificationDialogOpen(false);
+      setEmailVerificationToken('');
+      await fetchProfileData(); // Refresh profile data to show verified status
+      setError(null);
+    } catch (error: any) {
+      console.error('Email verification error:', error);
+      setEmailVerificationError(error.response?.data?.error || 'Failed to verify email. Please try again.');
+    } finally {
+      setEmailVerificationLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfileData();
   }, []);
@@ -276,61 +317,30 @@ const Profile: React.FC = () => {
         {!loading && profileData && (
           <Fade in={true} timeout={1000}>
             <Box>
-              {/* Enhanced Profile Header Card */}
+              {/* Profile Header Card */}
               <Card sx={{ 
-                mb: 3, 
-                overflow: 'visible', 
-                position: 'relative',
-                background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)',
-                border: '1px solid rgba(107, 70, 193, 0.2)',
+                mb: 3,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.secondary.main, 0.02)} 100%)`,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
                 borderRadius: '16px',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 20px 40px rgba(107, 70, 193, 0.15)'
+                }
               }}>
-                <Box
-                  sx={{
-                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                    height: 80,
-                    position: 'relative',
-                    borderRadius: '16px 16px 0 0',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%)',
-                    }
-                  }}
-                />
-                <CardContent sx={{ pt: 2, pb: 3, position: 'relative', zIndex: 2 }}>
-                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Box sx={{ textAlign: 'center' }}>
                     <Typography 
-                      variant="h3" 
+                      variant="h4" 
                       sx={{ 
                         fontWeight: 700, 
-                        color: 'common.white',
-                        mb: 2,
+                        color: theme.palette.text.primary,
                         letterSpacing: '-0.01em'
                       }}
                     >
                       {profileData.firstName} {profileData.lastName}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                      <Verified color="primary" fontSize="small" />
-                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                        Verified Account
-                      </Typography>
-                      {twoFAStatus?.isEnabled && (
-                        <>
-                          <Security color="success" fontSize="small" sx={{ ml: 2 }} />
-                          <Typography variant="body2" color="success.main">
-                            2FA Enabled
-                          </Typography>
-                        </>
-                      )}
-                    </Box>
                   </Box>
                 </CardContent>
               </Card>
@@ -413,39 +423,6 @@ const Profile: React.FC = () => {
                       </Box>
 
 
-                      <Box sx={{ 
-                        p: 4, 
-                        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.8)} 0%, ${alpha(theme.palette.secondary.main, 0.9)} 100%)`,
-                        borderRadius: '16px',
-                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                        mt: 3,
-                        backdropFilter: 'blur(10px)'
-                      }}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                          <Box sx={{ textAlign: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                              <Email sx={{ color: 'common.white', mr: 1, fontSize: 20 }} />
-                              <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
-                                Email Status
-                              </Typography>
-                            </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 700, color: 'common.white' }}>
-                              Verified
-                            </Typography>
-                          </Box>
-                          <Box sx={{ textAlign: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                              <Security sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
-                              <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
-                                2FA Status
-                              </Typography>
-                            </Box>
-                            <Typography variant="h6" sx={{ fontWeight: 700, color: twoFAStatus?.isEnabled ? 'success.main' : 'warning.main' }}>
-                              {twoFAStatus?.isEnabled ? 'Enabled' : 'Disabled'}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Box>
                     </Box>
                     </CardContent>
                   </Card>
@@ -530,39 +507,6 @@ const Profile: React.FC = () => {
                           </Box>
                         </Box>
 
-                        <Box sx={{ 
-                          p: 4, 
-                          background: `linear-gradient(135deg, ${alpha(theme.palette.grey[900], 0.8)} 0%, ${alpha(theme.palette.grey[800], 0.9)} 100%)`,
-                          borderRadius: '16px',
-                          border: `1px solid ${alpha(theme.palette.grey[700], 0.3)}`,
-                          mt: 3,
-                          backdropFilter: 'blur(10px)'
-                        }}>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-                            <Box sx={{ textAlign: 'center' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                                <Timeline sx={{ color: 'primary.main', mr: 1, fontSize: 20 }} />
-                                <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
-                                  Principal Amount
-                                </Typography>
-                              </Box>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'common.white' }}>
-                                {formatCurrency(loanSummary.principal_amount)}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ textAlign: 'center' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                                <ShowChart sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
-                                <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
-                                  Total Growth
-                                </Typography>
-                              </Box>
-                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
-                                +{formatCurrency(parseFloat(loanSummary.current_balance) - parseFloat(loanSummary.principal_amount))}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
                       </Box>
                     ) : (
                       <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -657,14 +601,35 @@ const Profile: React.FC = () => {
                     
                     <Box sx={{ textAlign: 'center', p: 3 }}>
                       <Chip
-                        icon={<Email />}
-                        label="Email Confirmed"
-                        color="info"
+                        icon={profileData.email_verified ? <Verified /> : <Email />}
+                        label={profileData.email_verified ? "Email Verified" : "Email Verification"}
+                        color={profileData.email_verified ? "success" : "warning"}
                         sx={{ mb: 2, fontWeight: 600 }}
                       />
-                      <Typography variant="body2" color="text.secondary">
-                        Email address is confirmed
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {profileData.email_verified 
+                          ? "Your email address has been verified"
+                          : "Verify your email address for security"
+                        }
                       </Typography>
+                      {!profileData.email_verified && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={handleSendEmailVerification}
+                          disabled={emailVerificationLoading}
+                          startIcon={emailVerificationLoading ? <CircularProgress size={16} /> : <Email />}
+                          sx={{ 
+                            background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+                            }
+                          }}
+                        >
+                          {emailVerificationLoading ? 'Sending...' : 'Send Verification'}
+                        </Button>
+                      )}
                     </Box>
                   </Box>
                   </CardContent>
@@ -809,6 +774,84 @@ const Profile: React.FC = () => {
               } : undefined}
             >
               {twoFALoading ? 'Processing...' : (twoFAStatus?.isEnabled ? 'Disable 2FA' : 'Verify & Enable')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Email Verification Dialog */}
+        <Dialog 
+          open={emailVerificationDialogOpen} 
+          onClose={() => {
+            setEmailVerificationDialogOpen(false);
+            setEmailVerificationToken('');
+            setEmailVerificationError(null);
+          }}
+          maxWidth="sm" 
+          fullWidth
+        >
+          <DialogTitle sx={{ 
+            background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <Email />
+            Email Verification
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3 }}>
+            {emailVerificationError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {emailVerificationError}
+              </Alert>
+            )}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              A verification token has been sent to your email. Please enter the token below to verify your email address.
+            </Typography>
+            <TextField
+              fullWidth
+              label="Verification Token"
+              value={emailVerificationToken}
+              onChange={(e) => setEmailVerificationToken(e.target.value)}
+              placeholder="Enter verification token"
+              margin="normal"
+              disabled={emailVerificationLoading}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#3B82F6',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#3B82F6',
+                  },
+                },
+              }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3, gap: 1 }}>
+            <Button 
+              onClick={() => {
+                setEmailVerificationDialogOpen(false);
+                setEmailVerificationToken('');
+                setEmailVerificationError(null);
+              }}
+              disabled={emailVerificationLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleVerifyEmail}
+              variant="contained"
+              disabled={emailVerificationLoading || !emailVerificationToken.trim()}
+              startIcon={emailVerificationLoading ? <CircularProgress size={16} /> : <Verified />}
+              sx={{
+                background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+                }
+              }}
+            >
+              {emailVerificationLoading ? 'Verifying...' : 'Verify Email'}
             </Button>
           </DialogActions>
         </Dialog>
