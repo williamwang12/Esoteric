@@ -19,30 +19,40 @@ import {
   Person,
   Dashboard,
   AdminPanelSettings,
+  AccountBalance,
+  TrendingUp,
+  History,
+  Description,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AppNavigationProps {
   onLogout?: () => void;
+  dashboardTab?: number;
+  onDashboardTabChange?: (tab: number) => void;
 }
 
-const AppNavigation: React.FC<AppNavigationProps> = ({ onLogout }) => {
+const AppNavigation: React.FC<AppNavigationProps> = ({ 
+  onLogout, 
+  dashboardTab = 0, 
+  onDashboardTabChange 
+}) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-  // Determine current tab based on pathname
-  const getCurrentTab = () => {
+  // Determine current main tab based on pathname
+  const getCurrentMainTab = () => {
     const path = location.pathname;
     if (path.includes('/profile')) return 1;
     if (path.includes('/admin')) return 2;
     return 0; // dashboard
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleMainTabChange = (event: React.SyntheticEvent, newValue: number) => {
     switch (newValue) {
       case 0:
         navigate('/dashboard');
@@ -53,6 +63,12 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ onLogout }) => {
       case 2:
         navigate('/admin');
         break;
+    }
+  };
+
+  const handleDashboardTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    if (onDashboardTabChange) {
+      onDashboardTabChange(newValue);
     }
   };
 
@@ -83,10 +99,13 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ onLogout }) => {
     navigate('/profile');
   };
 
+  const isDashboard = getCurrentMainTab() === 0;
+  
   return (
     <Slide direction="down" in={true} mountOnEnter unmountOnExit>
       <AppBar position="static" elevation={0}>
-        <Toolbar sx={{ py: 1 }}>
+        {/* Main Navigation Row */}
+        <Toolbar sx={{ py: 1, minHeight: '64px !important' }}>
           {/* Company Logo/Name */}
           <Typography 
             variant="h5" 
@@ -105,11 +124,11 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ onLogout }) => {
             ESOTERIC ENTERPRISES
           </Typography>
 
-          {/* Navigation Tabs */}
+          {/* Main Navigation Tabs */}
           <Box sx={{ flexGrow: 1 }}>
             <Tabs
-              value={getCurrentTab()}
-              onChange={handleTabChange}
+              value={getCurrentMainTab()}
+              onChange={handleMainTabChange}
               sx={{
                 '& .MuiTab-root': {
                   color: alpha(theme.palette.common.white, 0.7),
@@ -243,6 +262,102 @@ const AppNavigation: React.FC<AppNavigationProps> = ({ onLogout }) => {
             </Menu>
           </Box>
         </Toolbar>
+
+        {/* Dashboard Sub-tabs Row - Only show when on Dashboard */}
+        {isDashboard && (
+          <Box sx={{ 
+            bgcolor: alpha(theme.palette.common.black, 0.1),
+            borderTop: `1px solid ${alpha(theme.palette.common.white, 0.1)}`
+          }}>
+            <Box sx={{ 
+              maxWidth: '1200px', 
+              mx: 'auto', 
+              px: 3,
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <Tabs
+                value={dashboardTab}
+                onChange={handleDashboardTabChange}
+                sx={{
+                  '& .MuiTab-root': {
+                    color: alpha(theme.palette.common.white, 0.7),
+                    fontWeight: 500,
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    minWidth: 100,
+                    minHeight: 48,
+                    '&.Mui-selected': {
+                      color: theme.palette.common.white,
+                    },
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: theme.palette.common.white,
+                    height: 2,
+                  },
+                }}
+              >
+                <Tab 
+                  icon={<AccountBalance />} 
+                  label="Overview" 
+                  iconPosition="start"
+                  sx={{ 
+                    '& .MuiTab-iconWrapper': { 
+                      marginRight: '6px', 
+                      marginBottom: '0px !important' 
+                    } 
+                  }}
+                />
+                <Tab 
+                  icon={<TrendingUp />} 
+                  label="Analytics" 
+                  iconPosition="start"
+                  sx={{ 
+                    '& .MuiTab-iconWrapper': { 
+                      marginRight: '6px', 
+                      marginBottom: '0px !important' 
+                    } 
+                  }}
+                />
+                <Tab 
+                  icon={<History />} 
+                  label="Transactions" 
+                  iconPosition="start"
+                  sx={{ 
+                    '& .MuiTab-iconWrapper': { 
+                      marginRight: '6px', 
+                      marginBottom: '0px !important' 
+                    } 
+                  }}
+                />
+                <Tab 
+                  icon={<Description />} 
+                  label="Documents" 
+                  iconPosition="start"
+                  sx={{ 
+                    '& .MuiTab-iconWrapper': { 
+                      marginRight: '6px', 
+                      marginBottom: '0px !important' 
+                    } 
+                  }}
+                />
+                {user?.role === 'admin' && (
+                  <Tab 
+                    icon={<AdminPanelSettings />} 
+                    label="Admin" 
+                    iconPosition="start"
+                    sx={{ 
+                      '& .MuiTab-iconWrapper': { 
+                        marginRight: '6px', 
+                        marginBottom: '0px !important' 
+                      } 
+                    }}
+                  />
+                )}
+              </Tabs>
+            </Box>
+          </Box>
+        )}
       </AppBar>
     </Slide>
   );

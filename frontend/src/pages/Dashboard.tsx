@@ -6,8 +6,6 @@ import {
   Container,
   Card,
   CardContent,
-  Tab,
-  Tabs,
   CircularProgress,
   Alert,
   Fade,
@@ -15,10 +13,7 @@ import {
   alpha,
 } from '@mui/material';
 import { 
-  TrendingUp, 
   AccountBalance, 
-  History, 
-  Description, 
   AdminPanelSettings,
   AttachMoney,
   Timeline,
@@ -78,9 +73,6 @@ const Dashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
 
   const handleDocumentDownload = async (documentId: string, title: string) => {
     try {
@@ -196,7 +188,11 @@ const Dashboard: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative' }}>
       {/* Navigation Bar */}
-      <AppNavigation onLogout={handleLogout} />
+      <AppNavigation 
+        onLogout={handleLogout} 
+        dashboardTab={tabValue}
+        onDashboardTabChange={(tab) => setTabValue(tab)}
+      />
 
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -404,50 +400,6 @@ const Dashboard: React.FC = () => {
         {/* Main Dashboard Content */}
         {!loading && !error && loanData && (
           <>
-            {/* Tab Navigation */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-              <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange} 
-                aria-label="dashboard tabs"
-                textColor="primary"
-                indicatorColor="primary"
-              >
-                <Tab 
-                  icon={<AccountBalance />} 
-                  label="Overview" 
-                  id="dashboard-tab-0"
-                  aria-controls="dashboard-tabpanel-0"
-                />
-                <Tab 
-                  icon={<TrendingUp />} 
-                  label="Analytics" 
-                  id="dashboard-tab-1"
-                  aria-controls="dashboard-tabpanel-1"
-                />
-                <Tab 
-                  icon={<History />} 
-                  label="Transactions" 
-                  id="dashboard-tab-2"
-                  aria-controls="dashboard-tabpanel-2"
-                />
-                <Tab 
-                  icon={<Description />} 
-                  label="Documents" 
-                  id="dashboard-tab-3"
-                  aria-controls="dashboard-tabpanel-3"
-                />
-                {isAdmin && (
-                  <Tab 
-                    icon={<AdminPanelSettings />} 
-                    label="Admin" 
-                    id="dashboard-tab-4"
-                    aria-controls="dashboard-tabpanel-4"
-                  />
-                )}
-              </Tabs>
-            </Box>
-
             {/* Tab Content */}
             <TabPanel value={tabValue} index={0}>
               {/* Overview Tab - Loan Summary Cards */}
