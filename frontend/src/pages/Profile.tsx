@@ -8,7 +8,6 @@ import {
   Container,
   Card,
   CardContent,
-  Avatar,
   IconButton,
   Divider,
   Chip,
@@ -20,7 +19,8 @@ import {
   CircularProgress,
   Alert,
   Fade,
-  Paper,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -36,6 +36,9 @@ import {
   Security,
   TrendingUp,
   AttachMoney,
+  Timeline,
+  AccountBalanceWallet,
+  ShowChart,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +47,7 @@ import { userApi, loansApi, twoFAApi } from '../services/api';
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<any>(null);
@@ -112,14 +116,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleEditProfile = () => {
-    setEditForm({
-      firstName: profileData?.firstName || '',
-      lastName: profileData?.lastName || '',
-      phone: profileData?.phone || ''
-    });
-    setEditDialogOpen(true);
-  };
 
   const handleSaveProfile = async () => {
     try {
@@ -201,7 +197,7 @@ const Profile: React.FC = () => {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth="lg" sx={{ mt: 3, mb: 3 }}>
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress size={60} />
@@ -217,13 +213,23 @@ const Profile: React.FC = () => {
         {!loading && profileData && (
           <Fade in={true} timeout={1000}>
             <Box>
-              {/* Profile Header Card */}
-              <Card sx={{ mb: 4, overflow: 'visible', position: 'relative' }}>
+              {/* Enhanced Profile Header Card */}
+              <Card sx={{ 
+                mb: 3, 
+                overflow: 'visible', 
+                position: 'relative',
+                background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)',
+                border: '1px solid rgba(107, 70, 193, 0.2)',
+                borderRadius: '16px',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+              }}>
                 <Box
                   sx={{
                     background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                    height: 120,
+                    height: 80,
                     position: 'relative',
+                    borderRadius: '16px 16px 0 0',
+                    overflow: 'hidden',
                     '&::before': {
                       content: '""',
                       position: 'absolute',
@@ -235,65 +241,68 @@ const Profile: React.FC = () => {
                     }
                   }}
                 />
-                <CardContent sx={{ pt: 0, pb: 4, position: 'relative', zIndex: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'end', mt: -8 }}>
-                    <Avatar
-                      sx={{
-                        width: 120,
-                        height: 120,
-                        fontSize: '2.5rem',
-                        fontWeight: 700,
-                        background: 'linear-gradient(135deg, #374151 0%, #1F2937 100%)',
-                        border: '4px solid white',
-                        boxShadow: '0 8px 32px rgba(107, 70, 193, 0.3)',
-                        mr: 3,
-                        position: 'relative',
-                        zIndex: 3
+                <CardContent sx={{ pt: 2, pb: 3, position: 'relative', zIndex: 2 }}>
+                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                    <Typography 
+                      variant="h3" 
+                      sx={{ 
+                        fontWeight: 700, 
+                        color: 'common.white',
+                        mb: 2,
+                        letterSpacing: '-0.01em'
                       }}
                     >
-                      {profileData.firstName?.[0]}{profileData.lastName?.[0]}
-                    </Avatar>
-                    <Box sx={{ flexGrow: 1, mb: 2, position: 'relative', zIndex: 3 }}>
-                      <Typography variant="h3" sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>
-                        {profileData.firstName} {profileData.lastName}
+                      {profileData.firstName} {profileData.lastName}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                      <Verified color="primary" fontSize="small" />
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                        Verified Account
                       </Typography>
-                      <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                        Esoteric Enterprises Client
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Verified color="primary" fontSize="small" />
-                        <Typography variant="body2" color="text.secondary">
-                          Verified Account
-                        </Typography>
-                        {twoFAStatus?.isEnabled && (
-                          <>
-                            <Security color="success" fontSize="small" sx={{ ml: 2 }} />
-                            <Typography variant="body2" color="success.main">
-                              2FA Enabled
-                            </Typography>
-                          </>
-                        )}
-                      </Box>
+                      {twoFAStatus?.isEnabled && (
+                        <>
+                          <Security color="success" fontSize="small" sx={{ ml: 2 }} />
+                          <Typography variant="body2" color="success.main">
+                            2FA Enabled
+                          </Typography>
+                        </>
+                      )}
                     </Box>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Edit />}
-                      onClick={handleEditProfile}
-                      sx={{ mb: 2, position: 'relative', zIndex: 3 }}
-                    >
-                      Edit Profile
-                    </Button>
                   </Box>
                 </CardContent>
               </Card>
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, alignItems: 'start' }}>
                 {/* Personal Information */}
-                <Card sx={{ height: 'fit-content' }}>
-                  <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                      👤 Personal Information
-                    </Typography>
+                <Fade in={true} timeout={1200}>
+                  <Card sx={{ 
+                    height: 'fit-content',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.secondary.main, 0.02)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                    borderRadius: '16px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.15)'
+                    }
+                  }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #6B46C1, #9333EA)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Person sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+                          Personal Information
+                        </Typography>
+                      </Box>
                     
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -302,7 +311,11 @@ const Profile: React.FC = () => {
                           <Typography variant="body2" color="text.secondary">
                             Email Address
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          <Typography variant="h6" sx={{ 
+                            fontFamily: 'monospace', 
+                            fontWeight: 600,
+                            color: 'primary.main'
+                          }}>
                             {profileData.email}
                           </Typography>
                         </Box>
@@ -316,7 +329,7 @@ const Profile: React.FC = () => {
                           <Typography variant="body2" color="text.secondary">
                             Phone Number
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
                             {profileData.phone || 'Not provided'}
                           </Typography>
                         </Box>
@@ -330,20 +343,80 @@ const Profile: React.FC = () => {
                           <Typography variant="body2" color="text.secondary">
                             Member Since
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          <Typography variant="h5" sx={{ fontWeight: 600, color: 'info.main' }}>
                             {formatDate(profileData.createdAt)}
                           </Typography>
                         </Box>
                       </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
 
-                <Card sx={{ height: 'fit-content' }}>
-                  <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                      💼 Account Summary
-                    </Typography>
+
+                      <Box sx={{ 
+                        p: 4, 
+                        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.8)} 0%, ${alpha(theme.palette.secondary.main, 0.9)} 100%)`,
+                        borderRadius: '16px',
+                        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                        mt: 3,
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                              <Email sx={{ color: 'common.white', mr: 1, fontSize: 20 }} />
+                              <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
+                                Email Status
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: 'common.white' }}>
+                              Verified
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                              <Security sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
+                              <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
+                                2FA Status
+                              </Typography>
+                            </Box>
+                            <Typography variant="h6" sx={{ fontWeight: 700, color: twoFAStatus?.isEnabled ? 'success.main' : 'warning.main' }}>
+                              {twoFAStatus?.isEnabled ? 'Enabled' : 'Disabled'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
+
+                <Fade in={true} timeout={1400}>
+                  <Card sx={{ 
+                    height: 'fit-content',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.02)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                    borderRadius: '16px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(16, 185, 129, 0.15)'
+                    }
+                  }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+                        <Box sx={{ 
+                          background: 'linear-gradient(135deg, #10B981, #34D399)', 
+                          borderRadius: '12px', 
+                          p: 1.5, 
+                          mr: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <AccountBalanceWallet sx={{ fontSize: 28, color: 'white' }} />
+                        </Box>
+                        <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+                          Account Summary
+                        </Typography>
+                      </Box>
                     
                     {loanSummary ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -394,26 +467,39 @@ const Profile: React.FC = () => {
                           </Box>
                         </Box>
 
-                        <Paper sx={{ p: 3, backgroundColor: 'grey.50', mt: 2 }}>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">
-                                Principal Amount
-                              </Typography>
-                              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        <Box sx={{ 
+                          p: 4, 
+                          background: `linear-gradient(135deg, ${alpha(theme.palette.grey[900], 0.8)} 0%, ${alpha(theme.palette.grey[800], 0.9)} 100%)`,
+                          borderRadius: '16px',
+                          border: `1px solid ${alpha(theme.palette.grey[700], 0.3)}`,
+                          mt: 3,
+                          backdropFilter: 'blur(10px)'
+                        }}>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                                <Timeline sx={{ color: 'primary.main', mr: 1, fontSize: 20 }} />
+                                <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
+                                  Principal Amount
+                                </Typography>
+                              </Box>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'common.white' }}>
                                 {formatCurrency(loanSummary.principal_amount)}
                               </Typography>
                             </Box>
-                            <Box>
-                              <Typography variant="body2" color="text.secondary">
-                                Total Growth
-                              </Typography>
-                              <Typography variant="body1" sx={{ fontWeight: 600, color: 'success.main' }}>
+                            <Box sx={{ textAlign: 'center' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                                <ShowChart sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
+                                <Typography variant="body2" sx={{ color: alpha(theme.palette.common.white, 0.8), fontWeight: 600 }}>
+                                  Total Growth
+                                </Typography>
+                              </Box>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
                                 +{formatCurrency(parseFloat(loanSummary.current_balance) - parseFloat(loanSummary.principal_amount))}
                               </Typography>
                             </Box>
                           </Box>
-                        </Paper>
+                        </Box>
                       </Box>
                     ) : (
                       <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -426,19 +512,44 @@ const Profile: React.FC = () => {
                         </Typography>
                       </Box>
                     )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Fade>
               </Box>
 
-              <Card sx={{ mt: 4 }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                    🔐 Security & Authentication
-                  </Typography>
+              <Fade in={true} timeout={1600}>
+                <Card sx={{ 
+                  mt: 3,
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.02)} 0%, ${alpha(theme.palette.error.main, 0.02)} 100%)`,
+                  border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+                  borderRadius: '16px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 20px 40px rgba(245, 158, 11, 0.15)'
+                  }
+                }}>
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+                      <Box sx={{ 
+                        background: 'linear-gradient(135deg, #F59E0B, #EF4444)', 
+                        borderRadius: '12px', 
+                        p: 1.5, 
+                        mr: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Security sx={{ fontSize: 28, color: 'white' }} />
+                      </Box>
+                      <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+                        Security & Authentication
+                      </Typography>
+                    </Box>
                   
                   <Box sx={{ 
                     display: 'grid', 
-                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, 
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, 
                     gap: 3 
                   }}>
                     <Box sx={{ textAlign: 'center', p: 3 }}>
@@ -476,21 +587,10 @@ const Profile: React.FC = () => {
                         Email address is confirmed
                       </Typography>
                     </Box>
-                    
-                    <Box sx={{ textAlign: 'center', p: 3 }}>
-                      <Chip
-                        icon={<Person />}
-                        label="KYC Complete"
-                        color="primary"
-                        sx={{ mb: 2, fontWeight: 600 }}
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        Identity verification complete
-                      </Typography>
-                    </Box>
                   </Box>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Fade>
             </Box>
           </Fade>
         )}
