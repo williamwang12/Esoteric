@@ -206,13 +206,13 @@ const AdvancedMetrics: React.FC<AdvancedMetricsProps> = ({ analytics, loanData }
                 <EmojiEvents />
               </Avatar>
               <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-                A+
+                {((analytics.currentBalance - analytics.totalPrincipal) / analytics.totalPrincipal * 100).toFixed(1)}%
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                Performance Grade
+                Total Return
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Overall rating
+                Investment gain
               </Typography>
             </CardContent>
           </Card>
