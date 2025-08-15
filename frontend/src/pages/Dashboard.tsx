@@ -51,7 +51,7 @@ function TabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ py: 3 }}>
+        <Box sx={{ py: 1 }}>
           {children}
         </Box>
       )}
@@ -202,7 +202,7 @@ const Dashboard: React.FC = () => {
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         {/* Dynamic Welcome Section Based on Tab */}
         <Fade in={true} timeout={1000}>
-          <Box mb={6}>
+          <Box mb={3}>
             <Typography 
               variant="h2" 
               component="h1" 
@@ -618,7 +618,7 @@ const Dashboard: React.FC = () => {
             {/* Tab Content */}
             <TabPanel value={tabValue} index={0}>
               {/* Overview Tab - Loan Summary Cards */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 4, mb: 6 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 4, mb: 3 }}>
                 {/* Current Balance Card - Featured */}
                 <Fade in={cardAnimations[0]} timeout={800}>
                   <Card
