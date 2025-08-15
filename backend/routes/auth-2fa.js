@@ -26,7 +26,7 @@ router.post('/login', [
 
         // Get user with 2FA status
         const result = await pool.query(`
-            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.requires_2fa,
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.requires_2fa,
                    u2fa.is_enabled as has_2fa_enabled
             FROM users u
             LEFT JOIN user_2fa u2fa ON u.id = u2fa.user_id
@@ -76,7 +76,8 @@ router.post('/login', [
                     id: user.id,
                     email: user.email,
                     firstName: user.first_name,
-                    lastName: user.last_name
+                    lastName: user.last_name,
+                    role: user.role
                 }
             });
         }
@@ -101,7 +102,8 @@ router.post('/login', [
                 id: user.id,
                 email: user.email,
                 firstName: user.first_name,
-                lastName: user.last_name
+                lastName: user.last_name,
+                role: user.role
             },
             token: token
         });
@@ -215,12 +217,22 @@ router.post('/complete-2fa-login', [
             [decoded.userId]
         );
 
+        // Get complete user data for response
+        const userDataResult = await pool.query(
+            'SELECT id, email, first_name, last_name, role FROM users WHERE id = $1',
+            [decoded.userId]
+        );
+        const userData = userDataResult.rows[0];
+
         const response = {
             message: 'Login completed successfully',
             token: fullToken,
             user: {
-                id: decoded.userId,
-                email: decoded.email
+                id: userData.id,
+                email: userData.email,
+                firstName: userData.first_name,
+                lastName: userData.last_name,
+                role: userData.role
             }
         };
 
@@ -274,7 +286,7 @@ router.post('/register', [
 
         // Create user
         const result = await pool.query(
-            'INSERT INTO users (email, password_hash, first_name, last_name, phone) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, first_name, last_name',
+            'INSERT INTO users (email, password_hash, first_name, last_name, phone) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, first_name, last_name, role',
             [email, hashedPassword, firstName, lastName, phone]
         );
 
@@ -300,7 +312,8 @@ router.post('/register', [
                 id: user.id,
                 email: user.email,
                 firstName: user.first_name,
-                lastName: user.last_name
+                lastName: user.last_name,
+                role: user.role
             },
             token
         });

@@ -30,6 +30,7 @@ import {
   Tabs,
   Tab,
   Paper,
+  Snackbar,
 } from '@mui/material';
 import {
   Upload,
@@ -47,6 +48,10 @@ import {
   AttachMoney,
   TrendingUp,
   Receipt,
+  CheckCircle,
+  Cancel as CancelIcon,
+  ToggleOn,
+  ToggleOff,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, documentsApi } from '../services/api';
@@ -140,6 +145,18 @@ const AdminDashboard: React.FC = () => {
     monthlyRate: '1.0' // Default 1% monthly rate
   });
   const [creatingLoan, setCreatingLoan] = useState(false);
+  const [verificationLoading, setVerificationLoading] = useState<{[key: string]: boolean}>({});
+
+  // Snackbar state for user feedback
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -399,14 +416,28 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleCreateLoan = async () => {
-    if (!selectedUser || !createLoanForm.principalAmount) return;
+    if (!selectedUser || !createLoanForm.principalAmount) {
+      setSnackbar({
+        open: true,
+        message: 'Please fill in all required fields',
+        severity: 'error'
+      });
+      return;
+    }
 
     try {
       setCreatingLoan(true);
-      await adminApi.createLoan({
+      const response = await adminApi.createLoan({
         userId: selectedUser.id,
         principalAmount: parseFloat(createLoanForm.principalAmount),
         monthlyRate: parseFloat(createLoanForm.monthlyRate) / 100 // Convert percentage to decimal
+      });
+      
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: `Loan account created successfully for ${selectedUser.first_name} ${selectedUser.last_name}`,
+        severity: 'success'
       });
       
       // Refresh user loan data
@@ -419,10 +450,59 @@ const AdminDashboard: React.FC = () => {
         monthlyRate: '1.0'
       });
       setCreateLoanDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Loan creation error:', error);
+      
+      // Show error message with specific details
+      let errorMessage = 'Failed to create loan account';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
     } finally {
       setCreatingLoan(false);
+    }
+  };
+
+  const handleToggleVerification = async (userId: string, currentStatus: boolean) => {
+    try {
+      setVerificationLoading(prev => ({ ...prev, [userId]: true }));
+      await adminApi.toggleUserVerification(userId, !currentStatus);
+      // Refresh users list to show updated status
+      await fetchUsers();
+      
+      // Show success message
+      const action = !currentStatus ? 'verified' : 'unverified';
+      setSnackbar({
+        open: true,
+        message: `User account ${action} successfully`,
+        severity: 'success'
+      });
+    } catch (error: any) {
+      console.error('Verification toggle error:', error);
+      
+      // Show error message
+      let errorMessage = 'Failed to update verification status';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+    } finally {
+      setVerificationLoading(prev => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -508,6 +588,7 @@ const AdminDashboard: React.FC = () => {
                           <TableCell>Name</TableCell>
                           <TableCell>Email</TableCell>
                           <TableCell>Role</TableCell>
+                          <TableCell>Verification</TableCell>
                           <TableCell>Created</TableCell>
                           <TableCell>Actions</TableCell>
                         </TableRow>
@@ -525,6 +606,36 @@ const AdminDashboard: React.FC = () => {
                                 color={user.role === 'admin' ? 'secondary' : 'default'}
                                 size="small"
                               />
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip 
+                                  icon={user.account_verified ? <CheckCircle /> : <CancelIcon />}
+                                  label={user.account_verified ? 'Verified' : 'Unverified'}
+                                  color={user.account_verified ? 'success' : 'default'}
+                                  size="small"
+                                />
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleToggleVerification(user.id, user.account_verified)}
+                                  disabled={verificationLoading[user.id]}
+                                  sx={{ 
+                                    color: user.account_verified ? 'error.main' : 'success.main',
+                                    '&:hover': {
+                                      backgroundColor: user.account_verified ? 'error.light' : 'success.light',
+                                      opacity: 0.1
+                                    }
+                                  }}
+                                >
+                                  {verificationLoading[user.id] ? (
+                                    <CircularProgress size={16} />
+                                  ) : user.account_verified ? (
+                                    <ToggleOff />
+                                  ) : (
+                                    <ToggleOn />
+                                  )}
+                                </IconButton>
+                              </Box>
                             </TableCell>
                             <TableCell>
                               {(() => {
@@ -1558,6 +1669,23 @@ const AdminDashboard: React.FC = () => {
           <Button onClick={() => setTransactionsModalOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

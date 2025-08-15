@@ -256,6 +256,12 @@ export const adminApi = {
     const response = await api.post('/admin/create-loan', loanData);
     return response.data;
   },
+
+  // Toggle user account verification
+  toggleUserVerification: async (userId: string, verified: boolean) => {
+    const response = await api.put(`/admin/users/${userId}/verify`, { verified });
+    return response.data;
+  },
 };
 
 // Health check

@@ -68,7 +68,7 @@ app.use('/api/2fa', authenticateBasicToken, twoFARoutes);
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, email, first_name, last_name, phone, requires_2fa, last_login, created_at, email_verified FROM users WHERE id = $1',
+            'SELECT id, email, first_name, last_name, phone, role, requires_2fa, last_login, created_at, email_verified FROM users WHERE id = $1',
             [req.user.userId]
         );
 
@@ -490,12 +490,15 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT u.id, u.email, u.first_name, u.last_name, u.requires_2fa, u.last_login, u.created_at,
+                   u.account_verified, u.verified_at, u.verified_by_admin,
                    u2fa.is_enabled as has_2fa_enabled, u2fa.last_used as last_2fa_use,
-                   COUNT(la.id) as loan_accounts_count
+                   COUNT(la.id) as loan_accounts_count,
+                   admin_user.first_name as verified_by_first_name, admin_user.last_name as verified_by_last_name
             FROM users u
             LEFT JOIN user_2fa u2fa ON u.id = u2fa.user_id
             LEFT JOIN loan_accounts la ON u.id = la.user_id
-            GROUP BY u.id, u2fa.is_enabled, u2fa.last_used, u.created_at
+            LEFT JOIN users admin_user ON u.verified_by_admin = admin_user.id
+            GROUP BY u.id, u2fa.is_enabled, u2fa.last_used, u.created_at, admin_user.first_name, admin_user.last_name
             ORDER BY u.created_at DESC
         `);
 
@@ -1160,6 +1163,65 @@ app.get('/api/admin/loans', authenticateAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Admin all loans error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Toggle user account verification
+app.put('/api/admin/users/:userId/verify', authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { verified } = req.body;
+        const adminUserId = req.user.userId;
+
+        // Verify target user exists
+        const userCheck = await pool.query(
+            'SELECT id, first_name, last_name, email, account_verified FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const targetUser = userCheck.rows[0];
+
+        // Prevent admin from verifying themselves (optional business rule)
+        if (parseInt(userId) === parseInt(adminUserId)) {
+            return res.status(400).json({ error: 'Cannot modify your own verification status' });
+        }
+
+        // Update verification status
+        if (verified) {
+            // Verify the account
+            await pool.query(
+                'UPDATE users SET account_verified = true, verified_by_admin = $1, verified_at = NOW() WHERE id = $2',
+                [adminUserId, userId]
+            );
+        } else {
+            // Unverify the account
+            await pool.query(
+                'UPDATE users SET account_verified = false, verified_by_admin = NULL, verified_at = NULL WHERE id = $1',
+                [userId]
+            );
+        }
+
+        // Get updated user data
+        const updatedUser = await pool.query(`
+            SELECT u.id, u.email, u.first_name, u.last_name, u.account_verified, u.verified_at,
+                   admin_user.first_name as verified_by_first_name, admin_user.last_name as verified_by_last_name
+            FROM users u
+            LEFT JOIN users admin_user ON u.verified_by_admin = admin_user.id
+            WHERE u.id = $1
+        `, [userId]);
+
+        res.json({
+            message: verified ? 'Account verified successfully' : 'Account verification removed',
+            user: updatedUser.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Admin verify user error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
