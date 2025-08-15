@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        {/* Welcome Section */}
+        {/* Dynamic Welcome Section Based on Tab */}
         <Fade in={true} timeout={1000}>
           <Box mb={6}>
             <Typography 
@@ -217,7 +217,11 @@ const Dashboard: React.FC = () => {
                 mb: 2
               }}
             >
-              Welcome back, {user?.firstName}!
+              {tabValue === 0 && `Welcome back, ${user?.firstName}!`}
+              {tabValue === 1 && `Analytics Dashboard`}
+              {tabValue === 2 && `Transaction History`}
+              {tabValue === 3 && `Document Center`}
+              {tabValue === 4 && user?.role === 'admin' && `Admin Panel`}
             </Typography>
             <Typography 
               variant="h6" 
@@ -229,7 +233,11 @@ const Dashboard: React.FC = () => {
                 maxWidth: '600px'
               }}
             >
-              Here's an overview of your loan performance with Esoteric Enterprises. Track your growth, manage your investments, and explore your financial journey.
+              {tabValue === 0 && `Here's an overview of your loan performance with Esoteric Enterprises. Track your growth, manage your investments, and explore your financial journey.`}
+              {tabValue === 1 && `Analyze your investment performance with comprehensive charts, metrics, and insights to track your loan growth and returns over time.`}
+              {tabValue === 2 && `Review all your transaction history including loan disbursements, monthly payments, bonuses, and withdrawals with detailed records.`}
+              {tabValue === 3 && `Access and manage all your important loan documents, contracts, statements, and reports in one secure location.`}
+              {tabValue === 4 && user?.role === 'admin' && `Manage users, create loan accounts, verify customers, and oversee all administrative functions for the platform.`}
             </Typography>
           </Box>
         </Fade>
@@ -299,7 +307,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Enhanced New User Experience - Tab-specific content */}
-        {error && error === 'No loan accounts found' && (
+        {!loading && !loanData && (
           <>
             {/* Overview Tab - Welcome Message */}
             <TabPanel value={tabValue} index={0}>
@@ -349,14 +357,14 @@ const Dashboard: React.FC = () => {
                         mb: 3
                       }}
                     >
-                      Welcome to Esoteric Enterprises!
+                      Account Overview
                     </Typography>
                     <Typography 
                       variant="h6" 
                       sx={{ mb: 4, maxWidth: '600px', mx: 'auto', lineHeight: 1.6, color: 'rgba(255,255,255,0.8)' }}
                     >
-                      Your account has been successfully created. To get started with your loan management experience, 
-                      please contact our team to set up your loan account.
+                      Your loan account dashboard will display your current balance, monthly earnings, growth metrics, and 
+                      account summary once your loan account is activated.
                     </Typography>
                     
                     <Box sx={{ 
@@ -374,10 +382,10 @@ const Dashboard: React.FC = () => {
                         backdropFilter: 'blur(10px)'
                       }}>
                         <Typography variant="h6" gutterBottom sx={{ color: '#A855F7', fontWeight: 600 }}>
-                          📞 Contact Our Team
+                          💰 Account Balance
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                          Reach out to our loan specialists to discuss your investment opportunities and set up your account.
+                          View your current loan balance, principal amount, and total growth in real-time.
                         </Typography>
                       </Card>
                       
@@ -388,18 +396,18 @@ const Dashboard: React.FC = () => {
                         backdropFilter: 'blur(10px)'
                       }}>
                         <Typography variant="h6" gutterBottom sx={{ color: '#EC4899', fontWeight: 600 }}>
-                          📋 Prepare Documents
+                          📊 Performance Metrics
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                          Gather your financial documents and identification for a smooth onboarding process.
+                          Monitor your monthly rate, bonuses earned, and account performance indicators.
                         </Typography>
                       </Card>
                     </Box>
 
                     <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(107, 70, 193, 0.3)' }}>
                       <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.6)' }}>
-                        Once your loan account is activated, you'll have access to our comprehensive dashboard with 
-                        real-time analytics, transaction history, and performance tracking.
+                        Contact our team to activate your loan account and start monitoring your investment performance 
+                        with detailed balance tracking and real-time updates.
                       </Typography>
                     </Box>
                   </CardContent>
@@ -430,7 +438,8 @@ const Dashboard: React.FC = () => {
                       Advanced Analytics
                     </Typography>
                     <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4 }}>
-                      Once your loan account is active, you'll see comprehensive analytics including:
+                      Track your investment performance with powerful analytics tools that provide deep insights into 
+                      your loan growth, returns, and financial trends:
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mt: 4 }}>
                       <Box sx={{ p: 3, background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
@@ -474,10 +483,15 @@ const Dashboard: React.FC = () => {
                       Transaction History
                     </Typography>
                     <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4 }}>
-                      Monitor every transaction with detailed history and insights:
+                      Access complete transaction records including loan disbursements, monthly payments, bonuses, 
+                      and withdrawals with detailed timestamps and descriptions:
                     </Typography>
                     <Box sx={{ maxWidth: '500px', mx: 'auto', mt: 4 }}>
-                      {[1,2,3].map((i) => (
+                      {[
+                        { type: 'Loan Disbursement', desc: 'Initial loan amount', amount: '+$XX,XXX', color: '#3B82F6' },
+                        { type: 'Monthly Payment', desc: 'Interest earned', amount: '+$X,XXX', color: '#22C55E' },
+                        { type: 'Performance Bonus', desc: 'Additional return', amount: '+$XXX', color: '#F59E0B' }
+                      ].map((transaction, i) => (
                         <Box key={i} sx={{ 
                           display: 'flex', 
                           justifyContent: 'space-between', 
@@ -489,10 +503,10 @@ const Dashboard: React.FC = () => {
                           border: '1px solid rgba(59, 130, 246, 0.2)'
                         }}>
                           <Box>
-                            <Typography variant="body1" sx={{ color: '#3B82F6', fontWeight: 600 }}>Monthly Payment</Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>Coming soon...</Typography>
+                            <Typography variant="body1" sx={{ color: '#3B82F6', fontWeight: 600 }}>{transaction.type}</Typography>
+                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>{transaction.desc}</Typography>
                           </Box>
-                          <Typography variant="h6" sx={{ color: '#22C55E' }}>+$X,XXX</Typography>
+                          <Typography variant="h6" sx={{ color: transaction.color }}>{transaction.amount}</Typography>
                         </Box>
                       ))}
                     </Box>
@@ -524,7 +538,8 @@ const Dashboard: React.FC = () => {
                       Document Center
                     </Typography>
                     <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4 }}>
-                      Secure document storage and management for your loan account:
+                      Access and download all your important loan documents including contracts, statements, 
+                      and reports in a secure document management center:
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, mt: 4, maxWidth: '600px', mx: 'auto' }}>
                       <Box sx={{ p: 3, background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
@@ -565,20 +580,21 @@ const Dashboard: React.FC = () => {
                         Admin Dashboard
                       </Typography>
                       <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4 }}>
-                        Administrative tools and user management:
+                        Administrative control panel for managing users, creating loan accounts, verifying customers, 
+                        and overseeing system-wide operations:
                       </Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mt: 4 }}>
                         <Box sx={{ p: 3, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                           <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>👥 User Management</Typography>
-                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Manage client accounts and verification</Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>View all users, verify accounts, and manage customer profiles</Typography>
                         </Box>
                         <Box sx={{ p: 3, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                          <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>💼 Loan Accounts</Typography>
-                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Create and manage loan accounts</Typography>
+                          <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>💼 Loan Creation</Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Create new loan accounts and set terms for clients</Typography>
                         </Box>
                         <Box sx={{ p: 3, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                          <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>📊 Analytics</Typography>
-                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>System-wide performance metrics</Typography>
+                          <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>📊 System Analytics</Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Monitor platform performance and user activity</Typography>
                         </Box>
                       </Box>
                     </CardContent>
@@ -597,7 +613,7 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Main Dashboard Content */}
-        {!loading && !error && loanData && (
+        {!loading && loanData && (
           <>
             {/* Tab Content */}
             <TabPanel value={tabValue} index={0}>
