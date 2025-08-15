@@ -640,28 +640,15 @@ const Dashboard: React.FC = () => {
                     }}
                   >
                     <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                         <AccountBalanceWallet sx={{ fontSize: 32, mr: 2, opacity: 0.9 }} />
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, opacity: 0.9 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600, opacity: 0.9 }}>
                           Current Balance
                         </Typography>
                       </Box>
-                      <Typography variant="h2" component="div" sx={{ fontWeight: 800, mb: 2, letterSpacing: '-0.02em' }}>
+                      <Typography variant="h2" component="div" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
                         ${parseFloat(loanData.current_balance).toLocaleString()}
                       </Typography>
-                      <Box sx={{ 
-                        background: 'rgba(255,255,255,0.2)', 
-                        borderRadius: '8px', 
-                        p: 2,
-                        backdropFilter: 'blur(10px)'
-                      }}>
-                        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                          Principal: ${parseFloat(loanData.principal_amount).toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                          Growth: +${(parseFloat(loanData.current_balance) - parseFloat(loanData.principal_amount)).toLocaleString()}
-                        </Typography>
-                      </Box>
                     </CardContent>
                   </Card>
                 </Fade>
@@ -678,23 +665,13 @@ const Dashboard: React.FC = () => {
                         }}>
                           <AttachMoney sx={{ fontSize: 28, color: 'white' }} />
                         </Box>
-                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Total Bonuses
                         </Typography>
                       </Box>
-                      <Typography variant="h3" component="div" color="secondary.main" sx={{ fontWeight: 800, mb: 2 }}>
+                      <Typography variant="h3" component="div" color="secondary.main" sx={{ fontWeight: 800 }}>
                         ${parseFloat(loanData.total_bonuses).toLocaleString()}
                       </Typography>
-                      <Box sx={{ 
-                        background: alpha(theme.palette.secondary.main, 0.1), 
-                        borderRadius: '8px', 
-                        p: 2,
-                        border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`
-                      }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          Performance rewards
-                        </Typography>
-                      </Box>
                     </CardContent>
                   </Card>
                 </Fade>
@@ -711,23 +688,13 @@ const Dashboard: React.FC = () => {
                         }}>
                           <Timeline sx={{ fontSize: 28, color: 'white' }} />
                         </Box>
-                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Monthly Rate
                         </Typography>
                       </Box>
-                      <Typography variant="h3" component="div" color="success.main" sx={{ fontWeight: 800, mb: 2 }}>
+                      <Typography variant="h3" component="div" color="success.main" sx={{ fontWeight: 800 }}>
                         {(parseFloat(loanData.monthly_rate) * 100).toFixed(1)}%
                       </Typography>
-                      <Box sx={{ 
-                        background: alpha(theme.palette.success.main, 0.1), 
-                        borderRadius: '8px', 
-                        p: 2,
-                        border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
-                      }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          Base rate + bonuses
-                        </Typography>
-                      </Box>
                     </CardContent>
                   </Card>
                 </Fade>
@@ -744,7 +711,7 @@ const Dashboard: React.FC = () => {
                         }}>
                           <CreditCard sx={{ fontSize: 28, color: 'white' }} />
                         </Box>
-                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Account Number
                         </Typography>
                       </Box>
@@ -755,22 +722,11 @@ const Dashboard: React.FC = () => {
                           fontWeight: 700, 
                           fontFamily: '"JetBrains Mono", monospace',
                           color: 'info.main',
-                          mb: 2,
                           letterSpacing: '0.05em'
                         }}
                       >
                         {loanData.account_number}
                       </Typography>
-                      <Box sx={{ 
-                        background: alpha(theme.palette.info.main, 0.1), 
-                        borderRadius: '8px', 
-                        p: 2,
-                        border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
-                      }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          Loan identifier
-                        </Typography>
-                      </Box>
                     </CardContent>
                   </Card>
                 </Fade>
@@ -787,23 +743,13 @@ const Dashboard: React.FC = () => {
                         }}>
                           <Payment sx={{ fontSize: 28, color: 'white' }} />
                         </Box>
-                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Monthly Payment
                         </Typography>
                       </Box>
-                      <Typography variant="h3" component="div" color="error.main" sx={{ fontWeight: 800, mb: 2 }}>
+                      <Typography variant="h3" component="div" color="error.main" sx={{ fontWeight: 800 }}>
                         ${(parseFloat(loanData.current_balance) * parseFloat(loanData.monthly_rate)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </Typography>
-                      <Box sx={{ 
-                        background: alpha(theme.palette.error.main, 0.1), 
-                        borderRadius: '8px', 
-                        p: 2,
-                        border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`
-                      }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          Monthly earnings at {(parseFloat(loanData.monthly_rate) * 100).toFixed(1)}%
-                        </Typography>
-                      </Box>
                     </CardContent>
                   </Card>
                 </Fade>
@@ -820,23 +766,13 @@ const Dashboard: React.FC = () => {
                         }}>
                           <TrendingUp sx={{ fontSize: 28, color: 'white', transform: 'rotate(180deg)' }} />
                         </Box>
-                        <Typography variant="h6" gutterBottom color="text.primary" sx={{ fontWeight: 600 }}>
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Total Withdrawals
                         </Typography>
                       </Box>
-                      <Typography variant="h3" component="div" color="warning.main" sx={{ fontWeight: 800, mb: 2 }}>
+                      <Typography variant="h3" component="div" color="warning.main" sx={{ fontWeight: 800 }}>
                         ${parseFloat(loanData.total_withdrawals || '0').toLocaleString()}
                       </Typography>
-                      <Box sx={{ 
-                        background: alpha(theme.palette.warning.main, 0.1), 
-                        borderRadius: '8px', 
-                        p: 2,
-                        border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`
-                      }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          Funds withdrawn from account
-                        </Typography>
-                      </Box>
                     </CardContent>
                   </Card>
                 </Fade>
