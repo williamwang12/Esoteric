@@ -17,7 +17,6 @@ import {
 import {
   ExitToApp,
   Person,
-  Dashboard,
   AdminPanelSettings,
   AccountBalance,
   TrendingUp,
@@ -29,14 +28,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AppNavigationProps {
   onLogout?: () => void;
-  dashboardTab?: number;
-  onDashboardTabChange?: (tab: number) => void;
+  currentTab?: number;
+  onTabChange?: (tab: number) => void;
 }
 
 const AppNavigation: React.FC<AppNavigationProps> = ({ 
   onLogout, 
-  dashboardTab = 0, 
-  onDashboardTabChange 
+  currentTab = 0, 
+  onTabChange 
 }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -44,31 +43,14 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-  // Determine current main tab based on pathname
-  const getCurrentMainTab = () => {
-    const path = location.pathname;
-    if (path.includes('/profile')) return 1;
-    if (path.includes('/admin')) return 2;
-    return 0; // dashboard
-  };
-
-  const handleMainTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    switch (newValue) {
-      case 0:
-        navigate('/dashboard');
-        break;
-      case 1:
-        navigate('/profile');
-        break;
-      case 2:
-        navigate('/admin');
-        break;
-    }
-  };
-
-  const handleDashboardTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    if (onDashboardTabChange) {
-      onDashboardTabChange(newValue);
+  // Handle main tab changes
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    if (newValue === 4 && user?.role === 'admin') {
+      // Admin tab - navigate to admin page
+      navigate('/admin');
+    } else if (onTabChange) {
+      // Dashboard tabs - handle with callback
+      onTabChange(newValue);
     }
   };
 
@@ -99,7 +81,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
     navigate('/profile');
   };
 
-  const isDashboard = getCurrentMainTab() === 0;
+  const isAdminPage = location.pathname.includes('/admin');
   
   return (
     <Slide direction="down" in={true} mountOnEnter unmountOnExit>
@@ -124,11 +106,11 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             ESOTERIC ENTERPRISES
           </Typography>
 
-          {/* Main Navigation Tabs */}
+          {/* Main Navigation Tabs - Dashboard Tabs as Main Navigation */}
           <Box sx={{ flexGrow: 1 }}>
             <Tabs
-              value={getCurrentMainTab()}
-              onChange={handleMainTabChange}
+              value={isAdminPage ? (user?.role === 'admin' ? 4 : 0) : currentTab}
+              onChange={handleTabChange}
               sx={{
                 '& .MuiTab-root': {
                   color: alpha(theme.palette.common.white, 0.7),
@@ -148,8 +130,8 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
               }}
             >
               <Tab 
-                icon={<Dashboard />} 
-                label="Dashboard" 
+                icon={<AccountBalance />} 
+                label="Overview" 
                 iconPosition="start"
                 sx={{ 
                   '& .MuiTab-iconWrapper': { 
@@ -159,8 +141,30 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                 }}
               />
               <Tab 
-                icon={<Person />} 
-                label="Profile" 
+                icon={<TrendingUp />} 
+                label="Analytics" 
+                iconPosition="start"
+                sx={{ 
+                  '& .MuiTab-iconWrapper': { 
+                    marginRight: '8px', 
+                    marginBottom: '0px !important' 
+                  } 
+                }}
+              />
+              <Tab 
+                icon={<History />} 
+                label="Transactions" 
+                iconPosition="start"
+                sx={{ 
+                  '& .MuiTab-iconWrapper': { 
+                    marginRight: '8px', 
+                    marginBottom: '0px !important' 
+                  } 
+                }}
+              />
+              <Tab 
+                icon={<Description />} 
+                label="Documents" 
                 iconPosition="start"
                 sx={{ 
                   '& .MuiTab-iconWrapper': { 
@@ -263,101 +267,6 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           </Box>
         </Toolbar>
 
-        {/* Dashboard Sub-tabs Row - Only show when on Dashboard */}
-        {isDashboard && (
-          <Box sx={{ 
-            bgcolor: alpha(theme.palette.common.black, 0.1),
-            borderTop: `1px solid ${alpha(theme.palette.common.white, 0.1)}`
-          }}>
-            <Box sx={{ 
-              maxWidth: '1200px', 
-              mx: 'auto', 
-              px: 3,
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <Tabs
-                value={dashboardTab}
-                onChange={handleDashboardTabChange}
-                sx={{
-                  '& .MuiTab-root': {
-                    color: alpha(theme.palette.common.white, 0.7),
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    fontSize: '0.9rem',
-                    minWidth: 100,
-                    minHeight: 48,
-                    '&.Mui-selected': {
-                      color: theme.palette.common.white,
-                    },
-                  },
-                  '& .MuiTabs-indicator': {
-                    backgroundColor: theme.palette.common.white,
-                    height: 2,
-                  },
-                }}
-              >
-                <Tab 
-                  icon={<AccountBalance />} 
-                  label="Overview" 
-                  iconPosition="start"
-                  sx={{ 
-                    '& .MuiTab-iconWrapper': { 
-                      marginRight: '6px', 
-                      marginBottom: '0px !important' 
-                    } 
-                  }}
-                />
-                <Tab 
-                  icon={<TrendingUp />} 
-                  label="Analytics" 
-                  iconPosition="start"
-                  sx={{ 
-                    '& .MuiTab-iconWrapper': { 
-                      marginRight: '6px', 
-                      marginBottom: '0px !important' 
-                    } 
-                  }}
-                />
-                <Tab 
-                  icon={<History />} 
-                  label="Transactions" 
-                  iconPosition="start"
-                  sx={{ 
-                    '& .MuiTab-iconWrapper': { 
-                      marginRight: '6px', 
-                      marginBottom: '0px !important' 
-                    } 
-                  }}
-                />
-                <Tab 
-                  icon={<Description />} 
-                  label="Documents" 
-                  iconPosition="start"
-                  sx={{ 
-                    '& .MuiTab-iconWrapper': { 
-                      marginRight: '6px', 
-                      marginBottom: '0px !important' 
-                    } 
-                  }}
-                />
-                {user?.role === 'admin' && (
-                  <Tab 
-                    icon={<AdminPanelSettings />} 
-                    label="Admin" 
-                    iconPosition="start"
-                    sx={{ 
-                      '& .MuiTab-iconWrapper': { 
-                        marginRight: '6px', 
-                        marginBottom: '0px !important' 
-                      } 
-                    }}
-                  />
-                )}
-              </Tabs>
-            </Box>
-          </Box>
-        )}
       </AppBar>
     </Slide>
   );

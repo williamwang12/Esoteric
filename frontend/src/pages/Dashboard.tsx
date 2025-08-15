@@ -194,8 +194,8 @@ const Dashboard: React.FC = () => {
       {/* Navigation Bar */}
       <AppNavigation 
         onLogout={handleLogout} 
-        dashboardTab={tabValue}
-        onDashboardTabChange={(tab) => setTabValue(tab)}
+        currentTab={tabValue}
+        onTabChange={(tab) => setTabValue(tab)}
       />
 
       {/* Main Content */}

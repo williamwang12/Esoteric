@@ -33,13 +33,15 @@ import {
   TrendingUp,
   AttachMoney,
   AccountBalanceWallet,
+  ArrowBack,
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { userApi, loansApi, twoFAApi } from '../services/api';
-import AppNavigation from '../components/AppNavigation';
+import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -267,8 +269,32 @@ const Profile: React.FC = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
-      {/* Navigation Bar */}
-      <AppNavigation />
+      {/* Header with Back Button */}
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+        color: 'white',
+        py: 2
+      }}>
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button
+              startIcon={<ArrowBack />}
+              onClick={() => navigate('/dashboard')}
+              sx={{ 
+                color: 'white',
+                '&:hover': { 
+                  backgroundColor: 'rgba(255,255,255,0.1)' 
+                }
+              }}
+            >
+              Back to Dashboard
+            </Button>
+            <Typography variant="h4" sx={{ fontWeight: 700, flexGrow: 1 }}>
+              My Profile
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
       <Container maxWidth="lg" sx={{ mt: 3, mb: 3 }}>
         {loading && (
