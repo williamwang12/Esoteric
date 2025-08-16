@@ -52,6 +52,8 @@ import {
   Cancel as CancelIcon,
   Verified,
   Schedule,
+  Search,
+  Clear,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, documentsApi } from '../services/api';
@@ -88,6 +90,8 @@ const AdminDashboard: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [userDetailsTabValue, setUserDetailsTabValue] = useState(0);
   const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
@@ -189,6 +193,7 @@ const AdminDashboard: React.FC = () => {
         console.log('Created at field:', usersData[0].created_at);
       }
       setUsers(usersData);
+      setFilteredUsers(usersData);
     } catch (err) {
       setError('Failed to fetch users');
       console.error('Users fetch error:', err);
@@ -547,6 +552,20 @@ const AdminDashboard: React.FC = () => {
     fetchVerificationRequests();
   }, []);
 
+  // Filter users based on search term
+  useEffect(() => {
+    if (!userSearchTerm.trim()) {
+      setFilteredUsers(users);
+    } else {
+      const filtered = users.filter(user => 
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        (user.role && user.role.toLowerCase().includes(userSearchTerm.toLowerCase()))
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [users, userSearchTerm]);
+
   const formatCurrency = (value: string | number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('en-US', {
@@ -625,9 +644,49 @@ const AdminDashboard: React.FC = () => {
               {/* Users Tab */}
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    👥 User Management
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6">
+                      👥 User Management
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {filteredUsers.length} of {users.length} users
+                    </Typography>
+                  </Box>
+                  
+                  {/* Search Bar */}
+                  <Box sx={{ mb: 3 }}>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      placeholder="Search users by name, email, or role..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                            <Search color="action" />
+                          </Box>
+                        ),
+                        endAdornment: userSearchTerm && (
+                          <IconButton
+                            size="small"
+                            onClick={() => setUserSearchTerm('')}
+                            sx={{ mr: 1 }}
+                          >
+                            <Clear />
+                          </IconButton>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: 'primary.main',
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+
                   <TableContainer component={Paper}>
                     <Table>
                       <TableHead>
@@ -641,7 +700,7 @@ const AdminDashboard: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {users.map((user) => (
+                        {filteredUsers.map((user) => (
                           <TableRow key={user.id} hover>
                             <TableCell>
                               {user.first_name} {user.last_name}
@@ -685,6 +744,19 @@ const AdminDashboard: React.FC = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+                  
+                  {/* No Results Message */}
+                  {filteredUsers.length === 0 && userSearchTerm.trim() && (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Search sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        No users found
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Try adjusting your search terms or clear the search to see all users.
+                      </Typography>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </TabPanel>
