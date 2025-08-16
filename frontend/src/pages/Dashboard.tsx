@@ -25,7 +25,7 @@ import {
   Description
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LoanGrowthChart from '../components/charts/LoanGrowthChart';
 import PortfolioDashboard from '../components/charts/PortfolioDashboard';
 import AdvancedMetrics from '../components/charts/AdvancedMetrics';
@@ -62,6 +62,7 @@ function TabPanel(props: TabPanelProps) {
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
   const [loanData, setLoanData] = useState<any>(null);
@@ -188,6 +189,15 @@ const Dashboard: React.FC = () => {
     
     return () => timeouts.forEach(clearTimeout);
   }, []);
+
+  // Handle navigation from admin page with selected tab
+  useEffect(() => {
+    if (location.state && (location.state as any).selectedTab !== undefined) {
+      setTabValue((location.state as any).selectedTab);
+      // Clear the state to prevent it from persisting on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative' }}>

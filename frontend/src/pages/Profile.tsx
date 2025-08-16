@@ -65,6 +65,8 @@ const Profile: React.FC = () => {
   const [emailVerificationDialogOpen, setEmailVerificationDialogOpen] = useState(false);
   const [emailVerificationToken, setEmailVerificationToken] = useState('');
   const [emailVerificationError, setEmailVerificationError] = useState<string | null>(null);
+  const [verificationRequestLoading, setVerificationRequestLoading] = useState(false);
+  const [verificationRequestSent, setVerificationRequestSent] = useState(false);
 
   const fetchProfileData = async () => {
     try {
@@ -82,7 +84,8 @@ const Profile: React.FC = () => {
         lastName: userData.last_name || userData.lastName,
         email: userData.email,
         phone: userData.phone,
-        createdAt: userData.created_at || userData.createdAt
+        createdAt: userData.created_at || userData.createdAt,
+        accountVerified: userData.account_verified || userData.accountVerified || false
       });
       
       // Update form with current data
@@ -244,6 +247,20 @@ const Profile: React.FC = () => {
       setEmailVerificationError(error.response?.data?.error || 'Failed to verify email. Please try again.');
     } finally {
       setEmailVerificationLoading(false);
+    }
+  };
+
+  const handleRequestAccountVerification = async () => {
+    try {
+      setVerificationRequestLoading(true);
+      await userApi.requestAccountVerification();
+      setVerificationRequestSent(true);
+      setError(null);
+    } catch (error: any) {
+      console.error('Account verification request error:', error);
+      setError(error.response?.data?.error || 'Failed to request account verification. Please try again.');
+    } finally {
+      setVerificationRequestLoading(false);
     }
   };
 
@@ -557,13 +574,46 @@ const Profile: React.FC = () => {
                     <Box sx={{ textAlign: 'center', p: 3 }}>
                       <Chip
                         icon={<Verified />}
-                        label="Account Verified"
-                        color="success"
+                        label={profileData.accountVerified ? "Account Verified" : "Account Pending"}
+                        color={profileData.accountVerified ? "success" : "warning"}
                         sx={{ mb: 2, fontWeight: 600 }}
                       />
-                      <Typography variant="body2" color="text.secondary">
-                        Your account has been verified
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {profileData.accountVerified 
+                          ? "Your account has been verified"
+                          : "Account verification is pending approval"
+                        }
                       </Typography>
+                      {!profileData.accountVerified && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={handleRequestAccountVerification}
+                          disabled={verificationRequestLoading || verificationRequestSent}
+                          startIcon={verificationRequestLoading ? <CircularProgress size={16} /> : <Verified />}
+                          sx={{ 
+                            background: verificationRequestSent 
+                              ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
+                              : 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                            '&:hover': verificationRequestSent ? undefined : {
+                              background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                            },
+                            '&:disabled': {
+                              background: verificationRequestSent 
+                                ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
+                                : undefined
+                            }
+                          }}
+                        >
+                          {verificationRequestLoading 
+                            ? 'Requesting...' 
+                            : verificationRequestSent 
+                            ? 'Request Sent' 
+                            : 'Request Verification'
+                          }
+                        </Button>
+                      )}
                     </Box>
                     
                     <Box sx={{ textAlign: 'center', p: 3 }}>

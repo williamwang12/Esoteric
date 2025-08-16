@@ -120,6 +120,11 @@ export const userApi = {
     const response = await api.post('/user/verify-email', { token });
     return response.data;
   },
+
+  requestAccountVerification: async () => {
+    const response = await api.post('/user/request-account-verification');
+    return response.data;
+  },
 };
 
 // Loans API
@@ -260,6 +265,22 @@ export const adminApi = {
   // Toggle user account verification
   toggleUserVerification: async (userId: string, verified: boolean) => {
     const response = await api.put(`/admin/users/${userId}/verify`, { verified });
+    return response.data;
+  },
+
+  // Get account verification requests
+  getVerificationRequests: async (status?: string) => {
+    const params = status ? { status } : {};
+    const response = await api.get('/admin/verification-requests', { params });
+    return response.data;
+  },
+
+  // Approve or reject verification request
+  updateVerificationRequest: async (requestId: string, status: 'approved' | 'rejected', admin_notes?: string) => {
+    const response = await api.put(`/admin/verification-requests/${requestId}`, { 
+      status, 
+      admin_notes 
+    });
     return response.data;
   },
 };

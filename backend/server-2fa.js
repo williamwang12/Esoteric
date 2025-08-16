@@ -278,6 +278,40 @@ app.post('/api/user/verify-email', async (req, res) => {
     }
 });
 
+// Request account verification
+app.post('/api/user/request-account-verification', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        
+        // Check if user already has a pending request
+        const existingRequestResult = await pool.query(
+            'SELECT id, created_at FROM account_verification_requests WHERE user_id = $1 AND status = $2',
+            [userId, 'pending']
+        );
+
+        if (existingRequestResult.rows.length > 0) {
+            return res.status(400).json({ 
+                error: 'You already have a pending verification request' 
+            });
+        }
+
+        // Create new verification request
+        await pool.query(
+            'INSERT INTO account_verification_requests (user_id, status, created_at) VALUES ($1, $2, NOW())',
+            [userId, 'pending']
+        );
+
+        res.json({ 
+            message: 'Account verification request submitted successfully',
+            status: 'pending'
+        });
+
+    } catch (error) {
+        console.error('Account verification request error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get user's loan accounts
 app.get('/api/loans', authenticateToken, async (req, res) => {
     try {
@@ -1222,6 +1256,129 @@ app.put('/api/admin/users/:userId/verify', authenticateAdmin, async (req, res) =
 
     } catch (error) {
         console.error('Admin verify user error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get all account verification requests (Admin only)
+app.get('/api/admin/verification-requests', authenticateAdmin, async (req, res) => {
+    try {
+        const { status } = req.query;
+        
+        let query = `
+            SELECT 
+                avr.id,
+                avr.user_id,
+                avr.status,
+                avr.requested_at,
+                avr.reviewed_at,
+                avr.reviewed_by,
+                avr.admin_notes,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.account_verified,
+                reviewer.first_name as reviewer_first_name,
+                reviewer.last_name as reviewer_last_name
+            FROM account_verification_requests avr
+            JOIN users u ON avr.user_id = u.id
+            LEFT JOIN users reviewer ON avr.reviewed_by = reviewer.id
+        `;
+        
+        const queryParams = [];
+        if (status) {
+            query += ' WHERE avr.status = $1';
+            queryParams.push(status);
+        }
+        
+        query += ' ORDER BY avr.requested_at DESC';
+        
+        const result = await pool.query(query, queryParams);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Get verification requests error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Approve/reject account verification request (Admin only)
+app.put('/api/admin/verification-requests/:requestId', authenticateAdmin, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const { status, admin_notes } = req.body;
+        const adminUserId = req.user.userId;
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: 'Status must be approved or rejected' });
+        }
+
+        // Get the verification request
+        const requestResult = await pool.query(
+            'SELECT user_id FROM account_verification_requests WHERE id = $1',
+            [requestId]
+        );
+
+        if (requestResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Verification request not found' });
+        }
+
+        const { user_id } = requestResult.rows[0];
+
+        // Start transaction
+        await pool.query('BEGIN');
+
+        try {
+            // Update the verification request
+            await pool.query(
+                `UPDATE account_verification_requests 
+                 SET status = $1, reviewed_at = NOW(), reviewed_by = $2, admin_notes = $3 
+                 WHERE id = $4`,
+                [status, adminUserId, admin_notes, requestId]
+            );
+
+            // If approved, update user's account_verified status
+            if (status === 'approved') {
+                await pool.query(
+                    'UPDATE users SET account_verified = true WHERE id = $1',
+                    [user_id]
+                );
+            }
+
+            await pool.query('COMMIT');
+
+            // Get updated request data
+            const updatedRequest = await pool.query(
+                `SELECT 
+                    avr.id,
+                    avr.user_id,
+                    avr.status,
+                    avr.requested_at,
+                    avr.reviewed_at,
+                    avr.reviewed_by,
+                    avr.admin_notes,
+                    u.first_name,
+                    u.last_name,
+                    u.email,
+                    u.account_verified
+                FROM account_verification_requests avr
+                JOIN users u ON avr.user_id = u.id
+                WHERE avr.id = $1`,
+                [requestId]
+            );
+
+            res.json({
+                message: `Verification request ${status} successfully`,
+                request: updatedRequest.rows[0]
+            });
+
+        } catch (error) {
+            await pool.query('ROLLBACK');
+            throw error;
+        }
+
+    } catch (error) {
+        console.error('Update verification request error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

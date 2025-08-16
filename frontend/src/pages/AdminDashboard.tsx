@@ -50,8 +50,8 @@ import {
   Receipt,
   CheckCircle,
   Cancel as CancelIcon,
-  ToggleOn,
-  ToggleOff,
+  Verified,
+  Schedule,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, documentsApi } from '../services/api';
@@ -95,6 +95,8 @@ const AdminDashboard: React.FC = () => {
   const [loadingUserTransactions, setLoadingUserTransactions] = useState(false);
   const [allLoans, setAllLoans] = useState<any[]>([]);
   const [loadingAllLoans, setLoadingAllLoans] = useState(false);
+  const [verificationRequests, setVerificationRequests] = useState<any[]>([]);
+  const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -145,7 +147,13 @@ const AdminDashboard: React.FC = () => {
     monthlyRate: '1.0' // Default 1% monthly rate
   });
   const [creatingLoan, setCreatingLoan] = useState(false);
-  const [verificationLoading, setVerificationLoading] = useState<{[key: string]: boolean}>({});
+  
+  // Verification request dialog state
+  const [verificationDialogOpen, setVerificationDialogOpen] = useState(false);
+  const [selectedVerificationRequest, setSelectedVerificationRequest] = useState<any>(null);
+  const [verificationAction, setVerificationAction] = useState<'approved' | 'rejected' | null>(null);
+  const [verificationNotes, setVerificationNotes] = useState('');
+  const [processingVerification, setProcessingVerification] = useState(false);
 
   // Snackbar state for user feedback
   const [snackbar, setSnackbar] = useState<{
@@ -160,6 +168,11 @@ const AdminDashboard: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+    // If switching to a tab other than the user details tab (index 3), clear the selected user
+    if (newValue !== 3) {
+      setSelectedUser(null);
+      setUserDetailsTabValue(0); // Reset user details sub-tab
+    }
   };
 
   const handleUserDetailsTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -194,6 +207,19 @@ const AdminDashboard: React.FC = () => {
       setError('Failed to fetch loans');
     } finally {
       setLoadingAllLoans(false);
+    }
+  };
+
+  const fetchVerificationRequests = async () => {
+    try {
+      setLoadingVerificationRequests(true);
+      const requests = await adminApi.getVerificationRequests();
+      setVerificationRequests(requests);
+    } catch (err) {
+      console.error('Verification requests fetch error:', err);
+      setError('Failed to fetch verification requests');
+    } finally {
+      setLoadingVerificationRequests(false);
     }
   };
 
@@ -471,44 +497,54 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleToggleVerification = async (userId: string, currentStatus: boolean) => {
+  const handleVerificationRequest = async () => {
+    if (!selectedVerificationRequest || !verificationAction) return;
+    
     try {
-      setVerificationLoading(prev => ({ ...prev, [userId]: true }));
-      await adminApi.toggleUserVerification(userId, !currentStatus);
-      // Refresh users list to show updated status
-      await fetchUsers();
+      setProcessingVerification(true);
+      await adminApi.updateVerificationRequest(
+        selectedVerificationRequest.id,
+        verificationAction,
+        verificationNotes || undefined
+      );
+      
+      // Refresh data
+      await Promise.all([fetchVerificationRequests(), fetchUsers()]);
+      
+      // Close dialog and reset state
+      setVerificationDialogOpen(false);
+      setSelectedVerificationRequest(null);
+      setVerificationAction(null);
+      setVerificationNotes('');
       
       // Show success message
-      const action = !currentStatus ? 'verified' : 'unverified';
       setSnackbar({
         open: true,
-        message: `User account ${action} successfully`,
+        message: `Verification request ${verificationAction} successfully`,
         severity: 'success'
       });
     } catch (error: any) {
-      console.error('Verification toggle error:', error);
-      
-      // Show error message
-      let errorMessage = 'Failed to update verification status';
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
+      console.error('Verification request error:', error);
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message: error.response?.data?.error || 'Failed to process verification request',
         severity: 'error'
       });
     } finally {
-      setVerificationLoading(prev => ({ ...prev, [userId]: false }));
+      setProcessingVerification(false);
     }
+  };
+
+  const openVerificationDialog = (request: any, action: 'approved' | 'rejected') => {
+    setSelectedVerificationRequest(request);
+    setVerificationAction(action);
+    setVerificationDialogOpen(true);
   };
 
   useEffect(() => {
     fetchUsers();
     fetchAllLoans();
+    fetchVerificationRequests();
   }, []);
 
   const formatCurrency = (value: string | number) => {
@@ -522,7 +558,12 @@ const AdminDashboard: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       {/* Navigation Bar */}
-      <AppNavigation />
+      <AppNavigation 
+        onTabChange={(tabIndex) => {
+          // Navigate back to dashboard with the selected tab
+          navigate('/dashboard', { state: { selectedTab: tabIndex } });
+        }}
+      />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         {/* Error State */}
@@ -557,17 +598,23 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-0"
                 />
                 <Tab 
-                  icon={<AccountBalance />} 
-                  label="All Loans" 
+                  icon={<Verified />} 
+                  label="Verification Requests" 
                   id="admin-tab-1"
                   aria-controls="admin-tabpanel-1"
+                />
+                <Tab 
+                  icon={<AccountBalance />} 
+                  label="All Loans" 
+                  id="admin-tab-2"
+                  aria-controls="admin-tabpanel-2"
                 />
                 {selectedUser && (
                   <Tab 
                     icon={<Visibility />} 
                     label={`${selectedUser.firstName} ${selectedUser.lastName}`}
-                    id="admin-tab-2"
-                    aria-controls="admin-tabpanel-2"
+                    id="admin-tab-3"
+                    aria-controls="admin-tabpanel-3"
                   />
                 )}
               </Tabs>
@@ -608,34 +655,12 @@ const AdminDashboard: React.FC = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Chip 
-                                  icon={user.account_verified ? <CheckCircle /> : <CancelIcon />}
-                                  label={user.account_verified ? 'Verified' : 'Unverified'}
-                                  color={user.account_verified ? 'success' : 'default'}
-                                  size="small"
-                                />
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleToggleVerification(user.id, user.account_verified)}
-                                  disabled={verificationLoading[user.id]}
-                                  sx={{ 
-                                    color: user.account_verified ? 'error.main' : 'success.main',
-                                    '&:hover': {
-                                      backgroundColor: user.account_verified ? 'error.light' : 'success.light',
-                                      opacity: 0.1
-                                    }
-                                  }}
-                                >
-                                  {verificationLoading[user.id] ? (
-                                    <CircularProgress size={16} />
-                                  ) : user.account_verified ? (
-                                    <ToggleOff />
-                                  ) : (
-                                    <ToggleOn />
-                                  )}
-                                </IconButton>
-                              </Box>
+                              <Chip 
+                                icon={user.account_verified ? <CheckCircle /> : <CancelIcon />}
+                                label={user.account_verified ? 'Verified' : 'Unverified'}
+                                color={user.account_verified ? 'success' : 'default'}
+                                size="small"
+                              />
                             </TableCell>
                             <TableCell>
                               {(() => {
@@ -649,7 +674,7 @@ const AdminDashboard: React.FC = () => {
                                 startIcon={<Visibility />}
                                 onClick={() => {
                                   fetchUserDetails(user.id);
-                                  setTabValue(2);
+                                  setTabValue(3);
                                 }}
                               >
                                 View Details
@@ -665,6 +690,126 @@ const AdminDashboard: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
+              {/* Verification Requests Tab */}
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6">
+                      ✅ Account Verification Requests
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      onClick={fetchVerificationRequests}
+                      disabled={loadingVerificationRequests}
+                      startIcon={loadingVerificationRequests ? <CircularProgress size={16} /> : undefined}
+                    >
+                      {loadingVerificationRequests ? 'Loading...' : 'Refresh'}
+                    </Button>
+                  </Box>
+                  
+                  {loadingVerificationRequests ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : verificationRequests.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Schedule sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        No Verification Requests
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        All users are verified or no requests have been submitted.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <TableContainer component={Paper}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>User</TableCell>
+                            <TableCell>Email</TableCell>
+                            <TableCell>Requested</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {verificationRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {request.first_name} {request.last_name}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" color="text.secondary">
+                                  {request.email}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {new Date(request.requested_at).toLocaleDateString()}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                                  color={
+                                    request.status === 'pending' ? 'warning' :
+                                    request.status === 'approved' ? 'success' : 'error'
+                                  }
+                                  size="small"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                {request.status === 'pending' ? (
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="success"
+                                      onClick={() => openVerificationDialog(request, 'approved')}
+                                      startIcon={<CheckCircle />}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      color="error"
+                                      onClick={() => openVerificationDialog(request, 'rejected')}
+                                      startIcon={<CancelIcon />}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </Box>
+                                ) : (
+                                  <Box>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {request.status === 'approved' ? 'Approved' : 'Rejected'}
+                                      {request.reviewer_first_name && (
+                                        <> by {request.reviewer_first_name} {request.reviewer_last_name}</>
+                                      )}
+                                    </Typography>
+                                    {request.admin_notes && (
+                                      <Typography variant="caption" display="block" color="text.secondary">
+                                        Notes: {request.admin_notes}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
               {/* All Loans Tab */}
               <Card>
                 <CardContent>
@@ -780,7 +925,7 @@ const AdminDashboard: React.FC = () => {
                                     size="small"
                                     onClick={() => {
                                       fetchUserDetails(loan.user_id);
-                                      setTabValue(2);
+                                      setTabValue(3);
                                       setUserDetailsTabValue(0); // Start with loans tab
                                     }}
                                     color="primary"
@@ -806,7 +951,7 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </TabPanel>
 
-            <TabPanel value={tabValue} index={2}>
+            <TabPanel value={tabValue} index={3}>
               {/* User Details Tab */}
               {selectedUser && (
                 <Box>
@@ -1667,6 +1812,102 @@ const AdminDashboard: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setTransactionsModalOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Verification Request Dialog */}
+      <Dialog 
+        open={verificationDialogOpen} 
+        onClose={() => {
+          setVerificationDialogOpen(false);
+          setSelectedVerificationRequest(null);
+          setVerificationAction(null);
+          setVerificationNotes('');
+        }} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          background: verificationAction === 'approved' 
+            ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
+            : 'linear-gradient(135deg, #EF4444 0%, #F87171 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          {verificationAction === 'approved' ? <CheckCircle /> : <CancelIcon />}
+          {verificationAction === 'approved' ? 'Approve' : 'Reject'} Account Verification
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedVerificationRequest && (
+            <Box>
+              <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+                <Typography variant="h6" gutterBottom>
+                  👤 {selectedVerificationRequest.first_name} {selectedVerificationRequest.last_name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  📧 {selectedVerificationRequest.email}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  📅 Requested: {new Date(selectedVerificationRequest.requested_at).toLocaleDateString()}
+                </Typography>
+              </Box>
+              
+              <Typography variant="body1" gutterBottom>
+                Are you sure you want to <strong>{verificationAction}</strong> this account verification request?
+              </Typography>
+              
+              {verificationAction === 'approved' && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  This will mark the user's account as verified and grant them full access to platform features.
+                </Typography>
+              )}
+              
+              {verificationAction === 'rejected' && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  This will reject the verification request. The user will remain unverified and can submit a new request.
+                </Typography>
+              )}
+
+              <TextField
+                fullWidth
+                label="Admin Notes (Optional)"
+                multiline
+                rows={3}
+                value={verificationNotes}
+                onChange={(e) => setVerificationNotes(e.target.value)}
+                placeholder="Add any notes about this decision..."
+                sx={{ mt: 2 }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button 
+            onClick={() => {
+              setVerificationDialogOpen(false);
+              setSelectedVerificationRequest(null);
+              setVerificationAction(null);
+              setVerificationNotes('');
+            }}
+            disabled={processingVerification}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleVerificationRequest}
+            variant="contained"
+            disabled={processingVerification}
+            startIcon={processingVerification ? <CircularProgress size={16} /> : 
+              (verificationAction === 'approved' ? <CheckCircle /> : <CancelIcon />)}
+            color={verificationAction === 'approved' ? 'success' : 'error'}
+          >
+            {processingVerification 
+              ? 'Processing...' 
+              : `${verificationAction === 'approved' ? 'Approve' : 'Reject'} Request`
+            }
+          </Button>
         </DialogActions>
       </Dialog>
 
