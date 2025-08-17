@@ -140,7 +140,7 @@ export const loansApi = {
   },
 
   getLoanPerformance: async (loanId: string) => {
-    const response = await api.get(`/loans/${loanId}/performance`);
+    const response = await api.get(`/loans/${loanId}/analytics`);
     return response.data;
   },
 
