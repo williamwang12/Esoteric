@@ -1016,7 +1016,7 @@ const AdminDashboard: React.FC = () => {
                                     No Transactions
                                   </Typography>
                                   <Typography variant="body2" sx={{ color: '#9ca3af' }}>
-                                    No transactions found for this user.
+                                    This user doesn't have a loan account yet, so there's no transaction history to display.
                                   </Typography>
                                 </Box>
                               )}
@@ -1471,7 +1471,19 @@ const AdminDashboard: React.FC = () => {
       </Dialog>
 
       {/* Transaction Dialog */}
-      <Dialog open={transactionDialogOpen} onClose={() => setTransactionDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={transactionDialogOpen} 
+        onClose={() => setTransactionDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          }
+        }}
+      >
         <DialogTitle sx={{ 
           background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
           color: 'white',
@@ -1482,27 +1494,64 @@ const AdminDashboard: React.FC = () => {
           <AttachMoney />
           Add Transaction
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
           {selectedLoanForTransaction && (
-            <Box sx={{ mb: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
-              <Typography variant="h6" gutterBottom>
+            <Box sx={{ mb: 2, p: 2, backgroundColor: '#2d2d2d', borderRadius: 1, border: '1px solid #444' }}>
+              <Typography variant="h6" gutterBottom sx={{ color: '#e0e0e0' }}>
                 📋 Account: {selectedLoanForTransaction.account_number}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                 {selectedLoanForTransaction.user?.firstName || selectedLoanForTransaction.first_name} {selectedLoanForTransaction.user?.lastName || selectedLoanForTransaction.last_name}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                 Current Balance: {formatCurrency(selectedLoanForTransaction.current_balance)}
               </Typography>
             </Box>
           )}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <FormControl fullWidth>
-              <InputLabel>Transaction Type</InputLabel>
+              <InputLabel sx={{ color: '#9ca3af', '&.Mui-focused': { color: '#10B981' } }}>
+                Transaction Type
+              </InputLabel>
               <Select
                 value={transactionForm.transactionType}
                 label="Transaction Type"
                 onChange={(e) => setTransactionForm(prev => ({ ...prev, transactionType: e.target.value }))}
+                sx={{
+                  backgroundColor: '#2d2d2d',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#444',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                  },
+                  '& .MuiSelect-select': {
+                    color: '#e0e0e0',
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: '#2d2d2d',
+                      border: '1px solid #444',
+                      '& .MuiMenuItem-root': {
+                        color: '#e0e0e0',
+                        '&:hover': {
+                          backgroundColor: '#3d3d3d',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: '#10B981',
+                          '&:hover': {
+                            backgroundColor: '#059669',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
               >
                 <MenuItem value="monthly_payment">Monthly Payment</MenuItem>
                 <MenuItem value="bonus">Bonus Payment</MenuItem>
@@ -1518,7 +1567,30 @@ const AdminDashboard: React.FC = () => {
               fullWidth
               required
               InputProps={{
-                startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+                startAdornment: <Typography sx={{ mr: 1, color: '#9ca3af' }}>$</Typography>
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#2d2d2d',
+                  '& fieldset': {
+                    borderColor: '#444',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#10B981',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: '#9ca3af',
+                  '&.Mui-focused': {
+                    color: '#10B981',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: '#e0e0e0',
+                },
               }}
             />
 
@@ -1530,6 +1602,32 @@ const AdminDashboard: React.FC = () => {
               multiline
               rows={2}
               placeholder="Optional description for this transaction"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#2d2d2d',
+                  '& fieldset': {
+                    borderColor: '#444',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#10B981',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: '#9ca3af',
+                  '&.Mui-focused': {
+                    color: '#10B981',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: '#e0e0e0',
+                  '&::placeholder': {
+                    color: '#6b7280',
+                  },
+                },
+              }}
             />
 
             <TextField
@@ -1541,6 +1639,29 @@ const AdminDashboard: React.FC = () => {
               InputLabelProps={{
                 shrink: true,
               }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#2d2d2d',
+                  '& fieldset': {
+                    borderColor: '#444',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#10B981',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: '#9ca3af',
+                  '&.Mui-focused': {
+                    color: '#10B981',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: '#e0e0e0',
+                },
+              }}
             />
 
             {transactionForm.transactionType === 'bonus' && (
@@ -1551,15 +1672,46 @@ const AdminDashboard: React.FC = () => {
                 onChange={(e) => setTransactionForm(prev => ({ ...prev, bonusPercentage: e.target.value }))}
                 fullWidth
                 InputProps={{
-                  endAdornment: <Typography sx={{ ml: 1, color: 'text.secondary' }}>%</Typography>
+                  endAdornment: <Typography sx={{ ml: 1, color: '#9ca3af' }}>%</Typography>
                 }}
                 helperText="Enter percentage (e.g., 0.5 for 0.5%)"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#2d2d2d',
+                    '& fieldset': {
+                      borderColor: '#444',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#10B981',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#10B981',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#9ca3af',
+                    '&.Mui-focused': {
+                      color: '#10B981',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#e0e0e0',
+                  },
+                  '& .MuiFormHelperText-root': {
+                    color: '#9ca3af',
+                  },
+                }}
               />
             )}
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setTransactionDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ backgroundColor: '#1a1a1a', borderTop: '1px solid #333' }}>
+          <Button 
+            onClick={() => setTransactionDialogOpen(false)}
+            sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#2d2d2d' } }}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleSaveTransaction}
             variant="contained"
@@ -1578,7 +1730,19 @@ const AdminDashboard: React.FC = () => {
       </Dialog>
 
       {/* Create Loan Dialog */}
-      <Dialog open={createLoanDialogOpen} onClose={() => setCreateLoanDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={createLoanDialogOpen} 
+        onClose={() => setCreateLoanDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          }
+        }}
+      >
         <DialogTitle sx={{ 
           background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
           color: 'white',
@@ -1589,14 +1753,14 @@ const AdminDashboard: React.FC = () => {
           <AccountBalance />
           Create Loan Account
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
           {selectedUser && (
             <Box sx={{ pt: 2 }}>
-              <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
-                <Typography variant="h6" gutterBottom>
+              <Box sx={{ mb: 3, p: 2, backgroundColor: '#2d2d2d', borderRadius: 1, border: '1px solid #444' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#e0e0e0' }}>
                   👤 {selectedUser.firstName} {selectedUser.lastName}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                   {selectedUser.email}
                 </Typography>
               </Box>
@@ -1610,9 +1774,35 @@ const AdminDashboard: React.FC = () => {
                   fullWidth
                   required
                   InputProps={{
-                    startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>$</Typography>
+                    startAdornment: <Typography sx={{ mr: 1, color: '#9ca3af' }}>$</Typography>
                   }}
                   helperText="Initial loan amount"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#2d2d2d',
+                      '& fieldset': {
+                        borderColor: '#444',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#6B46C1',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6B46C1',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#9ca3af',
+                      '&.Mui-focused': {
+                        color: '#6B46C1',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      color: '#e0e0e0',
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#9ca3af',
+                    },
+                  }}
                 />
                 
                 <TextField
@@ -1622,16 +1812,47 @@ const AdminDashboard: React.FC = () => {
                   onChange={(e) => setCreateLoanForm(prev => ({ ...prev, monthlyRate: e.target.value }))}
                   fullWidth
                   InputProps={{
-                    endAdornment: <Typography sx={{ ml: 1, color: 'text.secondary' }}>%</Typography>
+                    endAdornment: <Typography sx={{ ml: 1, color: '#9ca3af' }}>%</Typography>
                   }}
                   helperText="Monthly interest rate (e.g., 1.0 for 1% per month)"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#2d2d2d',
+                      '& fieldset': {
+                        borderColor: '#444',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#6B46C1',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6B46C1',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#9ca3af',
+                      '&.Mui-focused': {
+                        color: '#6B46C1',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      color: '#e0e0e0',
+                    },
+                    '& .MuiFormHelperText-root': {
+                      color: '#9ca3af',
+                    },
+                  }}
                 />
               </Box>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateLoanDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ backgroundColor: '#1a1a1a', borderTop: '1px solid #333' }}>
+          <Button 
+            onClick={() => setCreateLoanDialogOpen(false)}
+            sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#2d2d2d' } }}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleCreateLoan}
             variant="contained"
