@@ -317,31 +317,16 @@ const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({ analytics, loan
           <Card>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Timeline sx={{ fontSize: 32, color: theme.palette.info.main, mr: 1 }} />
+                <AttachMoney sx={{ fontSize: 32, color: theme.palette.info.main, mr: 1 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Performance Score
+                  % Return
                 </Typography>
               </Box>
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="h3" sx={{ fontWeight: 800, color: theme.palette.info.main, mb: 1 }}>
-                  {Math.min(100, Math.max(0, (parseFloat(growthRate) / 10) * 100)).toFixed(0)}
-                </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={Math.min(100, Math.max(0, (parseFloat(growthRate) / 10) * 100))} 
-                  sx={{ 
-                    height: 8, 
-                    borderRadius: 4,
-                    backgroundColor: alpha(theme.palette.info.main, 0.2),
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: theme.palette.info.main,
-                      borderRadius: 4,
-                    }
-                  }} 
-                />
-              </Box>
+              <Typography variant="h3" sx={{ fontWeight: 800, color: theme.palette.info.main, mb: 1 }}>
+                +{growthRate}%
+              </Typography>
               <Typography variant="body2" color="text.secondary">
-                Based on growth rate
+                Overall return on investment
               </Typography>
             </CardContent>
           </Card>
@@ -353,19 +338,24 @@ const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({ analytics, loan
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <ShowChart sx={{ fontSize: 32, color: theme.palette.secondary.main, mr: 1 }} />
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  Risk Level
+                  % Change
                 </Typography>
               </Box>
-              <Box sx={{ mb: 2 }}>
-                <Chip 
-                  label="Conservative" 
-                  color="success" 
-                  variant="filled"
-                  sx={{ fontWeight: 600, mb: 1 }}
-                />
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                {trend === 'up' ? (
+                  <TrendingUp sx={{ color: theme.palette.success.main, fontSize: 24, mr: 0.5 }} />
+                ) : (
+                  <TrendingDown sx={{ color: theme.palette.error.main, fontSize: 24, mr: 0.5 }} />
+                )}
+                <Typography variant="h3" sx={{ 
+                  fontWeight: 800, 
+                  color: trend === 'up' ? theme.palette.success.main : theme.palette.error.main
+                }}>
+                  {trend === 'up' ? '+' : ''}{trendPercentage}%
+                </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Stable growth pattern
+                vs previous period
               </Typography>
             </CardContent>
           </Card>

@@ -813,16 +813,6 @@ const Dashboard: React.FC = () => {
                           Comprehensive performance insights and advanced metrics
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 800 }}>
-                            {((analyticsData.analytics.currentBalance - analyticsData.analytics.totalPrincipal) / analyticsData.analytics.totalPrincipal * 100).toFixed(1)}%
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Total Return
-                          </Typography>
-                        </Box>
-                      </Box>
                     </Box>
 
                     {/* Portfolio Dashboard */}
