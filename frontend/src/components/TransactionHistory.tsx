@@ -199,13 +199,31 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
         </Box>
 
         {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Type</InputLabel>
             <Select
               value={filters.type}
               label="Type"
               onChange={(e) => handleFilterChange('type', e.target.value)}
+              sx={{
+                backgroundColor: 'background.paper',
+                '& .MuiSelect-select': {
+                  backgroundColor: 'background.paper',
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  backgroundColor: 'background.paper',
+                },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    backgroundColor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }
+                }
+              }}
             >
               <MenuItem value="">All Types</MenuItem>
               <MenuItem value="loan">Initial Loan</MenuItem>
@@ -235,9 +253,13 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
 
           <Button
             variant="outlined"
-            size="small"
             onClick={handleClearFilters}
             disabled={!filters.type && !filters.startDate && !filters.endDate}
+            sx={{
+              height: '40px', // Match the height of small-sized FormControl
+              minHeight: '40px',
+              px: 2,
+            }}
           >
             Clear Filters
           </Button>
