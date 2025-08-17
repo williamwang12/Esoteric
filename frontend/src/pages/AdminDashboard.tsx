@@ -34,7 +34,6 @@ import {
   Upload,
   Download,
   Delete,
-  Visibility,
   People,
   Description,
   AccountBalance,
@@ -91,8 +90,6 @@ const AdminDashboard: React.FC = () => {
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
-  const [allLoans, setAllLoans] = useState<any[]>([]);
-  const [loadingAllLoans, setLoadingAllLoans] = useState(false);
   const [verificationRequests, setVerificationRequests] = useState<any[]>([]);
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -195,18 +192,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchAllLoans = async () => {
-    try {
-      setLoadingAllLoans(true);
-      const loansData = await adminApi.getAllLoans();
-      setAllLoans(loansData.loans);
-    } catch (err) {
-      console.error('All loans fetch error:', err);
-      setError('Failed to fetch loans');
-    } finally {
-      setLoadingAllLoans(false);
-    }
-  };
 
   const fetchVerificationRequests = async () => {
     try {
@@ -345,7 +330,6 @@ const AdminDashboard: React.FC = () => {
         if (selectedUser) {
           await fetchUserDetails(selectedUser.id);
         }
-        await fetchAllLoans(); // Refresh all loans data
       }
 
       setLoanEditDialogOpen(false);
@@ -370,7 +354,6 @@ const AdminDashboard: React.FC = () => {
       if (selectedUser) {
         await fetchUserDetails(selectedUser.id);
       }
-      await fetchAllLoans(); // Refresh all loans data
     } catch (error) {
       console.error('Loan deletion error:', error);
     }
@@ -411,7 +394,6 @@ const AdminDashboard: React.FC = () => {
       if (selectedUser) {
         await fetchUserDetails(selectedUser.id);
       }
-      await fetchAllLoans(); // Refresh all loans data
 
       setTransactionDialogOpen(false);
       setSelectedLoanForTransaction(null);
@@ -422,6 +404,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const fetchLoanTransactions = async (loanId: string, loanData?: any) => {
     try {
       setLoadingTransactions(true);
@@ -468,7 +451,6 @@ const AdminDashboard: React.FC = () => {
       
       // Refresh user loan data
       await fetchUserDetails(selectedUser.id);
-      await fetchAllLoans(); // Also refresh all loans data
       
       // Reset form and close dialog
       setCreateLoanForm({
@@ -543,7 +525,6 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-    fetchAllLoans();
     fetchVerificationRequests();
   }, []);
 
@@ -616,12 +597,6 @@ const AdminDashboard: React.FC = () => {
                   label="Verification Requests" 
                   id="admin-tab-1"
                   aria-controls="admin-tabpanel-1"
-                />
-                <Tab 
-                  icon={<AccountBalance />} 
-                  label="All Loans" 
-                  id="admin-tab-2"
-                  aria-controls="admin-tabpanel-2"
                 />
               </Tabs>
             </Box>
@@ -753,21 +728,34 @@ const AdminDashboard: React.FC = () => {
                     {selectedUser ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                         {/* User Header */}
-                        <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
-                          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
                             👤 {selectedUser.firstName} {selectedUser.lastName}
                           </Typography>
-                          <Typography variant="body1" color="text.secondary">
+                          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                             {selectedUser.email}
                           </Typography>
                         </Box>
 
                         {/* User Details Subtabs */}
-                        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                        <Box sx={{ mb: 3 }}>
                           <Tabs 
                             value={userDetailsTabValue} 
                             onChange={handleUserDetailsTabChange}
                             aria-label="user details tabs"
+                            variant="fullWidth"
+                            sx={{
+                              '& .MuiTabs-indicator': {
+                                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                              },
+                              '& .MuiTab-root': {
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&.Mui-selected': {
+                                  color: 'primary.main',
+                                },
+                              },
+                            }}
                           >
                             <Tab 
                               icon={<AccountBalance />} 
@@ -792,56 +780,86 @@ const AdminDashboard: React.FC = () => {
                           {/* User Loans Subtab */}
                           {userDetailsTabValue === 0 && (
                             <Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                  💳 Loan Accounts
-                                </Typography>
-                              </Box>
-                              
                               {userLoans.length > 0 ? (
-                                <TableContainer component={Paper} sx={{ mb: 4 }}>
+                                <TableContainer sx={{ 
+                                  borderRadius: 2, 
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
+                                  backgroundColor: '#1a1a1a',
+                                  border: '1px solid #333',
+                                }}>
                                   <Table size="small">
                                     <TableHead>
-                                      <TableRow>
-                                        <TableCell>Account Number</TableCell>
-                                        <TableCell>Principal</TableCell>
-                                        <TableCell>Current Balance</TableCell>
-                                        <TableCell>Monthly Rate</TableCell>
-                                        <TableCell>Actions</TableCell>
+                                      <TableRow sx={{ backgroundColor: '#2d2d2d' }}>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Account Number</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Principal</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Current Balance</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Monthly Rate</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Actions</TableCell>
                                       </TableRow>
                                     </TableHead>
                                     <TableBody>
                                       {userLoans.map((loan) => (
-                                        <TableRow key={loan.id} hover>
-                                          <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                                        <TableRow key={loan.id} hover sx={{ 
+                                          '&:hover': { backgroundColor: '#333' },
+                                          backgroundColor: '#1a1a1a'
+                                        }}>
+                                          <TableCell sx={{ 
+                                            fontFamily: 'monospace', 
+                                            fontWeight: 600, 
+                                            color: '#6B46C1',
+                                            borderBottom: '1px solid #333'
+                                          }}>
                                             {loan.account_number}
                                           </TableCell>
-                                          <TableCell>{formatCurrency(loan.principal_amount)}</TableCell>
-                                          <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
+                                            {formatCurrency(loan.principal_amount)}
+                                          </TableCell>
+                                          <TableCell sx={{ fontWeight: 600, color: '#10B981', borderBottom: '1px solid #333' }}>
                                             {formatCurrency(loan.current_balance)}
                                           </TableCell>
-                                          <TableCell>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
                                             <Chip 
                                               label={`${(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%`}
-                                              color="info"
+                                              sx={{ 
+                                                fontWeight: 600,
+                                                backgroundColor: '#374151',
+                                                color: '#60A5FA',
+                                                border: '1px solid #4B5563'
+                                              }}
                                               size="small"
                                             />
                                           </TableCell>
-                                          <TableCell>
-                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
                                               <IconButton
                                                 size="small"
                                                 onClick={() => handleEditLoan(loan)}
-                                                color="primary"
                                                 title="Edit Loan"
+                                                sx={{ 
+                                                  color: '#6B46C1',
+                                                  '&:hover': { 
+                                                    backgroundColor: '#6B46C1', 
+                                                    color: 'white',
+                                                    transform: 'scale(1.1)'
+                                                  },
+                                                  transition: 'all 0.2s'
+                                                }}
                                               >
                                                 <Edit />
                                               </IconButton>
                                               <IconButton
                                                 size="small"
                                                 onClick={() => handleAddTransaction(loan)}
-                                                color="secondary"
                                                 title="Add Transaction"
+                                                sx={{ 
+                                                  color: '#10B981',
+                                                  '&:hover': { 
+                                                    backgroundColor: '#10B981', 
+                                                    color: 'white',
+                                                    transform: 'scale(1.1)'
+                                                  },
+                                                  transition: 'all 0.2s'
+                                                }}
                                               >
                                                 <Add />
                                               </IconButton>
@@ -853,11 +871,19 @@ const AdminDashboard: React.FC = () => {
                                   </Table>
                                 </TableContainer>
                               ) : (
-                                <Box sx={{ textAlign: 'center', py: 6 }}>
-                                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                                <Box sx={{ 
+                                  textAlign: 'center', 
+                                  py: 6,
+                                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                                  borderRadius: 2,
+                                  border: '2px dashed #444',
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
+                                }}>
+                                  <AccountBalance sx={{ fontSize: 48, color: '#6B46C1', mb: 2 }} />
+                                  <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
                                     No Loan Account
                                   </Typography>
-                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                                  <Typography variant="body2" sx={{ color: '#9ca3af', mb: 3 }}>
                                     This user doesn't have a loan account yet.
                                   </Typography>
                                   <Button
@@ -867,9 +893,13 @@ const AdminDashboard: React.FC = () => {
                                     size="large"
                                     sx={{ 
                                       background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                      boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
                                       '&:hover': {
                                         background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                                      }
+                                        boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
+                                        transform: 'translateY(-1px)',
+                                      },
+                                      transition: 'all 0.2s'
                                     }}
                                   >
                                     Create Loan Account
@@ -882,10 +912,7 @@ const AdminDashboard: React.FC = () => {
                           {/* User Transactions Subtab */}
                           {userDetailsTabValue === 1 && (
                             <Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                  📋 All Transactions
-                                </Typography>
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
                                 {userLoans.length > 0 && (
                                   <Button
                                     variant="contained"
@@ -893,9 +920,13 @@ const AdminDashboard: React.FC = () => {
                                     onClick={() => handleAddTransaction(userLoans[0])}
                                     sx={{ 
                                       background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                      boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
                                       '&:hover': {
                                         background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                                      }
+                                        boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
+                                        transform: 'translateY(-1px)',
+                                      },
+                                      transition: 'all 0.2s'
                                     }}
                                   >
                                     Add Transaction
@@ -904,50 +935,87 @@ const AdminDashboard: React.FC = () => {
                               </Box>
                               
                               {userTransactions.length > 0 ? (
-                                <TableContainer component={Paper}>
+                                <TableContainer sx={{ 
+                                  borderRadius: 2, 
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
+                                  backgroundColor: '#1a1a1a',
+                                  border: '1px solid #333',
+                                }}>
                                   <Table size="small">
                                     <TableHead>
-                                      <TableRow>
-                                        <TableCell>Date</TableCell>
-                                        <TableCell>Type</TableCell>
-                                        <TableCell>Amount</TableCell>
-                                        <TableCell>Description</TableCell>
+                                      <TableRow sx={{ backgroundColor: '#2d2d2d' }}>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Date</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Type</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Amount</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Description</TableCell>
                                       </TableRow>
                                     </TableHead>
                                     <TableBody>
                                       {userTransactions.map((transaction) => (
-                                        <TableRow key={transaction.id} hover>
-                                          <TableCell>
+                                        <TableRow key={transaction.id} hover sx={{ 
+                                          '&:hover': { backgroundColor: '#333' },
+                                          backgroundColor: '#1a1a1a'
+                                        }}>
+                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
                                             {new Date(transaction.transaction_date).toLocaleDateString()}
                                           </TableCell>
-                                          <TableCell>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
                                             <Chip 
                                               label={transaction.transaction_type.replace('_', ' ')}
-                                              color={
-                                                transaction.transaction_type === 'withdrawal' ? 'error' :
-                                                transaction.transaction_type === 'bonus' ? 'success' :
-                                                transaction.transaction_type === 'loan' ? 'primary' :
-                                                'default'
-                                              }
                                               size="small"
+                                              sx={{ 
+                                                fontWeight: 600, 
+                                                textTransform: 'capitalize',
+                                                backgroundColor: 
+                                                  transaction.transaction_type === 'withdrawal' ? '#7F1D1D' :
+                                                  transaction.transaction_type === 'bonus' ? '#14532D' :
+                                                  transaction.transaction_type === 'loan' ? '#1E3A8A' :
+                                                  '#374151',
+                                                color: 
+                                                  transaction.transaction_type === 'withdrawal' ? '#FCA5A5' :
+                                                  transaction.transaction_type === 'bonus' ? '#86EFAC' :
+                                                  transaction.transaction_type === 'loan' ? '#93C5FD' :
+                                                  '#D1D5DB',
+                                                border: '1px solid',
+                                                borderColor:
+                                                  transaction.transaction_type === 'withdrawal' ? '#991B1B' :
+                                                  transaction.transaction_type === 'bonus' ? '#166534' :
+                                                  transaction.transaction_type === 'loan' ? '#1D4ED8' :
+                                                  '#4B5563'
+                                              }}
                                             />
                                           </TableCell>
                                           <TableCell sx={{ 
-                                            color: transaction.transaction_type === 'withdrawal' ? 'error.main' : 'success.main',
-                                            fontWeight: 600
+                                            color: transaction.transaction_type === 'withdrawal' ? '#F87171' : '#34D399',
+                                            fontWeight: 600,
+                                            fontFamily: 'monospace',
+                                            borderBottom: '1px solid #333'
                                           }}>
                                             {transaction.transaction_type === 'withdrawal' ? '-' : '+'}
                                             {formatCurrency(Math.abs(parseFloat(transaction.amount)))}
                                           </TableCell>
-                                          <TableCell>{transaction.description || '-'}</TableCell>
+                                          <TableCell sx={{ color: '#9ca3af', borderBottom: '1px solid #333' }}>
+                                            {transaction.description || '-'}
+                                          </TableCell>
                                         </TableRow>
                                       ))}
                                     </TableBody>
                                   </Table>
                                 </TableContainer>
                               ) : (
-                                <Box sx={{ textAlign: 'center', py: 4 }}>
-                                  <Typography variant="body1" color="text.secondary">
+                                <Box sx={{ 
+                                  textAlign: 'center', 
+                                  py: 6,
+                                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                                  borderRadius: 2,
+                                  border: '2px dashed #444',
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
+                                }}>
+                                  <Receipt sx={{ fontSize: 48, color: '#10B981', mb: 2 }} />
+                                  <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
+                                    No Transactions
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                                     No transactions found for this user.
                                   </Typography>
                                 </Box>
@@ -958,10 +1026,7 @@ const AdminDashboard: React.FC = () => {
                           {/* User Documents Subtab */}
                           {userDetailsTabValue === 2 && (
                             <Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                <Typography variant="h6" gutterBottom>
-                                  📄 Documents
-                                </Typography>
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
                                 <Button
                                   variant="contained"
                                   startIcon={<Upload />}
@@ -971,9 +1036,13 @@ const AdminDashboard: React.FC = () => {
                                   }}
                                   sx={{ 
                                     background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                    boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
                                     '&:hover': {
                                       background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                                    }
+                                      boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
+                                      transform: 'translateY(-1px)',
+                                    },
+                                    transition: 'all 0.2s'
                                   }}
                                 >
                                   Upload Document
@@ -981,44 +1050,85 @@ const AdminDashboard: React.FC = () => {
                               </Box>
                               
                               {userDocuments.length > 0 ? (
-                                <TableContainer component={Paper}>
+                                <TableContainer sx={{ 
+                                  borderRadius: 2, 
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
+                                  backgroundColor: '#1a1a1a',
+                                  border: '1px solid #333',
+                                }}>
                                   <Table size="small">
                                     <TableHead>
-                                      <TableRow>
-                                        <TableCell>Title</TableCell>
-                                        <TableCell>Category</TableCell>
-                                        <TableCell>Size</TableCell>
-                                        <TableCell>Upload Date</TableCell>
-                                        <TableCell>Actions</TableCell>
+                                      <TableRow sx={{ backgroundColor: '#2d2d2d' }}>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Title</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Category</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Size</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Upload Date</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Actions</TableCell>
                                       </TableRow>
                                     </TableHead>
                                     <TableBody>
                                       {userDocuments.map((doc) => (
-                                        <TableRow key={doc.id} hover>
-                                          <TableCell>{doc.title}</TableCell>
-                                          <TableCell>
-                                            <Chip label={doc.category} size="small" />
+                                        <TableRow key={doc.id} hover sx={{ 
+                                          '&:hover': { backgroundColor: '#333' },
+                                          backgroundColor: '#1a1a1a'
+                                        }}>
+                                          <TableCell sx={{ fontWeight: 600, color: '#6B46C1', borderBottom: '1px solid #333' }}>
+                                            {doc.title}
                                           </TableCell>
-                                          <TableCell>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
+                                            <Chip 
+                                              label={doc.category} 
+                                              size="small" 
+                                              sx={{ 
+                                                fontWeight: 600, 
+                                                textTransform: 'capitalize',
+                                                backgroundColor: '#374151',
+                                                color: '#9333EA',
+                                                border: '1px solid #4B5563'
+                                              }}
+                                            />
+                                          </TableCell>
+                                          <TableCell sx={{ fontFamily: 'monospace', color: '#9ca3af', borderBottom: '1px solid #333' }}>
                                             {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : 'Unknown'}
                                           </TableCell>
-                                          <TableCell>
+                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
                                             {new Date(doc.upload_date).toLocaleDateString()}
                                           </TableCell>
-                                          <TableCell>
-                                            <IconButton
-                                              size="small"
-                                              onClick={() => handleDocumentDownload(doc.id, doc.title)}
-                                            >
-                                              <Download />
-                                            </IconButton>
-                                            <IconButton
-                                              size="small"
-                                              onClick={() => handleDeleteDocument(doc.id)}
-                                              color="error"
-                                            >
-                                              <Delete />
-                                            </IconButton>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
+                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                              <IconButton
+                                                size="small"
+                                                onClick={() => handleDocumentDownload(doc.id, doc.title)}
+                                                title="Download Document"
+                                                sx={{ 
+                                                  color: '#6B46C1',
+                                                  '&:hover': { 
+                                                    backgroundColor: '#6B46C1', 
+                                                    color: 'white',
+                                                    transform: 'scale(1.1)'
+                                                  },
+                                                  transition: 'all 0.2s'
+                                                }}
+                                              >
+                                                <Download />
+                                              </IconButton>
+                                              <IconButton
+                                                size="small"
+                                                onClick={() => handleDeleteDocument(doc.id)}
+                                                title="Delete Document"
+                                                sx={{ 
+                                                  color: '#DC2626',
+                                                  '&:hover': { 
+                                                    backgroundColor: '#DC2626', 
+                                                    color: 'white',
+                                                    transform: 'scale(1.1)'
+                                                  },
+                                                  transition: 'all 0.2s'
+                                                }}
+                                              >
+                                                <Delete />
+                                              </IconButton>
+                                            </Box>
                                           </TableCell>
                                         </TableRow>
                                       ))}
@@ -1026,8 +1136,19 @@ const AdminDashboard: React.FC = () => {
                                   </Table>
                                 </TableContainer>
                               ) : (
-                                <Box sx={{ textAlign: 'center', py: 4 }}>
-                                  <Typography variant="body1" color="text.secondary">
+                                <Box sx={{ 
+                                  textAlign: 'center', 
+                                  py: 6,
+                                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                                  borderRadius: 2,
+                                  border: '2px dashed #444',
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
+                                }}>
+                                  <Description sx={{ fontSize: 48, color: '#9333EA', mb: 2 }} />
+                                  <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
+                                    No Documents
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                                     No documents found for this user.
                                   </Typography>
                                 </Box>
@@ -1179,147 +1300,6 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </TabPanel>
 
-            <TabPanel value={tabValue} index={2}>
-              {/* All Loans Tab */}
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                      🏦 All Loan Accounts
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={fetchAllLoans}
-                      disabled={loadingAllLoans}
-                    >
-                      {loadingAllLoans ? <CircularProgress size={20} /> : 'Refresh'}
-                    </Button>
-                  </Box>
-                  
-                  {loadingAllLoans ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : allLoans.length > 0 ? (
-                    <TableContainer component={Paper}>
-                      <Table>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Account Number</TableCell>
-                            <TableCell>User</TableCell>
-                            <TableCell>Principal</TableCell>
-                            <TableCell>Current Balance</TableCell>
-                            <TableCell>Monthly Rate</TableCell>
-                            <TableCell>Total Bonuses</TableCell>
-                            <TableCell>Total Withdrawals</TableCell>
-                            <TableCell>Transactions</TableCell>
-                            <TableCell>Created</TableCell>
-                            <TableCell>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {allLoans.map((loan) => (
-                            <TableRow key={loan.id} hover>
-                              <TableCell sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                                {loan.account_number}
-                              </TableCell>
-                              <TableCell>
-                                <Box>
-                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                    {loan.user.firstName} {loan.user.lastName}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {loan.user.email}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>{formatCurrency(loan.principal_amount)}</TableCell>
-                              <TableCell sx={{ fontWeight: 600, color: 'primary.main' }}>
-                                {formatCurrency(loan.current_balance)}
-                              </TableCell>
-                              <TableCell>
-                                <Chip 
-                                  label={`${(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%`}
-                                  color="info"
-                                  size="small"
-                                />
-                              </TableCell>
-                              <TableCell sx={{ color: 'success.main', fontWeight: 600 }}>
-                                {formatCurrency(loan.total_bonuses)}
-                              </TableCell>
-                              <TableCell sx={{ color: 'warning.main', fontWeight: 600 }}>
-                                {formatCurrency(loan.total_withdrawals)}
-                              </TableCell>
-                              <TableCell>
-                                <Chip 
-                                  label={`${loan.transactionCount} txns`}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                                {loan.lastTransactionDate && (
-                                  <Typography variant="caption" display="block" color="text.secondary">
-                                    Last: {new Date(loan.lastTransactionDate).toLocaleDateString()}
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {new Date(loan.created_at).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleEditLoan(loan)}
-                                    color="primary"
-                                    title="Edit Loan"
-                                  >
-                                    <Edit />
-                                  </IconButton>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleAddTransaction(loan)}
-                                    color="secondary"
-                                    title="Add Transaction"
-                                  >
-                                    <Add />
-                                  </IconButton>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => fetchLoanTransactions(loan.id, loan)}
-                                    color="info"
-                                    title="View Transactions"
-                                  >
-                                    <Receipt />
-                                  </IconButton>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                      fetchUserDetails(loan.user_id);
-                                      setTabValue(0);
-                                      setUserDetailsTabValue(0); // Start with loans tab
-                                    }}
-                                    color="primary"
-                                    title="View User Details"
-                                  >
-                                    <Visibility />
-                                  </IconButton>
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <Typography variant="body1" color="text.secondary">
-                        No loan accounts found in the system.
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </TabPanel>
           </>
         )}
       </Container>
