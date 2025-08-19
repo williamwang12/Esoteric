@@ -11,6 +11,13 @@ import {
   Fade,
   useTheme,
   alpha,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  InputAdornment,
+  Chip,
 } from '@mui/material';
 import { 
   AccountBalance, 
@@ -22,7 +29,14 @@ import {
   Payment,
   TrendingUp,
   History,
-  Description
+  Description,
+  Search,
+  FilterList,
+  GetApp,
+  InsertDriveFile,
+  PictureAsPdf,
+  Article,
+  Folder
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -68,6 +82,8 @@ const Dashboard: React.FC = () => {
   const [loanData, setLoanData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [documentSearch, setDocumentSearch] = useState('');
+  const [documentCategoryFilter, setDocumentCategoryFilter] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +109,31 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('Download error:', error);
       // You could show a toast notification here
+    }
+  };
+
+  // Filter and search documents
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch = doc.title.toLowerCase().includes(documentSearch.toLowerCase()) ||
+                          doc.category.toLowerCase().includes(documentSearch.toLowerCase());
+    const matchesCategory = !documentCategoryFilter || doc.category === documentCategoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories for filter dropdown
+  const documentCategories = Array.from(new Set(documents.map(doc => doc.category))).sort();
+
+  // Get file type icon
+  const getFileIcon = (filename: string) => {
+    const extension = filename.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return <PictureAsPdf sx={{ color: '#f44336' }} />;
+      case 'doc':
+      case 'docx':
+        return <Article sx={{ color: '#2196f3' }} />;
+      default:
+        return <InsertDriveFile sx={{ color: '#9e9e9e' }} />;
     }
   };
 
@@ -890,42 +931,189 @@ const Dashboard: React.FC = () => {
 
             <TabPanel value={tabValue} index={3}>
               {/* Documents Tab */}
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Your Documents
-                  </Typography>
-                  {documents.length > 0 ? (
-                    <Box sx={{ display: 'grid', gap: 2 }}>
-                      {documents.map((doc) => (
-                        <Card key={doc.id} variant="outlined">
-                          <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box>
-                              <Typography variant="h6">{doc.title}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Category: {doc.category} • Uploaded: {new Date(doc.upload_date).toLocaleDateString()}
-                              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Folder sx={{ fontSize: 32, color: 'primary.main' }} />
+                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                      Document Center
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={`${filteredDocuments.length} documents`}
+                    color="primary"
+                    variant="outlined"
+                  />
+                </Box>
+
+                {/* Search and Filter Controls */}
+                <Card sx={{ 
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`
+                }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <TextField
+                        placeholder="Search documents..."
+                        value={documentSearch}
+                        onChange={(e) => setDocumentSearch(e.target.value)}
+                        size="small"
+                        sx={{ minWidth: 300, flex: 1 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Search sx={{ color: 'text.secondary' }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>Category</InputLabel>
+                        <Select
+                          value={documentCategoryFilter}
+                          label="Category"
+                          onChange={(e) => setDocumentCategoryFilter(e.target.value)}
+                          startAdornment={<FilterList sx={{ color: 'text.secondary', mr: 1 }} />}
+                        >
+                          <MenuItem value="">All Categories</MenuItem>
+                          {documentCategories.map((category) => (
+                            <MenuItem key={category} value={category}>
+                              {category}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      {(documentSearch || documentCategoryFilter) && (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => {
+                            setDocumentSearch('');
+                            setDocumentCategoryFilter('');
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
+
+                {/* Documents Grid */}
+                {filteredDocuments.length > 0 ? (
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 3 }}>
+                    {filteredDocuments.map((doc, index) => (
+                      <Fade in={true} timeout={800 + index * 100} key={doc.id}>
+                        <Card sx={{
+                          position: 'relative',
+                          overflow: 'hidden',
+                          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                          borderRadius: 3,
+                          transition: 'all 0.3s ease-in-out',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: `0 12px 24px ${alpha(theme.palette.primary.main, 0.15)}`,
+                            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                          }
+                        }}>
+                          <CardContent sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+                              <Box sx={{ 
+                                p: 1.5, 
+                                borderRadius: 2, 
+                                background: alpha(theme.palette.primary.main, 0.1),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                {getFileIcon(doc.title)}
+                              </Box>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography 
+                                  variant="h6" 
+                                  sx={{ 
+                                    fontWeight: 600, 
+                                    mb: 0.5,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  title={doc.title}
+                                >
+                                  {doc.title}
+                                </Typography>
+                                <Chip
+                                  label={doc.category}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{ mb: 1 }}
+                                />
+                                <Typography variant="body2" color="text.secondary">
+                                  Uploaded: {new Date(doc.upload_date).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })}
+                                </Typography>
+                              </Box>
                             </Box>
                             <Button
-                              variant="outlined"
-                              size="small"
+                              variant="contained"
+                              fullWidth
+                              startIcon={<GetApp />}
                               onClick={() => handleDocumentDownload(doc.id, doc.title)}
+                              sx={{
+                                mt: 2,
+                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                                '&:hover': {
+                                  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
+                                }
+                              }}
                             >
                               Download
                             </Button>
                           </CardContent>
                         </Card>
-                      ))}
-                    </Box>
-                  ) : (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <Typography variant="body1" color="text.secondary">
-                        No documents available yet.
+                      </Fade>
+                    ))}
+                  </Box>
+                ) : (
+                  <Card sx={{ 
+                    textAlign: 'center', 
+                    py: 8,
+                    background: alpha(theme.palette.background.paper, 0.5),
+                    border: `2px dashed ${alpha(theme.palette.primary.main, 0.2)}`
+                  }}>
+                    <CardContent>
+                      <Description sx={{ fontSize: 64, color: alpha(theme.palette.primary.main, 0.3), mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                        {documents.length === 0 ? 'No documents available yet' : 'No documents match your search'}
                       </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+                      <Typography variant="body2" color="text.secondary">
+                        {documents.length === 0 
+                          ? 'Documents will appear here once they are uploaded to your account'
+                          : 'Try adjusting your search terms or filters'
+                        }
+                      </Typography>
+                      {(documentSearch || documentCategoryFilter) && (
+                        <Button
+                          variant="outlined"
+                          sx={{ mt: 2 }}
+                          onClick={() => {
+                            setDocumentSearch('');
+                            setDocumentCategoryFilter('');
+                          }}
+                        >
+                          Clear All Filters
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </Box>
             </TabPanel>
 
             {isAdmin && (
