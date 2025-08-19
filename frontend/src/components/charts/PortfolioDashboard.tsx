@@ -355,7 +355,7 @@ const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({ analytics, loan
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                vs previous period
+                vs previous 3-month period
               </Typography>
             </CardContent>
           </Card>

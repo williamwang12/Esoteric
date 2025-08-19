@@ -820,17 +820,11 @@ const Dashboard: React.FC = () => {
                     
                     {/* Advanced Metrics */}
                     <Box sx={{ mt: 6 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        Advanced Analytics
-                      </Typography>
                       <AdvancedMetrics analytics={analyticsData.analytics} loanData={loanData} />
                     </Box>
 
                     {/* Original Chart - Now as Historical Overview */}
                     <Box sx={{ mt: 6 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
-                        Historical Growth Overview
-                      </Typography>
                       <Card>
                         <CardContent sx={{ p: 4 }}>
                           <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
