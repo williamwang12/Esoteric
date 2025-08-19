@@ -610,7 +610,7 @@ const AdminDashboard: React.FC = () => {
                   <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                       <Typography variant="h6">
-                        👥 Users
+                        Users
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {filteredUsers.length} of {users.length}
@@ -652,7 +652,12 @@ const AdminDashboard: React.FC = () => {
                     </Box>
 
                     {/* Users List */}
-                    <Box sx={{ flex: 1, overflow: 'auto' }}>
+                    <Box sx={{ 
+                      flex: 1, 
+                      overflow: 'auto',
+                      pr: 2, // Add right padding to create space from scrollbar
+                      mr: -2 // Negative margin to maintain original width
+                    }}>
                       {filteredUsers.length > 0 ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                           {filteredUsers.map((user) => (
@@ -730,7 +735,7 @@ const AdminDashboard: React.FC = () => {
                         {/* User Header */}
                         <Box sx={{ mb: 3 }}>
                           <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
-                            👤 {selectedUser.firstName} {selectedUser.lastName}
+                            {selectedUser.firstName} {selectedUser.lastName}
                           </Typography>
                           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                             {selectedUser.email}
@@ -1186,7 +1191,7 @@ const AdminDashboard: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h6">
-                      ✅ Account Verification Requests
+                      Account Verification Requests
                     </Typography>
                     <Button
                       variant="outlined"
@@ -1498,7 +1503,7 @@ const AdminDashboard: React.FC = () => {
           {selectedLoanForTransaction && (
             <Box sx={{ mb: 2, p: 2, backgroundColor: '#2d2d2d', borderRadius: 1, border: '1px solid #444' }}>
               <Typography variant="h6" gutterBottom sx={{ color: '#e0e0e0' }}>
-                📋 Account: {selectedLoanForTransaction.account_number}
+                Account: {selectedLoanForTransaction.account_number}
               </Typography>
               <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                 {selectedLoanForTransaction.user?.firstName || selectedLoanForTransaction.first_name} {selectedLoanForTransaction.user?.lastName || selectedLoanForTransaction.last_name}
@@ -1758,7 +1763,7 @@ const AdminDashboard: React.FC = () => {
             <Box sx={{ pt: 2 }}>
               <Box sx={{ mb: 3, p: 2, backgroundColor: '#2d2d2d', borderRadius: 1, border: '1px solid #444' }}>
                 <Typography variant="h6" gutterBottom sx={{ color: '#e0e0e0' }}>
-                  👤 {selectedUser.firstName} {selectedUser.lastName}
+                  {selectedUser.firstName} {selectedUser.lastName}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                   {selectedUser.email}
@@ -1886,7 +1891,7 @@ const AdminDashboard: React.FC = () => {
           {selectedLoanForTransactionView && (
             <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
               <Typography variant="h6" gutterBottom>
-                📋 Account: {selectedLoanForTransactionView.account_number}
+                Account: {selectedLoanForTransactionView.account_number}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -2000,7 +2005,7 @@ const AdminDashboard: React.FC = () => {
             <Box>
               <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
                 <Typography variant="h6" gutterBottom>
-                  👤 {selectedVerificationRequest.first_name} {selectedVerificationRequest.last_name}
+                  {selectedVerificationRequest.first_name} {selectedVerificationRequest.last_name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   📧 {selectedVerificationRequest.email}

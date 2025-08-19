@@ -636,7 +636,7 @@ const Dashboard: React.FC = () => {
                       </Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mt: 4 }}>
                         <Box sx={{ p: 3, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                          <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>👥 User Management</Typography>
+                          <Typography variant="h6" sx={{ color: '#EF4444', fontWeight: 600, mb: 1 }}>User Management</Typography>
                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>View all users, verify accounts, and manage customer profiles</Typography>
                         </Box>
                         <Box sx={{ p: 3, background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>

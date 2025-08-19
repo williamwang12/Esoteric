@@ -379,9 +379,6 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
                         {parseFloat(transaction.amount) >= 0 ? '+' : ''}
                         {formatCurrency(transaction.amount)}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Account: {transaction.account_number}
-                      </Typography>
                     </Box>
                   </Box>
                 </CardContent>
