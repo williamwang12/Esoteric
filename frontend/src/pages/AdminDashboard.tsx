@@ -48,6 +48,9 @@ import {
   Schedule,
   Search,
   Clear,
+  AccountBalanceWallet,
+  CalendarMonth,
+  RequestPage,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../services/api';
@@ -139,6 +142,10 @@ const AdminDashboard: React.FC = () => {
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
   const [verificationRequests, setVerificationRequests] = useState<any[]>([]);
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
+  const [loadingWithdrawalRequests, setLoadingWithdrawalRequests] = useState(false);
+  const [meetingRequests, setMeetingRequests] = useState<any[]>([]);
+  const [loadingMeetingRequests, setLoadingMeetingRequests] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -273,6 +280,48 @@ const AdminDashboard: React.FC = () => {
       setError('Failed to fetch verification requests');
     } finally {
       setLoadingVerificationRequests(false);
+    }
+  };
+
+  const fetchWithdrawalRequests = async () => {
+    try {
+      setLoadingWithdrawalRequests(true);
+      const response = await fetch('http://localhost:5002/api/admin/withdrawal-requests', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch withdrawal requests');
+      }
+      const requests = await response.json();
+      setWithdrawalRequests(requests);
+    } catch (err) {
+      console.error('Withdrawal requests fetch error:', err);
+      setError('Failed to fetch withdrawal requests');
+    } finally {
+      setLoadingWithdrawalRequests(false);
+    }
+  };
+
+  const fetchMeetingRequests = async () => {
+    try {
+      setLoadingMeetingRequests(true);
+      const response = await fetch('http://localhost:5002/api/admin/meeting-requests', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch meeting requests');
+      }
+      const requests = await response.json();
+      setMeetingRequests(requests);
+    } catch (err) {
+      console.error('Meeting requests fetch error:', err);
+      setError('Failed to fetch meeting requests');
+    } finally {
+      setLoadingMeetingRequests(false);
     }
   };
 
@@ -626,9 +675,57 @@ const AdminDashboard: React.FC = () => {
     setVerificationDialogOpen(true);
   };
 
+  const updateWithdrawalRequestStatus = async (requestId: string, status: string) => {
+    try {
+      const response = await fetch(`http://localhost:5002/api/admin/withdrawal-requests/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update withdrawal request');
+      }
+
+      // Refresh the withdrawal requests
+      await fetchWithdrawalRequests();
+    } catch (error) {
+      console.error('Update withdrawal request error:', error);
+      setError('Failed to update withdrawal request');
+    }
+  };
+
+  const updateMeetingRequestStatus = async (requestId: string, status: string) => {
+    try {
+      const response = await fetch(`http://localhost:5002/api/admin/meeting-requests/${requestId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update meeting request');
+      }
+
+      // Refresh the meeting requests
+      await fetchMeetingRequests();
+    } catch (error) {
+      console.error('Update meeting request error:', error);
+      setError('Failed to update meeting request');
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchVerificationRequests();
+    fetchWithdrawalRequests();
+    fetchMeetingRequests();
   }, []);
 
   // Removed redundant useEffect - using useMemo for filtering instead
@@ -688,6 +785,18 @@ const AdminDashboard: React.FC = () => {
                   label="Verification Requests" 
                   id="admin-tab-1"
                   aria-controls="admin-tabpanel-1"
+                />
+                <Tab 
+                  icon={<AccountBalanceWallet />} 
+                  label="Withdrawal Requests" 
+                  id="admin-tab-2"
+                  aria-controls="admin-tabpanel-2"
+                />
+                <Tab 
+                  icon={<CalendarMonth />} 
+                  label="Meeting Requests" 
+                  id="admin-tab-3"
+                  aria-controls="admin-tabpanel-3"
                 />
               </Tabs>
             </Box>
@@ -1347,6 +1456,295 @@ const AdminDashboard: React.FC = () => {
                                       </Typography>
                                     )}
                                   </Box>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </TabPanel>
+
+            {/* Withdrawal Requests Tab */}
+            <TabPanel value={tabValue} index={2}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">Withdrawal Requests</Typography>
+                    <Button
+                      startIcon={<AccountBalanceWallet />}
+                      onClick={fetchWithdrawalRequests}
+                      disabled={loadingWithdrawalRequests}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                  {loadingWithdrawalRequests ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>User</TableCell>
+                            <TableCell>Amount</TableCell>
+                            <TableCell>Reason</TableCell>
+                            <TableCell>Priority</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Requested</TableCell>
+                            <TableCell>Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {withdrawalRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {request.first_name} {request.last_name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {request.email}
+                                  </Typography>
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    Account: {request.account_number}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="h6" color="warning.main">
+                                  ${parseFloat(request.amount).toLocaleString()}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Balance: ${parseFloat(request.current_balance).toLocaleString()}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {request.reason}
+                                </Typography>
+                                {request.notes && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Notes: {request.notes}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={request.urgency.toUpperCase()} 
+                                  size="small"
+                                  color={
+                                    request.urgency === 'urgent' ? 'error' : 
+                                    request.urgency === 'high' ? 'warning' : 
+                                    request.urgency === 'normal' ? 'primary' : 'default'
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={request.status.toUpperCase()} 
+                                  size="small"
+                                  color={
+                                    request.status === 'approved' ? 'success' : 
+                                    request.status === 'rejected' ? 'error' : 
+                                    request.status === 'processed' ? 'info' : 'default'
+                                  }
+                                />
+                                {request.admin_notes && (
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    Admin notes: {request.admin_notes}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {new Date(request.created_at).toLocaleDateString()}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(request.created_at).toLocaleTimeString()}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                {request.status === 'pending' && (
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="success"
+                                      onClick={() => updateWithdrawalRequestStatus(request.id, 'approved')}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="error"
+                                      onClick={() => updateWithdrawalRequestStatus(request.id, 'rejected')}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </Box>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </TabPanel>
+
+            {/* Meeting Requests Tab */}
+            <TabPanel value={tabValue} index={3}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">Meeting Requests</Typography>
+                    <Button
+                      startIcon={<CalendarMonth />}
+                      onClick={fetchMeetingRequests}
+                      disabled={loadingMeetingRequests}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                  {loadingMeetingRequests ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>User</TableCell>
+                            <TableCell>Purpose</TableCell>
+                            <TableCell>Preferred Date/Time</TableCell>
+                            <TableCell>Type</TableCell>
+                            <TableCell>Priority</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {meetingRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {request.first_name} {request.last_name}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {request.email}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {request.purpose}
+                                </Typography>
+                                {request.topics && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Topics: {request.topics}
+                                  </Typography>
+                                )}
+                                {request.notes && (
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    Notes: {request.notes}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {new Date(request.preferred_date).toLocaleDateString()}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {request.preferred_time}
+                                </Typography>
+                                {request.scheduled_date && (
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography variant="caption" color="success.main">
+                                      Scheduled: {new Date(request.scheduled_date).toLocaleDateString()} at {request.scheduled_time}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={request.meeting_type.replace('_', ' ').toUpperCase()} 
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={request.urgency.toUpperCase()} 
+                                  size="small"
+                                  color={
+                                    request.urgency === 'urgent' ? 'error' : 
+                                    request.urgency === 'high' ? 'warning' : 
+                                    request.urgency === 'normal' ? 'primary' : 'default'
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Chip 
+                                  label={request.status.toUpperCase()} 
+                                  size="small"
+                                  color={
+                                    request.status === 'scheduled' ? 'success' : 
+                                    request.status === 'completed' ? 'info' : 
+                                    request.status === 'cancelled' ? 'error' : 'default'
+                                  }
+                                />
+                                {request.meeting_link && (
+                                  <Typography variant="caption" display="block" color="primary.main">
+                                    Link provided
+                                  </Typography>
+                                )}
+                                {request.admin_notes && (
+                                  <Typography variant="caption" display="block" color="text.secondary">
+                                    Admin notes: {request.admin_notes}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {request.status === 'pending' && (
+                                  <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="success"
+                                      onClick={() => updateMeetingRequestStatus(request.id, 'scheduled')}
+                                    >
+                                      Schedule
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="error"
+                                      onClick={() => updateMeetingRequestStatus(request.id, 'cancelled')}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </Box>
+                                )}
+                                {request.status === 'scheduled' && (
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => updateMeetingRequestStatus(request.id, 'completed')}
+                                  >
+                                    Mark Complete
+                                  </Button>
                                 )}
                               </TableCell>
                             </TableRow>

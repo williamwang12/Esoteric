@@ -1260,6 +1260,162 @@ app.put('/api/admin/users/:userId/verify', authenticateAdmin, async (req, res) =
     }
 });
 
+// Create withdrawal request
+app.post('/api/withdrawal-requests', authenticateToken, [
+    body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
+    body('reason').isString().isLength({ min: 1 }).withMessage('Reason is required'),
+    body('urgency').optional().isIn(['low', 'normal', 'high', 'urgent']).withMessage('Invalid urgency level'),
+    body('notes').optional().isString().withMessage('Notes must be a string')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { amount, reason, urgency = 'normal', notes } = req.body;
+        const userId = req.user.userId;
+
+        // Get user's loan account to verify they have sufficient balance
+        const loanResult = await pool.query(
+            'SELECT id, current_balance FROM loan_accounts WHERE user_id = $1',
+            [userId]
+        );
+
+        if (loanResult.rows.length === 0) {
+            return res.status(404).json({ error: 'No loan account found' });
+        }
+
+        const loanAccount = loanResult.rows[0];
+        const currentBalance = parseFloat(loanAccount.current_balance);
+
+        if (amount > currentBalance) {
+            return res.status(400).json({ error: 'Withdrawal amount exceeds current balance' });
+        }
+
+        // Create withdrawal request
+        const requestResult = await pool.query(`
+            INSERT INTO withdrawal_requests (user_id, loan_account_id, amount, reason, urgency, notes, status, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, 'pending', NOW())
+            RETURNING *
+        `, [userId, loanAccount.id, amount, reason, urgency, notes]);
+
+        res.status(201).json({
+            message: 'Withdrawal request submitted successfully',
+            request: requestResult.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Withdrawal request error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Create meeting request
+app.post('/api/meeting-requests', authenticateToken, [
+    body('purpose').isString().isLength({ min: 1 }).withMessage('Purpose is required'),
+    body('preferred_date').isISO8601().withMessage('Valid preferred date required'),
+    body('preferred_time').matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid time format required (HH:MM)'),
+    body('meeting_type').optional().isIn(['video', 'phone', 'in_person']).withMessage('Invalid meeting type'),
+    body('urgency').optional().isIn(['low', 'normal', 'high', 'urgent']).withMessage('Invalid urgency level'),
+    body('topics').optional().isString().withMessage('Topics must be a string'),
+    body('notes').optional().isString().withMessage('Notes must be a string')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { 
+            purpose, 
+            preferred_date, 
+            preferred_time, 
+            meeting_type = 'video', 
+            urgency = 'normal', 
+            topics, 
+            notes 
+        } = req.body;
+        const userId = req.user.userId;
+
+        // Create meeting request
+        const requestResult = await pool.query(`
+            INSERT INTO meeting_requests (
+                user_id, purpose, preferred_date, preferred_time, meeting_type, 
+                urgency, topics, notes, status, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
+            RETURNING *
+        `, [userId, purpose, preferred_date, preferred_time, meeting_type, urgency, topics, notes]);
+
+        res.status(201).json({
+            message: 'Meeting request submitted successfully',
+            request: requestResult.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Meeting request error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get user's withdrawal requests
+app.get('/api/withdrawal-requests', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { status, limit = 50, offset = 0 } = req.query;
+
+        let query = `
+            SELECT wr.*, la.account_number, la.current_balance
+            FROM withdrawal_requests wr
+            JOIN loan_accounts la ON wr.loan_account_id = la.id
+            WHERE wr.user_id = $1
+        `;
+        const params = [userId];
+
+        if (status) {
+            query += ' AND wr.status = $2';
+            params.push(status);
+        }
+
+        query += ' ORDER BY wr.created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+        params.push(limit, offset);
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Get withdrawal requests error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get user's meeting requests
+app.get('/api/meeting-requests', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { status, limit = 50, offset = 0 } = req.query;
+
+        let query = 'SELECT * FROM meeting_requests WHERE user_id = $1';
+        const params = [userId];
+
+        if (status) {
+            query += ' AND status = $2';
+            params.push(status);
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+        params.push(limit, offset);
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Get meeting requests error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Get all account verification requests (Admin only)
 app.get('/api/admin/verification-requests', authenticateAdmin, async (req, res) => {
     try {
@@ -1379,6 +1535,150 @@ app.put('/api/admin/verification-requests/:requestId', authenticateAdmin, async 
 
     } catch (error) {
         console.error('Update verification request error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Get all withdrawal requests
+app.get('/api/admin/withdrawal-requests', authenticateAdmin, async (req, res) => {
+    try {
+        const { status, limit = 50, offset = 0 } = req.query;
+
+        let query = `
+            SELECT 
+                wr.*,
+                u.first_name, u.last_name, u.email,
+                la.account_number, la.current_balance
+            FROM withdrawal_requests wr
+            JOIN users u ON wr.user_id = u.id
+            JOIN loan_accounts la ON wr.loan_account_id = la.id
+        `;
+        const params = [];
+
+        if (status) {
+            query += ' WHERE wr.status = $1';
+            params.push(status);
+        }
+
+        query += ' ORDER BY wr.created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+        params.push(limit, offset);
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Admin get withdrawal requests error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Update withdrawal request status
+app.put('/api/admin/withdrawal-requests/:requestId', authenticateAdmin, [
+    body('status').isIn(['pending', 'approved', 'rejected', 'processed']).withMessage('Invalid status'),
+    body('admin_notes').optional().isString().withMessage('Admin notes must be a string')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { requestId } = req.params;
+        const { status, admin_notes } = req.body;
+        const adminUserId = req.user.userId;
+
+        // Update withdrawal request
+        const result = await pool.query(`
+            UPDATE withdrawal_requests 
+            SET status = $1, admin_notes = $2, reviewed_by = $3, reviewed_at = NOW()
+            WHERE id = $4
+            RETURNING *
+        `, [status, admin_notes, adminUserId, requestId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Withdrawal request not found' });
+        }
+
+        res.json({
+            message: 'Withdrawal request updated successfully',
+            request: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Admin update withdrawal request error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Get all meeting requests
+app.get('/api/admin/meeting-requests', authenticateAdmin, async (req, res) => {
+    try {
+        const { status, limit = 50, offset = 0 } = req.query;
+
+        let query = `
+            SELECT 
+                mr.*,
+                u.first_name, u.last_name, u.email
+            FROM meeting_requests mr
+            JOIN users u ON mr.user_id = u.id
+        `;
+        const params = [];
+
+        if (status) {
+            query += ' WHERE mr.status = $1';
+            params.push(status);
+        }
+
+        query += ' ORDER BY mr.created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+        params.push(limit, offset);
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+
+    } catch (error) {
+        console.error('Admin get meeting requests error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Update meeting request status
+app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
+    body('status').isIn(['pending', 'scheduled', 'completed', 'cancelled']).withMessage('Invalid status'),
+    body('scheduled_date').optional().isISO8601().withMessage('Valid scheduled date required'),
+    body('scheduled_time').optional().matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid time format required'),
+    body('meeting_link').optional().isString().withMessage('Meeting link must be a string'),
+    body('admin_notes').optional().isString().withMessage('Admin notes must be a string')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { requestId } = req.params;
+        const { status, scheduled_date, scheduled_time, meeting_link, admin_notes } = req.body;
+        const adminUserId = req.user.userId;
+
+        // Update meeting request
+        const result = await pool.query(`
+            UPDATE meeting_requests 
+            SET status = $1, scheduled_date = $2, scheduled_time = $3, meeting_link = $4, 
+                admin_notes = $5, reviewed_by = $6, reviewed_at = NOW()
+            WHERE id = $7
+            RETURNING *
+        `, [status, scheduled_date, scheduled_time, meeting_link, admin_notes, adminUserId, requestId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Meeting request not found' });
+        }
+
+        res.json({
+            message: 'Meeting request updated successfully',
+            request: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Admin update meeting request error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

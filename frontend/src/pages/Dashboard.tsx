@@ -36,7 +36,9 @@ import {
   InsertDriveFile,
   PictureAsPdf,
   Article,
-  Folder
+  Folder,
+  CalendarMonth,
+  RequestPage
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -45,6 +47,8 @@ import PortfolioDashboard from '../components/charts/PortfolioDashboard';
 import AdvancedMetrics from '../components/charts/AdvancedMetrics';
 import TransactionHistory from '../components/TransactionHistory';
 import AppNavigation from '../components/AppNavigation';
+import WithdrawalRequestDialog from '../components/WithdrawalRequestDialog';
+import MeetingRequestDialog from '../components/MeetingRequestDialog';
 import { documentsApi, adminApi } from '../services/api';
 
 interface TabPanelProps {
@@ -88,6 +92,8 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false, false, false]);
+  const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
+  const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -828,6 +834,64 @@ const Dashboard: React.FC = () => {
                   </Card>
                 </Fade>
               </Box>
+
+              {/* Quick Actions Section */}
+              <Fade in={true} timeout={2000}>
+                <Card sx={{
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                  borderRadius: 3,
+                  mt: 4
+                }}>
+                  <CardContent sx={{ p: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <RequestPage sx={{ fontSize: 28, color: 'primary.main' }} />
+                      <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                        Account Actions
+                      </Typography>
+                    </Box>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                      Manage your account with quick actions for withdrawals and consultations
+                    </Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 3 }}>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={<AccountBalanceWallet />}
+                        onClick={() => setWithdrawalDialogOpen(true)}
+                        sx={{
+                          py: 2,
+                          background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+                          color: 'white',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+                          },
+                          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                        }}
+                      >
+                        Request Withdrawal
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        startIcon={<CalendarMonth />}
+                        onClick={() => setMeetingDialogOpen(true)}
+                        sx={{
+                          py: 2,
+                          background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                          color: 'white',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #1D4ED8, #3B82F6)',
+                          },
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                        }}
+                      >
+                        Schedule Meeting
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Fade>
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
@@ -1143,6 +1207,29 @@ const Dashboard: React.FC = () => {
           </>
         )}
       </Container>
+
+      {/* Dialog Components */}
+      {loanData && (
+        <>
+          <WithdrawalRequestDialog
+            open={withdrawalDialogOpen}
+            onClose={() => setWithdrawalDialogOpen(false)}
+            currentBalance={parseFloat(loanData.current_balance)}
+            onRequestSubmitted={() => {
+              // Optionally refresh data or show success message
+              console.log('Withdrawal request submitted successfully');
+            }}
+          />
+          <MeetingRequestDialog
+            open={meetingDialogOpen}
+            onClose={() => setMeetingDialogOpen(false)}
+            onRequestSubmitted={() => {
+              // Optionally refresh data or show success message
+              console.log('Meeting request submitted successfully');
+            }}
+          />
+        </>
+      )}
     </Box>
   );
 };
