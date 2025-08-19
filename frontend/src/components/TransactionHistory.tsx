@@ -20,8 +20,20 @@ import {
   Pagination,
   CircularProgress,
   Alert,
+  InputAdornment,
+  useTheme,
+  alpha,
+  Fade,
 } from '@mui/material';
-import { FilterList, GetApp } from '@mui/icons-material';
+import { 
+  FilterList, 
+  GetApp, 
+  Search, 
+  Receipt, 
+  TrendingUp,
+  TrendingDown,
+  AccountBalance 
+} from '@mui/icons-material';
 
 interface Transaction {
   id: number;
@@ -49,6 +61,7 @@ interface TransactionHistoryProps {
 }
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
+  const theme = useTheme();
   const [data, setData] = useState<TransactionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +69,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     type: '',
     startDate: '',
     endDate: '',
+    search: '',
   });
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -103,6 +117,21 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
         return 'Withdrawal';
       default:
         return type;
+    }
+  };
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'loan':
+        return <AccountBalance sx={{ fontSize: 20 }} />;
+      case 'monthly_payment':
+        return <TrendingUp sx={{ fontSize: 20 }} />;
+      case 'bonus':
+        return <TrendingUp sx={{ fontSize: 20 }} />;
+      case 'withdrawal':
+        return <TrendingDown sx={{ fontSize: 20 }} />;
+      default:
+        return <Receipt sx={{ fontSize: 20 }} />;
     }
   };
 
@@ -160,7 +189,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
   };
 
   const handleClearFilters = () => {
-    setFilters({ type: '', startDate: '', endDate: '' });
+    setFilters({ type: '', startDate: '', endDate: '', search: '' });
     setPage(1);
   };
 
@@ -183,169 +212,234 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <FilterList sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h6" component="h2">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Receipt sx={{ fontSize: 32, color: 'primary.main' }} />
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
             Transaction History
           </Typography>
-          <Box sx={{ flexGrow: 1 }} />
-          {data && (
-            <Typography variant="body2" color="text.secondary">
-              {data.pagination.total} transactions
-            </Typography>
-          )}
         </Box>
-
-        {/* Filters */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Type</InputLabel>
-            <Select
-              value={filters.type}
-              label="Type"
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-              sx={{
-                backgroundColor: 'background.paper',
-                '& .MuiSelect-select': {
-                  backgroundColor: 'background.paper',
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  backgroundColor: 'background.paper',
-                },
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    backgroundColor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }
-                }
-              }}
-            >
-              <MenuItem value="">All Types</MenuItem>
-              <MenuItem value="loan">Initial Loan</MenuItem>
-              <MenuItem value="monthly_payment">Monthly Payment</MenuItem>
-              <MenuItem value="bonus">Bonus Payment</MenuItem>
-              <MenuItem value="withdrawal">Withdrawal</MenuItem>
-            </Select>
-          </FormControl>
-
-          <TextField
-            size="small"
-            label="Start Date"
-            type="date"
-            value={filters.startDate}
-            onChange={(e) => handleFilterChange('startDate', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-
-          <TextField
-            size="small"
-            label="End Date"
-            type="date"
-            value={filters.endDate}
-            onChange={(e) => handleFilterChange('endDate', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-
-          <Button
+        {data && (
+          <Chip 
+            label={`${data.pagination.total} transactions`}
+            color="primary"
             variant="outlined"
-            onClick={handleClearFilters}
-            disabled={!filters.type && !filters.startDate && !filters.endDate}
-            sx={{
-              height: '40px', // Match the height of small-sized FormControl
-              minHeight: '40px',
-              px: 2,
-            }}
-          >
-            Clear Filters
-          </Button>
-        </Box>
+          />
+        )}
+      </Box>
 
-        {/* Transaction Table */}
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="right">Amount</TableCell>
-                <TableCell align="center">Bonus %</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.transactions.map((transaction) => (
-                <TableRow key={transaction.id} hover>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {formatDate(transaction.transaction_date)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={getTransactionTypeLabel(transaction.transaction_type)}
-                      color={getTransactionTypeColor(transaction.transaction_type) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {transaction.description}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: parseFloat(transaction.amount) >= 0 ? 'success.main' : 'warning.main',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {parseFloat(transaction.amount) >= 0 ? '+' : ''}
-                      {formatCurrency(transaction.amount)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    {transaction.bonus_percentage ? (
-                      <Typography variant="body2" color="secondary.main">
-                        {(parseFloat(transaction.bonus_percentage) * 100).toFixed(2)}%
-                      </Typography>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, newPage) => setPage(newPage)}
-              color="primary"
+      {/* Search and Filter Controls */}
+      <Card sx={{ 
+        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`
+      }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+            <TextField
+              placeholder="Search transactions..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              size="small"
+              sx={{ minWidth: 300, flex: 1 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
             />
-          </Box>
-        )}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={filters.type}
+                label="Type"
+                onChange={(e) => handleFilterChange('type', e.target.value)}
+                startAdornment={<FilterList sx={{ color: 'text.secondary', mr: 1 }} />}
+              >
+                <MenuItem value="">All Types</MenuItem>
+                <MenuItem value="loan">Initial Loan</MenuItem>
+                <MenuItem value="monthly_payment">Monthly Payment</MenuItem>
+                <MenuItem value="bonus">Bonus Payment</MenuItem>
+                <MenuItem value="withdrawal">Withdrawal</MenuItem>
+              </Select>
+            </FormControl>
 
-        {/* Empty State */}
-        {data?.transactions.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body1" color="text.secondary">
-              No transactions found for the selected filters.
-            </Typography>
+            <TextField
+              size="small"
+              label="Start Date"
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <TextField
+              size="small"
+              label="End Date"
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            {(filters.type || filters.startDate || filters.endDate || filters.search) && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleClearFilters}
+                sx={{
+                  height: '40px',
+                  minHeight: '40px',
+                  px: 2,
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </Box>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Transaction Cards */}
+      {data?.transactions.length ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {data.transactions.map((transaction, index) => (
+            <Fade in={true} timeout={600 + index * 100} key={transaction.id}>
+              <Card sx={{
+                position: 'relative',
+                overflow: 'hidden',
+                background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                borderRadius: 3,
+                transition: 'all 0.3s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.12)}`,
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                }
+              }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                      <Box sx={{ 
+                        p: 1.5, 
+                        borderRadius: 2, 
+                        background: alpha(getTransactionTypeColor(transaction.transaction_type) === 'success' ? theme.palette.success.main :
+                                         getTransactionTypeColor(transaction.transaction_type) === 'info' ? theme.palette.info.main :
+                                         getTransactionTypeColor(transaction.transaction_type) === 'secondary' ? theme.palette.secondary.main :
+                                         theme.palette.warning.main, 0.1),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {getTransactionIcon(transaction.transaction_type)}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Chip
+                            label={getTransactionTypeLabel(transaction.transaction_type)}
+                            color={getTransactionTypeColor(transaction.transaction_type) as any}
+                            size="small"
+                            variant="outlined"
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(transaction.transaction_date)}
+                          </Typography>
+                        </Box>
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            fontWeight: 500,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title={transaction.description}
+                        >
+                          {transaction.description}
+                        </Typography>
+                        {transaction.bonus_percentage && (
+                          <Typography variant="body2" color="secondary.main" sx={{ mt: 0.5 }}>
+                            Bonus: {(parseFloat(transaction.bonus_percentage) * 100).toFixed(2)}%
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                    <Box sx={{ textAlign: 'right', minWidth: 'fit-content' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          color: parseFloat(transaction.amount) >= 0 ? 'success.main' : 'warning.main',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {parseFloat(transaction.amount) >= 0 ? '+' : ''}
+                        {formatCurrency(transaction.amount)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Account: {transaction.account_number}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Fade>
+          ))}
+        </Box>
+      ) : (
+        <Card sx={{ 
+          textAlign: 'center', 
+          py: 8,
+          background: alpha(theme.palette.background.paper, 0.5),
+          border: `2px dashed ${alpha(theme.palette.primary.main, 0.2)}`
+        }}>
+          <CardContent>
+            <Receipt sx={{ fontSize: 64, color: alpha(theme.palette.primary.main, 0.3), mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+              {data?.transactions.length === 0 ? 'No transactions found' : 'No transactions match your filters'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {data?.transactions.length === 0 
+                ? 'Transactions will appear here once they are processed'
+                : 'Try adjusting your search terms or filters'
+              }
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Card sx={{ 
+            background: alpha(theme.palette.primary.main, 0.02),
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+          }}>
+            <CardContent sx={{ py: 2 }}>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(_, newPage) => setPage(newPage)}
+                color="primary"
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    '&.Mui-selected': {
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                      color: 'white',
+                    }
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        </Box>
+      )}
+    </Box>
   );
 };
 
