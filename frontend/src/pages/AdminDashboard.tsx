@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   Box,
   Typography,
@@ -79,12 +79,59 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+// Memoized UserCard component for better performance
+const UserCard = memo(({ user, isSelected, onClick }: {
+  user: any;
+  isSelected: boolean;
+  onClick: (userId: string) => void;
+}) => (
+  <Card 
+    variant="outlined" 
+    sx={{ 
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      '&:hover': {
+        boxShadow: 2,
+        transform: 'translateY(-1px)'
+      },
+      backgroundColor: isSelected ? 'action.selected' : 'background.paper'
+    }}
+    onClick={() => onClick(user.id)}
+  >
+    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          {user.first_name} {user.last_name}
+        </Typography>
+        <Chip 
+          icon={user.account_verified ? <CheckCircle /> : <CancelIcon />}
+          label={user.account_verified ? 'Verified' : 'Unverified'}
+          color={user.account_verified ? 'success' : 'default'}
+          size="small"
+        />
+      </Box>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        {user.email}
+      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Chip 
+          label={user.role || 'user'} 
+          color={user.role === 'admin' ? 'secondary' : 'default'}
+          size="small"
+        />
+        <Typography variant="caption" color="text.secondary">
+          {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+        </Typography>
+      </Box>
+    </CardContent>
+  </Card>
+));
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [userDetailsTabValue, setUserDetailsTabValue] = useState(0);
   const [users, setUsers] = useState<any[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
@@ -94,6 +141,22 @@ const AdminDashboard: React.FC = () => {
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Caching state
+  const [userCache, setUserCache] = useState<Map<string, any>>(new Map());
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  // Memoized filtered users calculation
+  const filteredUsers = useMemo(() => {
+    if (!userSearchTerm) return users;
+    return users.filter((user) =>
+      user.first_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.role?.toLowerCase().includes(userSearchTerm.toLowerCase())
+    );
+  }, [users, userSearchTerm]);
   
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -173,8 +236,15 @@ const AdminDashboard: React.FC = () => {
     setUserDetailsTabValue(newValue);
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (forceRefresh = false) => {
     try {
+      const now = Date.now();
+      
+      // Check if we have cached data and it's still valid
+      if (!forceRefresh && users.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+        return; // Use cached data
+      }
+      
       setLoading(true);
       const usersData = await adminApi.getUsers();
       console.log('Users data received:', usersData);
@@ -183,14 +253,14 @@ const AdminDashboard: React.FC = () => {
         console.log('Created at field:', usersData[0].created_at);
       }
       setUsers(usersData);
-      setFilteredUsers(usersData);
+      setLastFetchTime(now);
     } catch (err) {
       setError('Failed to fetch users');
       console.error('Users fetch error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [users.length, lastFetchTime, CACHE_DURATION]);
 
 
   const fetchVerificationRequests = async () => {
@@ -206,13 +276,37 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchUserDetails = async (userId: string) => {
+  const fetchUserDetails = useCallback(async (userId: string) => {
     try {
+      // Check cache first
+      const cacheKey = `user_${userId}`;
+      const cachedData = userCache.get(cacheKey);
+      const now = Date.now();
+      
+      if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+        setSelectedUser(cachedData.user);
+        setUserDocuments(cachedData.documents);
+        setUserLoans(cachedData.loans);
+        setUserTransactions(cachedData.transactions);
+        return;
+      }
+      
       const [documentsData, loansData, transactionsData] = await Promise.all([
         adminApi.getUserDocuments(userId),
         adminApi.getUserLoans(userId),
         adminApi.getUserTransactions(userId),
       ]);
+      
+      // Cache the results
+      const newCache = new Map(userCache);
+      newCache.set(cacheKey, {
+        user: documentsData.user,
+        documents: documentsData.documents,
+        loans: loansData.loans,
+        transactions: transactionsData.transactions,
+        timestamp: now
+      });
+      setUserCache(newCache);
       
       setSelectedUser(documentsData.user);
       setUserDocuments(documentsData.documents);
@@ -221,7 +315,16 @@ const AdminDashboard: React.FC = () => {
     } catch (err) {
       console.error('User details fetch error:', err);
     }
-  };
+  }, [userCache, CACHE_DURATION]);
+
+  // Memoized event handlers
+  const handleUserClick = useCallback((userId: string) => {
+    fetchUserDetails(userId);
+  }, [fetchUserDetails]);
+
+  const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setUserSearchTerm(event.target.value);
+  }, []);
 
   const handleUploadDocument = async () => {
     if (!uploadForm.file || !uploadForm.title || !uploadForm.category || !uploadForm.userId) {
@@ -528,19 +631,7 @@ const AdminDashboard: React.FC = () => {
     fetchVerificationRequests();
   }, []);
 
-  // Filter users based on search term
-  useEffect(() => {
-    if (!userSearchTerm.trim()) {
-      setFilteredUsers(users);
-    } else {
-      const filtered = users.filter(user => 
-        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        (user.role && user.role.toLowerCase().includes(userSearchTerm.toLowerCase()))
-      );
-      setFilteredUsers(filtered);
-    }
-  }, [users, userSearchTerm]);
+  // Removed redundant useEffect - using useMemo for filtering instead
 
   const formatCurrency = (value: string | number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -624,7 +715,7 @@ const AdminDashboard: React.FC = () => {
                         variant="outlined"
                         placeholder="Search by name..."
                         value={userSearchTerm}
-                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        onChange={handleSearchChange}
                         InputProps={{
                           startAdornment: (
                             <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
@@ -661,49 +752,12 @@ const AdminDashboard: React.FC = () => {
                       {filteredUsers.length > 0 ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                           {filteredUsers.map((user) => (
-                            <Card 
-                              key={user.id} 
-                              variant="outlined" 
-                              sx={{ 
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                  boxShadow: 2,
-                                  transform: 'translateY(-1px)'
-                                },
-                                backgroundColor: selectedUser?.id === user.id ? 'action.selected' : 'background.paper'
-                              }}
-                              onClick={() => {
-                                fetchUserDetails(user.id);
-                              }}
-                            >
-                              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                    {user.first_name} {user.last_name}
-                                  </Typography>
-                                  <Chip 
-                                    icon={user.account_verified ? <CheckCircle /> : <CancelIcon />}
-                                    label={user.account_verified ? 'Verified' : 'Unverified'}
-                                    color={user.account_verified ? 'success' : 'default'}
-                                    size="small"
-                                  />
-                                </Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                  {user.email}
-                                </Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <Chip 
-                                    label={user.role || 'user'} 
-                                    color={user.role === 'admin' ? 'secondary' : 'default'}
-                                    size="small"
-                                  />
-                                  <Typography variant="caption" color="text.secondary">
-                                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                                  </Typography>
-                                </Box>
-                              </CardContent>
-                            </Card>
+                            <UserCard
+                              key={user.id}
+                              user={user}
+                              isSelected={selectedUser?.id === user.id}
+                              onClick={handleUserClick}
+                            />
                           ))}
                         </Box>
                       ) : userSearchTerm.trim() ? (
