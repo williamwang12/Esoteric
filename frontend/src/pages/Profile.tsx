@@ -551,7 +551,7 @@ const Profile: React.FC = () => {
                   <CardContent sx={{ p: 4 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
                       <Box sx={{ 
-                        background: 'linear-gradient(135deg, #F59E0B, #EF4444)', 
+                        background: 'linear-gradient(135deg, #6B46C1, #9333EA)', 
                         borderRadius: '12px', 
                         p: 1.5, 
                         mr: 2,
@@ -586,25 +586,12 @@ const Profile: React.FC = () => {
                       </Typography>
                       {!profileData.accountVerified && (
                         <Button
-                          variant="contained"
+                          variant="outlined"
                           color="primary"
                           size="small"
                           onClick={handleRequestAccountVerification}
                           disabled={verificationRequestLoading || verificationRequestSent}
                           startIcon={verificationRequestLoading ? <CircularProgress size={16} /> : <Verified />}
-                          sx={{ 
-                            background: verificationRequestSent 
-                              ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
-                              : 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                            '&:hover': verificationRequestSent ? undefined : {
-                              background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                            },
-                            '&:disabled': {
-                              background: verificationRequestSent 
-                                ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
-                                : undefined
-                            }
-                          }}
                         >
                           {verificationRequestLoading 
                             ? 'Requesting...' 
