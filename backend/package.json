@@ -11,7 +11,7 @@
     "test:2fa": "jest tests/2fa-comprehensive.test.js --detectOpenHandles --forceExit",
     "test:simple": "jest tests/simple-api.test.js --detectOpenHandles --forceExit",
     "test:requests": "jest tests/requests.test.js --detectOpenHandles --forceExit",
-    "test:security": "jest tests/security-2fa.test.js --detectOpenHandles --forceExit", 
+    "test:security": "jest tests/security-2fa.test.js --detectOpenHandles --forceExit",
     "test:enhanced": "jest tests/enhanced-comprehensive.test.js --detectOpenHandles --forceExit",
     "test:new": "jest tests/requests.test.js tests/security-2fa.test.js tests/enhanced-comprehensive.test.js --detectOpenHandles --forceExit --runInBand",
     "test:simple-requests": "jest tests/requests-simple.test.js --detectOpenHandles --forceExit",
@@ -22,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",

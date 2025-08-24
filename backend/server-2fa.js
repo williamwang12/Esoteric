@@ -32,6 +32,9 @@ app.use(express.json());
 // Import middlewares
 const { authenticateToken, authenticateBasicToken, cleanupExpiredSessions } = require('./middleware/auth-2fa');
 
+// Import services
+const meetingService = require('./services/meetingService');
+
 // Apply session cleanup
 app.use(cleanupExpiredSessions);
 
@@ -1316,12 +1319,13 @@ app.post('/api/meeting-requests', authenticateToken, [
     body('purpose').isString().isLength({ min: 1 }).withMessage('Purpose is required'),
     body('preferred_date').isISO8601().withMessage('Valid preferred date required'),
     body('preferred_time').matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid time format required (HH:MM)'),
-    body('meeting_type').optional().isIn(['video', 'phone', 'in_person']).withMessage('Invalid meeting type'),
+    body('meeting_type').optional().isIn(['video']).withMessage('Only video meetings are supported'),
     body('urgency').optional().isIn(['low', 'normal', 'high', 'urgent']).withMessage('Invalid urgency level'),
     body('topics').optional().isString().withMessage('Topics must be a string'),
     body('notes').optional().isString().withMessage('Notes must be a string')
 ], async (req, res) => {
     try {
+        
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
@@ -1334,9 +1338,14 @@ app.post('/api/meeting-requests', authenticateToken, [
             meeting_type = 'video', 
             urgency = 'normal', 
             topics, 
-            notes 
+            notes
         } = req.body;
         const userId = req.user.userId;
+
+        // Only video meetings are supported now
+        if (meeting_type !== 'video') {
+            return res.status(400).json({ error: 'Only video meetings are supported' });
+        }
 
         // Create meeting request
         const requestResult = await pool.query(`
@@ -1650,8 +1659,11 @@ app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
     body('admin_notes').optional().isString().withMessage('Admin notes must be a string')
 ], async (req, res) => {
     try {
+        console.log('Admin meeting update request received:', req.params.requestId, req.body);
+        
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            console.log('Validation errors:', errors.array());
             return res.status(400).json({ errors: errors.array() });
         }
 
@@ -1659,7 +1671,7 @@ app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
         const { status, scheduled_date, scheduled_time, meeting_link, admin_notes } = req.body;
         const adminUserId = req.user.userId;
 
-        // Additional validation: if status is 'scheduled', require scheduled_date and scheduled_time
+        // Additional validation: if status is 'scheduled', require scheduled_date, scheduled_time, and meeting_link for video meetings
         if (status === 'scheduled') {
             if (!scheduled_date) {
                 return res.status(400).json({ error: 'scheduled_date is required when status is scheduled' });
@@ -1667,6 +1679,52 @@ app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
             if (!scheduled_time) {
                 return res.status(400).json({ error: 'scheduled_time is required when status is scheduled' });
             }
+            
+            // Get the meeting request to check type
+            const meetingCheck = await pool.query('SELECT meeting_type FROM meeting_requests WHERE id = $1', [requestId]);
+            if (meetingCheck.rows.length > 0 && meetingCheck.rows[0].meeting_type === 'video' && !meeting_link) {
+                return res.status(400).json({ error: 'meeting_link is required for video meetings when status is scheduled' });
+            }
+        }
+
+        // Get the original meeting request to check meeting type
+        const requestQuery = await pool.query('SELECT * FROM meeting_requests WHERE id = $1', [requestId]);
+        if (requestQuery.rows.length === 0) {
+            return res.status(404).json({ error: 'Meeting request not found' });
+        }
+        
+        const meetingRequest = requestQuery.rows[0];
+        let finalMeetingLink = meeting_link;
+
+        // If scheduling a video meeting, use provided link or create placeholder
+        if (status === 'scheduled' && meetingRequest.meeting_type === 'video') {
+            console.log('Processing video meeting:', meetingRequest.id);
+            
+            if (meeting_link && meeting_link.trim()) {
+                // Admin provided a meeting link
+                finalMeetingLink = meeting_link.trim();
+                console.log('Using admin-provided meeting link:', finalMeetingLink);
+            } else {
+                // No link provided, create placeholder
+                const meetingDateTime = `${scheduled_date}T${scheduled_time}:00`;
+                
+                const placeholderMeeting = await meetingService.createMeeting({
+                    topic: meetingRequest.purpose || 'Esoteric Financial Consultation',
+                    start_time: meetingDateTime,
+                    duration: 60
+                });
+
+                console.log('Placeholder meeting result:', placeholderMeeting);
+
+                if (placeholderMeeting.success) {
+                    finalMeetingLink = placeholderMeeting.meeting.join_url;
+                    console.log('Placeholder meeting created:', finalMeetingLink);
+                } else {
+                    console.warn('Failed to create placeholder meeting:', placeholderMeeting.error);
+                }
+            }
+        } else {
+            console.log('Not processing video meeting - status:', status, 'meeting_type:', meetingRequest.meeting_type);
         }
 
         // Update meeting request
@@ -1676,11 +1734,7 @@ app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
                 admin_notes = $5, reviewed_by = $6, reviewed_at = NOW()
             WHERE id = $7
             RETURNING *
-        `, [status, scheduled_date, scheduled_time, meeting_link, admin_notes, adminUserId, requestId]);
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Meeting request not found' });
-        }
+        `, [status, scheduled_date, scheduled_time, finalMeetingLink, admin_notes, adminUserId, requestId]);
 
         res.json({
             message: 'Meeting request updated successfully',
@@ -1689,15 +1743,19 @@ app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
 
     } catch (error) {
         console.error('Admin update meeting request error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
+
 
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error('Unhandled error:', error);
     res.status(500).json({ error: 'Internal server error' });
 });
+
+
 
 // 404 handler
 app.use((req, res) => {

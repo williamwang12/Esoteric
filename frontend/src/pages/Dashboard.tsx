@@ -1469,6 +1469,57 @@ const Dashboard: React.FC = () => {
                     </Typography>
                   </Box>
 
+                  {/* Meeting Link for Video Calls */}
+                  {meetingRequest.meeting_type === 'video' && meetingRequest.meeting_link && (
+                    <Box sx={{ 
+                      p: 3, 
+                      background: 'rgba(59, 130, 246, 0.1)', 
+                      borderRadius: 2,
+                      border: '1px solid rgba(59, 130, 246, 0.2)'
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
+                        📹 Google Meet Link
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        href={meetingRequest.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          background: 'linear-gradient(135deg, #4285F4, #34A853)',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          py: 1.5,
+                          fontSize: '1.1rem',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #3367D6, #137333)',
+                            boxShadow: '0 6px 12px rgba(66, 133, 244, 0.4)',
+                          },
+                          boxShadow: '0 3px 8px rgba(66, 133, 244, 0.3)',
+                        }}
+                      >
+                        Join Google Meet
+                      </Button>
+                    </Box>
+                  )}
+
+                  {/* Phone Call Information */}
+                  {meetingRequest.meeting_type === 'phone' && (
+                    <Box sx={{ 
+                      p: 3, 
+                      background: 'rgba(34, 197, 94, 0.1)', 
+                      borderRadius: 2,
+                      border: '1px solid rgba(34, 197, 94, 0.2)'
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'success.main' }}>
+                        📞 Phone Call Details
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'white' }}>
+                        We will call you at your registered phone number at the scheduled time.
+                      </Typography>
+                    </Box>
+                  )}
 
                   {/* Meeting Purpose */}
                   {meetingRequest.purpose && (

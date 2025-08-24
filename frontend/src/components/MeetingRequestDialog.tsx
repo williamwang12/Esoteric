@@ -56,26 +56,35 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
       return;
     }
 
+    // No additional validation needed - only video meetings now
+
     try {
       setLoading(true);
       setError(null);
 
       const token = localStorage.getItem('authToken');
+      
+      // Build request body - only video meetings now
+      const requestBody = {
+        purpose: formData.purpose,
+        preferred_date: formData.preferredDate,
+        preferred_time: formData.preferredTime,
+        meeting_type: formData.meetingType, // Will always be 'video'
+        urgency: formData.urgency,
+        ...(formData.topics && { topics: formData.topics }),
+        ...(formData.notes && { notes: formData.notes })
+      };
+      
+      console.log('Sending request:', requestBody);
+      console.log('Form data:', formData);
+      
       const response = await fetch('http://localhost:5002/api/meeting-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          purpose: formData.purpose,
-          preferred_date: formData.preferredDate,
-          preferred_time: formData.preferredTime,
-          meeting_type: formData.meetingType,
-          urgency: formData.urgency,
-          ...(formData.topics && { topics: formData.topics }),
-          ...(formData.notes && { notes: formData.notes })
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -123,9 +132,7 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
   };
 
   const meetingTypeOptions = [
-    { value: 'video', label: 'Video Call', icon: <VideoCall /> },
-    { value: 'phone', label: 'Phone Call', icon: <PersonOutline /> },
-    { value: 'in_person', label: 'In-Person Meeting', icon: <PersonOutline /> }
+    { value: 'video', label: 'Google Meet Video Call', icon: <VideoCall /> }
   ];
 
   const timeSlots = [
@@ -249,6 +256,7 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
                   ))}
                 </Select>
               </FormControl>
+
             </Box>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
