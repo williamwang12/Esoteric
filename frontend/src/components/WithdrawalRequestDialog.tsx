@@ -124,7 +124,7 @@ const WithdrawalRequestDialog: React.FC<WithdrawalRequestDialogProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          backgroundColor: 'background.paper',
+          backgroundColor: '#1f2937',
           border: '1px solid',
           borderColor: 'primary.main',
           borderRadius: 3,

@@ -9,7 +9,14 @@
     "test:coverage": "jest --coverage --detectOpenHandles --forceExit --runInBand",
     "test:comprehensive": "jest tests/comprehensive.test.js --detectOpenHandles --forceExit",
     "test:2fa": "jest tests/2fa-comprehensive.test.js --detectOpenHandles --forceExit",
-    "test:simple": "jest tests/simple-api.test.js --detectOpenHandles --forceExit"
+    "test:simple": "jest tests/simple-api.test.js --detectOpenHandles --forceExit",
+    "test:requests": "jest tests/requests.test.js --detectOpenHandles --forceExit",
+    "test:security": "jest tests/security-2fa.test.js --detectOpenHandles --forceExit", 
+    "test:enhanced": "jest tests/enhanced-comprehensive.test.js --detectOpenHandles --forceExit",
+    "test:new": "jest tests/requests.test.js tests/security-2fa.test.js tests/enhanced-comprehensive.test.js --detectOpenHandles --forceExit --runInBand",
+    "test:simple-requests": "jest tests/requests-simple.test.js --detectOpenHandles --forceExit",
+    "test:all": "./run-tests.sh all",
+    "test:runner": "./run-tests.sh"
   },
   "keywords": [],
   "author": "",

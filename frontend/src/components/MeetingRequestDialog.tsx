@@ -73,8 +73,8 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
           preferred_time: formData.preferredTime,
           meeting_type: formData.meetingType,
           urgency: formData.urgency,
-          topics: formData.topics || null,
-          notes: formData.notes || null
+          ...(formData.topics && { topics: formData.topics }),
+          ...(formData.notes && { notes: formData.notes })
         }),
       });
 
@@ -129,9 +129,23 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
   ];
 
   const timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-    '15:00', '15:30', '16:00', '16:30', '17:00'
+    { value: '09:00', label: '9:00 AM' },
+    { value: '09:30', label: '9:30 AM' },
+    { value: '10:00', label: '10:00 AM' },
+    { value: '10:30', label: '10:30 AM' },
+    { value: '11:00', label: '11:00 AM' },
+    { value: '11:30', label: '11:30 AM' },
+    { value: '12:00', label: '12:00 PM' },
+    { value: '12:30', label: '12:30 PM' },
+    { value: '13:00', label: '1:00 PM' },
+    { value: '13:30', label: '1:30 PM' },
+    { value: '14:00', label: '2:00 PM' },
+    { value: '14:30', label: '2:30 PM' },
+    { value: '15:00', label: '3:00 PM' },
+    { value: '15:30', label: '3:30 PM' },
+    { value: '16:00', label: '4:00 PM' },
+    { value: '16:30', label: '4:30 PM' },
+    { value: '17:00', label: '5:00 PM' }
   ];
 
   return (
@@ -142,7 +156,7 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
       fullWidth
       PaperProps={{
         sx: {
-          backgroundColor: 'background.paper',
+          backgroundColor: '#1f2937',
           border: '1px solid',
           borderColor: 'primary.main',
           borderRadius: 3,
@@ -210,9 +224,9 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
                   label="Preferred Time"
                   onChange={(e) => setFormData(prev => ({ ...prev, preferredTime: e.target.value }))}
                 >
-                  {timeSlots.map((time) => (
-                    <MenuItem key={time} value={time}>
-                      {time}
+                  {timeSlots.map((timeSlot) => (
+                    <MenuItem key={timeSlot.value} value={timeSlot.value}>
+                      {timeSlot.label}
                     </MenuItem>
                   ))}
                 </Select>
@@ -293,25 +307,24 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
               />
             </Box>
           </Box>
-
-          <Box sx={{ mt: 3, p: 2, backgroundColor: 'action.hover', borderRadius: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              <strong>Meeting Information:</strong>
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip size="small" label="45-60 minutes" color="primary" variant="outlined" />
-              <Chip size="small" label="Free consultation" color="success" variant="outlined" />
-              <Chip size="small" label="Flexible rescheduling" color="info" variant="outlined" />
-            </Box>
-          </Box>
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 2 }}>
           <Button 
             onClick={handleClose} 
-            variant="outlined"
+            variant="contained"
             disabled={loading}
-            sx={{ minWidth: 100 }}
+            sx={{ 
+              minWidth: 100,
+              background: 'linear-gradient(135deg, #6B7280, #4B5563)',
+              color: 'white',
+              fontWeight: 'bold',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #4B5563, #374151)',
+                boxShadow: '0 6px 12px rgba(107, 114, 128, 0.4)',
+              },
+              boxShadow: '0 3px 8px rgba(107, 114, 128, 0.3)',
+            }}
           >
             Cancel
           </Button>

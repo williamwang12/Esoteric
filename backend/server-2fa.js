@@ -1659,6 +1659,16 @@ app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
         const { status, scheduled_date, scheduled_time, meeting_link, admin_notes } = req.body;
         const adminUserId = req.user.userId;
 
+        // Additional validation: if status is 'scheduled', require scheduled_date and scheduled_time
+        if (status === 'scheduled') {
+            if (!scheduled_date) {
+                return res.status(400).json({ error: 'scheduled_date is required when status is scheduled' });
+            }
+            if (!scheduled_time) {
+                return res.status(400).json({ error: 'scheduled_time is required when status is scheduled' });
+            }
+        }
+
         // Update meeting request
         const result = await pool.query(`
             UPDATE meeting_requests 

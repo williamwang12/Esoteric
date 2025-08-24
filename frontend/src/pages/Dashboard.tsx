@@ -18,6 +18,11 @@ import {
   MenuItem,
   InputAdornment,
   Chip,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { 
   AccountBalance, 
@@ -38,7 +43,12 @@ import {
   Article,
   Folder,
   CalendarMonth,
-  RequestPage
+  RequestPage,
+  CheckCircle,
+  Schedule,
+  Pending,
+  Phone,
+  Cancel
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -94,12 +104,71 @@ const Dashboard: React.FC = () => {
   const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false, false, false]);
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
+  const [meetingDetailsOpen, setMeetingDetailsOpen] = useState(false);
+  const [meetingRequest, setMeetingRequest] = useState<any>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString || dateString === 'null' || dateString === 'undefined') return 'Date TBD';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Date TBD';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'Date TBD';
+    }
+  };
+
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    try {
+      // Handle time format like "14:30:00" or "14:30"
+      const [hours, minutes] = timeString.split(':');
+      const time = new Date();
+      time.setHours(parseInt(hours), parseInt(minutes));
+      return time.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return timeString;
+    }
+  };
+
+  const handleCancelMeeting = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`http://localhost:5002/api/admin/meeting-requests/${meetingRequest.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: 'cancelled',
+          admin_notes: 'Cancelled by user request'
+        }),
+      });
+
+      if (response.ok) {
+        setMeetingDetailsOpen(false);
+        fetchLoanData(); // Refresh to update the meeting status
+      } else {
+        console.error('Failed to cancel meeting');
+      }
+    } catch (error) {
+      console.error('Error cancelling meeting:', error);
+    }
+  };
 
   const handleDocumentDownload = async (documentId: string, title: string) => {
     try {
@@ -208,6 +277,26 @@ const Dashboard: React.FC = () => {
         setIsAdmin(true);
       } catch (adminError) {
         setIsAdmin(false);
+      }
+
+      // Fetch meeting requests
+      try {
+        const meetingResponse = await fetch('http://localhost:5002/api/meeting-requests', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (meetingResponse.ok) {
+          const meetingRequests = await meetingResponse.json();
+          // Get the most recent meeting request
+          if (meetingRequests.length > 0) {
+            const latestRequest = meetingRequests.sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0];
+            setMeetingRequest(latestRequest);
+          }
+        }
+      } catch (meetingError) {
+        console.error('Meeting requests fetch error:', meetingError);
       }
 
     } catch (err) {
@@ -871,23 +960,117 @@ const Dashboard: React.FC = () => {
                       >
                         Request Withdrawal
                       </Button>
-                      <Button
-                        variant="contained"
-                        size="large"
-                        startIcon={<CalendarMonth />}
-                        onClick={() => setMeetingDialogOpen(true)}
-                        sx={{
+                      {!meetingRequest ? (
+                        <Button
+                          variant="contained"
+                          size="large"
+                          startIcon={<CalendarMonth sx={{ color: '#3B82F6' }} />}
+                          onClick={() => setMeetingDialogOpen(true)}
+                          sx={{
+                            py: 2,
+                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            color: '#3B82F6',
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            fontWeight: 600,
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                              boxShadow: '0 8px 16px rgba(59, 130, 246, 0.4)',
+                              border: '1px solid rgba(59, 130, 246, 0.5)',
+                              transform: 'translateY(-2px)',
+                            },
+                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          Schedule Meeting
+                        </Button>
+                      ) : meetingRequest.status === 'pending' ? (
+                        <Card sx={{
                           py: 2,
-                          background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                          px: 3,
+                          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
                           color: 'white',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #1D4ED8, #3B82F6)',
-                          },
-                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-                        }}
-                      >
-                        Schedule Meeting
-                      </Button>
+                          textAlign: 'center',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                            <Pending sx={{ fontSize: 24, color: '#F59E0B' }} />
+                            <Box>
+                              <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+                                Meeting Request Pending
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
+                                Requested for {formatDate(meetingRequest.preferred_date)}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+                      ) : meetingRequest.status === 'scheduled' ? (
+                        <Card 
+                          sx={{
+                            py: 2,
+                            px: 3,
+                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            color: 'white',
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease-in-out',
+                            border: '1px solid rgba(34, 197, 94, 0.3)',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 8px 16px rgba(34, 197, 94, 0.4)',
+                              border: '1px solid rgba(34, 197, 94, 0.5)',
+                            }
+                          }}
+                          onClick={() => setMeetingDetailsOpen(true)}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                            <CheckCircle sx={{ fontSize: 24, color: '#22C55E' }} />
+                            <Box>
+                              <Typography variant="h6" sx={{ fontWeight: 600, color: '#22C55E' }}>
+                                Meeting Scheduled
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
+                                {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
+                                {meetingRequest.scheduled_time && ` at ${formatTime(meetingRequest.scheduled_time)}`}
+                              </Typography>
+                              <Typography variant="caption" sx={{ opacity: 0.7, display: 'block', mt: 0.5, color: '#9CA3AF' }}>
+                                Click for details
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+                      ) : (
+                        <Card sx={{
+                          py: 2,
+                          px: 3,
+                          background: 'linear-gradient(135deg, #6B7280, #4B5563)',
+                          color: 'white',
+                          textAlign: 'center',
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                            <Schedule sx={{ fontSize: 24 }} />
+                            <Box>
+                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Meeting {meetingRequest.status.charAt(0).toUpperCase() + meetingRequest.status.slice(1)}
+                              </Typography>
+                              <Button
+                                variant="text"
+                                size="small"
+                                onClick={() => setMeetingDialogOpen(true)}
+                                sx={{ 
+                                  color: 'white', 
+                                  textDecoration: 'underline',
+                                  mt: 0.5,
+                                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                                }}
+                              >
+                                Schedule New Meeting
+                              </Button>
+                            </Box>
+                          </Box>
+                        </Card>
+                      )}
                     </Box>
                   </CardContent>
                 </Card>
@@ -1224,10 +1407,128 @@ const Dashboard: React.FC = () => {
             open={meetingDialogOpen}
             onClose={() => setMeetingDialogOpen(false)}
             onRequestSubmitted={() => {
-              // Optionally refresh data or show success message
+              // Refresh meeting data after submission
+              fetchLoanData();
               console.log('Meeting request submitted successfully');
             }}
           />
+
+          {/* Meeting Details Dialog */}
+          {meetingRequest && meetingRequest.status === 'scheduled' && (
+            <Dialog
+              open={meetingDetailsOpen}
+              onClose={() => setMeetingDetailsOpen(false)}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  backgroundColor: '#1f2937',
+                  border: '1px solid',
+                  borderColor: 'success.main',
+                  borderRadius: 3,
+                }
+              }}
+            >
+              <DialogTitle sx={{ pb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ 
+                    background: 'linear-gradient(135deg, #22C55E, #16A34A)', 
+                    borderRadius: '12px', 
+                    p: 1.5 
+                  }}>
+                    <CheckCircle sx={{ fontSize: 28, color: 'white' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                      Meeting Scheduled
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Your consultation details
+                    </Typography>
+                  </Box>
+                </Box>
+              </DialogTitle>
+
+              <DialogContent sx={{ pt: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {/* Date and Time */}
+                  <Box sx={{ 
+                    p: 3, 
+                    background: 'rgba(34, 197, 94, 0.1)', 
+                    borderRadius: 2,
+                    border: '1px solid rgba(34, 197, 94, 0.2)'
+                  }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'success.main' }}>
+                      📅 Meeting Details
+                    </Typography>
+                    <Typography variant="body1" sx={{ mb: 1, color: 'white' }}>
+                      <strong>Date:</strong> {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: 'white' }}>
+                      <strong>Time:</strong> {meetingRequest.scheduled_time ? formatTime(meetingRequest.scheduled_time) : 'Time TBD'}
+                    </Typography>
+                  </Box>
+
+
+                  {/* Meeting Purpose */}
+                  {meetingRequest.purpose && (
+                    <Box sx={{ 
+                      p: 3, 
+                      background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.2), rgba(147, 51, 234, 0.2))', 
+                      borderRadius: 2,
+                      border: '2px solid rgba(107, 70, 193, 0.4)',
+                      boxShadow: '0 4px 12px rgba(107, 70, 193, 0.2)'
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#A855F7', fontSize: '1.2rem' }}>
+                        📋 Meeting Purpose
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'white', fontWeight: 500, fontSize: '1.1rem' }}>
+                        {meetingRequest.purpose}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </DialogContent>
+
+              <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 2 }}>
+                <Button 
+                  onClick={() => setMeetingDetailsOpen(false)} 
+                  variant="contained"
+                  sx={{ 
+                    minWidth: 100,
+                    background: 'linear-gradient(135deg, #6B7280, #4B5563)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #4B5563, #374151)',
+                      boxShadow: '0 6px 12px rgba(107, 114, 128, 0.4)',
+                    },
+                    boxShadow: '0 3px 8px rgba(107, 114, 128, 0.3)',
+                  }}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={handleCancelMeeting}
+                  variant="contained"
+                  startIcon={<Cancel />}
+                  sx={{ 
+                    minWidth: 150,
+                    background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
+                      boxShadow: '0 8px 16px rgba(239, 68, 68, 0.4)',
+                    },
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                  }}
+                >
+                  Cancel Meeting
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
         </>
       )}
     </Box>
