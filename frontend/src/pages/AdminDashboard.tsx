@@ -29,6 +29,7 @@ import {
   Tab,
   Paper,
   Snackbar,
+  Badge,
 } from '@mui/material';
 import {
   Upload,
@@ -174,6 +175,11 @@ const AdminDashboard: React.FC = () => {
       user.role?.toLowerCase().includes(userSearchTerm.toLowerCase())
     );
   }, [users, userSearchTerm]);
+
+  // Memoized pending meeting requests count for notification badge
+  const pendingMeetingCount = useMemo(() => {
+    return meetingRequests.filter(req => req.status === 'pending').length;
+  }, [meetingRequests]);
   
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -845,7 +851,23 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-2"
                 />
                 <Tab 
-                  icon={<CalendarMonth />} 
+                  icon={
+                    <Badge 
+                      badgeContent={pendingMeetingCount} 
+                      color="error"
+                      invisible={pendingMeetingCount === 0}
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          backgroundColor: '#EF4444',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                        }
+                      }}
+                    >
+                      <CalendarMonth />
+                    </Badge>
+                  } 
                   label="Meetings" 
                   id="admin-tab-3"
                   aria-controls="admin-tabpanel-3"
@@ -1682,11 +1704,11 @@ const AdminDashboard: React.FC = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                         <RequestPage sx={{ color: 'warning.main', fontSize: 28 }} />
                         <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                          Pending Requests ({meetingRequests.filter(req => req.status === 'pending').length})
+                          Pending Requests ({pendingMeetingCount})
                         </Typography>
                       </Box>
                       
-                      {meetingRequests.filter(req => req.status === 'pending').length === 0 ? (
+                      {pendingMeetingCount === 0 ? (
                         <Box sx={{ 
                           textAlign: 'center', 
                           py: 4,

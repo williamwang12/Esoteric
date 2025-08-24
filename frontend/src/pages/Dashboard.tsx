@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Paper,
 } from '@mui/material';
 import { 
   AccountBalance, 
@@ -1007,37 +1008,31 @@ const Dashboard: React.FC = () => {
                         </Card>
                       ) : meetingRequest.status === 'scheduled' ? (
                         <Card 
+                          variant="outlined"
                           sx={{
                             py: 2,
                             px: 3,
-                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                            color: 'white',
                             textAlign: 'center',
                             cursor: 'pointer',
-                            transition: 'transform 0.2s ease-in-out',
-                            border: '1px solid rgba(34, 197, 94, 0.3)',
+                            transition: 'all 0.2s ease-in-out',
                             '&:hover': {
                               transform: 'translateY(-2px)',
-                              boxShadow: '0 8px 16px rgba(34, 197, 94, 0.4)',
-                              border: '1px solid rgba(34, 197, 94, 0.5)',
+                              boxShadow: 2,
                             }
                           }}
                           onClick={() => setMeetingDetailsOpen(true)}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <CheckCircle sx={{ fontSize: 24, color: '#22C55E' }} />
-                            <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 600, color: '#22C55E' }}>
-                                Meeting Scheduled
-                              </Typography>
-                              <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
-                                {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
-                                {meetingRequest.scheduled_time && ` at ${formatTime(meetingRequest.scheduled_time)}`}
-                              </Typography>
-                              <Typography variant="caption" sx={{ opacity: 0.7, display: 'block', mt: 0.5, color: '#9CA3AF' }}>
-                                Click for details
-                              </Typography>
-                            </Box>
+                          <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+                              Meeting Scheduled
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                              {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
+                              {meetingRequest.scheduled_time && ` at ${formatTime(meetingRequest.scheduled_time)}`}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                              Click for details
+                            </Typography>
                           </Box>
                         </Card>
                       ) : (
@@ -1423,120 +1418,75 @@ const Dashboard: React.FC = () => {
               PaperProps={{
                 sx: {
                   backgroundColor: '#1f2937',
-                  border: '1px solid',
-                  borderColor: 'success.main',
                   borderRadius: 3,
                 }
               }}
             >
               <DialogTitle sx={{ pb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ 
-                    background: 'linear-gradient(135deg, #22C55E, #16A34A)', 
-                    borderRadius: '12px', 
-                    p: 1.5 
-                  }}>
-                    <CheckCircle sx={{ fontSize: 28, color: 'white' }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                      Meeting Scheduled
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Your consultation details
-                    </Typography>
-                  </Box>
-                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                  Meeting Details
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Your scheduled consultation information
+                </Typography>
               </DialogTitle>
 
               <DialogContent sx={{ pt: 2 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {/* Date and Time */}
-                  <Box sx={{ 
-                    p: 3, 
-                    background: 'rgba(34, 197, 94, 0.1)', 
-                    borderRadius: 2,
-                    border: '1px solid rgba(34, 197, 94, 0.2)'
-                  }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'success.main' }}>
-                      📅 Meeting Details
+                  <Paper variant="outlined" sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                      Meeting Schedule
                     </Typography>
-                    <Typography variant="body1" sx={{ mb: 1, color: 'white' }}>
+                    <Typography variant="body1" sx={{ mb: 1, color: 'text.primary' }}>
                       <strong>Date:</strong> {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
                     </Typography>
-                    <Typography variant="body1" sx={{ color: 'white' }}>
+                    <Typography variant="body1" sx={{ color: 'text.primary' }}>
                       <strong>Time:</strong> {meetingRequest.scheduled_time ? formatTime(meetingRequest.scheduled_time) : 'Time TBD'}
                     </Typography>
-                  </Box>
+                  </Paper>
+
+                  {/* Meeting Purpose */}
+                  {meetingRequest.purpose && (
+                    <Paper variant="outlined" sx={{ p: 3 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                        Meeting Purpose
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'text.primary' }}>
+                        {meetingRequest.purpose}
+                      </Typography>
+                    </Paper>
+                  )}
 
                   {/* Meeting Link for Video Calls */}
                   {meetingRequest.meeting_type === 'video' && meetingRequest.meeting_link && (
-                    <Box sx={{ 
-                      p: 3, 
-                      background: 'rgba(59, 130, 246, 0.1)', 
-                      borderRadius: 2,
-                      border: '1px solid rgba(59, 130, 246, 0.2)'
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                        📹 Google Meet Link
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        href={meetingRequest.meeting_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          background: 'linear-gradient(135deg, #4285F4, #34A853)',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          py: 1.5,
-                          fontSize: '1.1rem',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #3367D6, #137333)',
-                            boxShadow: '0 6px 12px rgba(66, 133, 244, 0.4)',
-                          },
-                          boxShadow: '0 3px 8px rgba(66, 133, 244, 0.3)',
-                        }}
-                      >
-                        Join Google Meet
-                      </Button>
-                    </Box>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      size="large"
+                      href={meetingRequest.meeting_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        py: 1.5,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Join Meeting
+                    </Button>
                   )}
 
                   {/* Phone Call Information */}
                   {meetingRequest.meeting_type === 'phone' && (
-                    <Box sx={{ 
-                      p: 3, 
-                      background: 'rgba(34, 197, 94, 0.1)', 
-                      borderRadius: 2,
-                      border: '1px solid rgba(34, 197, 94, 0.2)'
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'success.main' }}>
-                        📞 Phone Call Details
+                    <Paper variant="outlined" sx={{ p: 3 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                        Phone Call Details
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'white' }}>
+                      <Typography variant="body1" sx={{ color: 'text.primary' }}>
                         We will call you at your registered phone number at the scheduled time.
                       </Typography>
-                    </Box>
-                  )}
-
-                  {/* Meeting Purpose */}
-                  {meetingRequest.purpose && (
-                    <Box sx={{ 
-                      p: 3, 
-                      background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.2), rgba(147, 51, 234, 0.2))', 
-                      borderRadius: 2,
-                      border: '2px solid rgba(107, 70, 193, 0.4)',
-                      boxShadow: '0 4px 12px rgba(107, 70, 193, 0.2)'
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#A855F7', fontSize: '1.2rem' }}>
-                        📋 Meeting Purpose
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: 'white', fontWeight: 500, fontSize: '1.1rem' }}>
-                        {meetingRequest.purpose}
-                      </Typography>
-                    </Box>
+                    </Paper>
                   )}
                 </Box>
               </DialogContent>
