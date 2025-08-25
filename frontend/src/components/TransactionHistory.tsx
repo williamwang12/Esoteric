@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -71,6 +71,9 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     endDate: '',
     search: '',
   });
+  const [searchInput, setSearchInput] = useState('');
+  const [startDateInput, setStartDateInput] = useState('');
+  const [endDateInput, setEndDateInput] = useState('');
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
 
@@ -149,10 +152,10 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
         params.append('type', filters.type);
       }
       if (filters.startDate) {
-        params.append('startDate', filters.startDate);
+        params.append('start_date', filters.startDate);
       }
       if (filters.endDate) {
-        params.append('endDate', filters.endDate);
+        params.append('end_date', filters.endDate);
       }
 
       const response = await fetch(
@@ -177,11 +180,41 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     }
   };
 
+  // Debounce search input
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchInput }));
+      setPage(1); // Reset to first page when searching
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchInput]);
+
+  // Debounce start date input
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, startDate: startDateInput }));
+      setPage(1); // Reset to first page when filtering
+    }, 500); // 500ms debounce delay for dates
+
+    return () => clearTimeout(debounceTimer);
+  }, [startDateInput]);
+
+  // Debounce end date input
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, endDate: endDateInput }));
+      setPage(1); // Reset to first page when filtering
+    }, 500); // 500ms debounce delay for dates
+
+    return () => clearTimeout(debounceTimer);
+  }, [endDateInput]);
+
   useEffect(() => {
     if (loanId) {
       fetchTransactions();
     }
-  }, [loanId, page, filters]);
+  }, [loanId, page, filters.type, filters.startDate, filters.endDate]); // Removed filters.search from dependencies
 
   const handleFilterChange = (field: string, value: string) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -190,8 +223,25 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
 
   const handleClearFilters = () => {
     setFilters({ type: '', startDate: '', endDate: '', search: '' });
+    setSearchInput('');
+    setStartDateInput('');
+    setEndDateInput('');
     setPage(1);
   };
+
+  // Client-side filtering for search
+  const filteredTransactions = useMemo(() => {
+    if (!data?.transactions) return [];
+    if (!filters.search.trim()) return data.transactions;
+    
+    const searchTerm = filters.search.toLowerCase();
+    return data.transactions.filter(transaction =>
+      transaction.description.toLowerCase().includes(searchTerm) ||
+      transaction.transaction_type.toLowerCase().includes(searchTerm) ||
+      getTransactionTypeLabel(transaction.transaction_type).toLowerCase().includes(searchTerm) ||
+      formatCurrency(transaction.amount).toLowerCase().includes(searchTerm)
+    );
+  }, [data?.transactions, filters.search]);
 
   const totalPages = data ? Math.ceil(data.pagination.total / limit) : 0;
 
@@ -223,7 +273,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
         </Box>
         {data && (
           <Chip 
-            label={`${data.pagination.total} transactions`}
+            label={`${filteredTransactions.length} of ${data.pagination.total} transactions`}
             color="primary"
             variant="outlined"
           />
@@ -239,8 +289,8 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
           <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
               placeholder="Search transactions..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               size="small"
               sx={{ minWidth: 300, flex: 1 }}
               InputProps={{
@@ -271,8 +321,8 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
               size="small"
               label="Start Date"
               type="date"
-              value={filters.startDate}
-              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              value={startDateInput}
+              onChange={(e) => setStartDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
 
@@ -280,12 +330,12 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
               size="small"
               label="End Date"
               type="date"
-              value={filters.endDate}
-              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              value={endDateInput}
+              onChange={(e) => setEndDateInput(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
 
-            {(filters.type || filters.startDate || filters.endDate || filters.search) && (
+            {(filters.type || startDateInput || endDateInput || searchInput) && (
               <Button
                 variant="outlined"
                 size="small"
@@ -304,9 +354,9 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
       </Card>
 
       {/* Transaction Cards */}
-      {data?.transactions.length ? (
+      {filteredTransactions.length ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {data.transactions.map((transaction, index) => (
+          {filteredTransactions.map((transaction, index) => (
             <Fade in={true} timeout={600 + index * 100} key={transaction.id}>
               <Card sx={{
                 position: 'relative',
