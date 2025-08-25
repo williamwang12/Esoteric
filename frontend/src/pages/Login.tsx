@@ -383,23 +383,6 @@ const Login: React.FC = () => {
                     )}
                   </Button>
 
-                  {/* Demo credentials */}
-                  <Alert 
-                    severity="info" 
-                    sx={{ 
-                      mb: 3,
-                      borderRadius: '12px',
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      backdropFilter: 'blur(10px)',
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      <strong>Demo Account:</strong><br />
-                      Email: demo@esoteric.com<br />
-                      Password: demo123456
-                    </Typography>
-                  </Alert>
 
                   {/* Links */}
                   <Box textAlign="center">

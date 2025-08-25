@@ -956,6 +956,7 @@ const Dashboard: React.FC = () => {
                           border: '1px solid rgba(255, 255, 255, 0.3)',
                           borderRadius: 3,
                           fontWeight: 600,
+                          fontSize: '1rem',
                           '&:hover': {
                             background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
                             boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
@@ -981,6 +982,7 @@ const Dashboard: React.FC = () => {
                             border: '1px solid rgba(255, 255, 255, 0.3)',
                             borderRadius: 3,
                             fontWeight: 600,
+                            fontSize: '1rem',
                             '&:hover': {
                               background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
                               boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
@@ -1001,11 +1003,18 @@ const Dashboard: React.FC = () => {
                           color: 'white',
                           textAlign: 'center',
                           border: '1px solid rgba(245, 158, 11, 0.3)',
+                          borderRadius: 3,
+                          minHeight: '64px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                          transition: 'all 0.2s ease-in-out',
                         }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                             <Pending sx={{ fontSize: 24, color: '#F59E0B' }} />
                             <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+                              <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#F59E0B' }}>
                                 Meeting Request Pending
                               </Typography>
                               <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
@@ -1025,6 +1034,10 @@ const Dashboard: React.FC = () => {
                             background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
                             border: '1px solid rgba(255, 255, 255, 0.3)',
                             borderRadius: 3,
+                            minHeight: '64px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             transition: 'all 0.2s ease-in-out',
                             '&:hover': {
                               background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
@@ -1037,7 +1050,7 @@ const Dashboard: React.FC = () => {
                           onClick={() => setMeetingDetailsOpen(true)}
                         >
                           <Box>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+                            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: 'text.primary', mb: 1 }}>
                               Meeting Scheduled
                             </Typography>
                             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
@@ -1050,35 +1063,31 @@ const Dashboard: React.FC = () => {
                           </Box>
                         </Card>
                       ) : (
-                        <Card sx={{
-                          py: 2,
-                          px: 3,
-                          background: 'linear-gradient(135deg, #6B7280, #4B5563)',
-                          color: 'white',
-                          textAlign: 'center',
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <Schedule sx={{ fontSize: 24 }} />
-                            <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                Meeting {meetingRequest.status.charAt(0).toUpperCase() + meetingRequest.status.slice(1)}
-                              </Typography>
-                              <Button
-                                variant="text"
-                                size="small"
-                                onClick={() => setMeetingDialogOpen(true)}
-                                sx={{ 
-                                  color: 'white', 
-                                  textDecoration: 'underline',
-                                  mt: 0.5,
-                                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
-                                }}
-                              >
-                                Schedule New Meeting
-                              </Button>
-                            </Box>
-                          </Box>
-                        </Card>
+                        <Button
+                          variant="contained"
+                          size="large"
+                          startIcon={<CalendarMonth />}
+                          onClick={() => setMeetingDialogOpen(true)}
+                          sx={{
+                            py: 2,
+                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            borderRadius: 3,
+                            fontWeight: 600,
+                            fontSize: '1rem',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                              border: '1px solid rgba(255, 255, 255, 0.5)',
+                              transform: 'translateY(-2px)',
+                            },
+                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          Schedule Meeting
+                        </Button>
                       )}
                     </Box>
                   </CardContent>
