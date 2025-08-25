@@ -618,7 +618,7 @@ const AdminDashboard: React.FC = () => {
       // Show success message
       setSnackbar({
         open: true,
-        message: `Loan account created successfully for ${selectedUser.first_name} ${selectedUser.last_name}`,
+        message: `Loan account created successfully for ${selectedUser.firstName} ${selectedUser.lastName}`,
         severity: 'success'
       });
       
