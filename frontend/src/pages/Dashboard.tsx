@@ -529,7 +529,7 @@ const Dashboard: React.FC = () => {
                         backdropFilter: 'blur(10px)'
                       }}>
                         <Typography variant="h6" gutterBottom sx={{ color: '#A855F7', fontWeight: 600 }}>
-                          💰 Account Balance
+                          Account Balance
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                           View your current loan balance, principal amount, and total growth in real-time.
@@ -543,7 +543,7 @@ const Dashboard: React.FC = () => {
                         backdropFilter: 'blur(10px)'
                       }}>
                         <Typography variant="h6" gutterBottom sx={{ color: '#EC4899', fontWeight: 600 }}>
-                          📊 Performance Metrics
+                          Performance Metrics
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
                           Monitor your monthly rate, bonuses earned, and account performance indicators.
@@ -590,15 +590,15 @@ const Dashboard: React.FC = () => {
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 3, mt: 4 }}>
                       <Box sx={{ p: 3, background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                        <Typography variant="h6" sx={{ color: '#22C55E', fontWeight: 600, mb: 1 }}>📊 Performance Charts</Typography>
+                        <Typography variant="h6" sx={{ color: '#22C55E', fontWeight: 600, mb: 1 }}>Performance Charts</Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Real-time growth visualization</Typography>
                       </Box>
                       <Box sx={{ p: 3, background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                        <Typography variant="h6" sx={{ color: '#22C55E', fontWeight: 600, mb: 1 }}>📈 ROI Tracking</Typography>
+                        <Typography variant="h6" sx={{ color: '#22C55E', fontWeight: 600, mb: 1 }}>ROI Tracking</Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Return on investment metrics</Typography>
                       </Box>
                       <Box sx={{ p: 3, background: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                        <Typography variant="h6" sx={{ color: '#22C55E', fontWeight: 600, mb: 1 }}>🎯 Goal Progress</Typography>
+                        <Typography variant="h6" sx={{ color: '#22C55E', fontWeight: 600, mb: 1 }}>Goal Progress</Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Track your financial goals</Typography>
                       </Box>
                     </Box>
@@ -690,11 +690,11 @@ const Dashboard: React.FC = () => {
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3, mt: 4, maxWidth: '600px', mx: 'auto' }}>
                       <Box sx={{ p: 3, background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                        <Typography variant="h6" sx={{ color: '#F59E0B', fontWeight: 600, mb: 1 }}>📄 Loan Agreements</Typography>
+                        <Typography variant="h6" sx={{ color: '#F59E0B', fontWeight: 600, mb: 1 }}>Loan Agreements</Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Download your loan contracts and terms</Typography>
                       </Box>
                       <Box sx={{ p: 3, background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                        <Typography variant="h6" sx={{ color: '#F59E0B', fontWeight: 600, mb: 1 }}>📊 Statements</Typography>
+                        <Typography variant="h6" sx={{ color: '#F59E0B', fontWeight: 600, mb: 1 }}>Statements</Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>Monthly account statements and reports</Typography>
                       </Box>
                     </Box>

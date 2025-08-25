@@ -119,7 +119,11 @@ const AdvancedMetrics: React.FC<AdvancedMetricsProps> = ({ analytics, loanData }
       {/* Advanced Metrics Summary Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3, mb: 4 }}>
         <Fade in={isVisible} timeout={800}>
-          <Card>
+          <Card sx={{
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
+            border: `1px solid ${theme.palette.primary.main}30`,
+            borderRadius: 3
+          }}>
             <CardContent sx={{ p: 3, textAlign: 'center' }}>
               <Avatar sx={{ 
                 bgcolor: theme.palette.success.main, 
@@ -144,7 +148,11 @@ const AdvancedMetrics: React.FC<AdvancedMetricsProps> = ({ analytics, loanData }
         </Fade>
 
         <Fade in={isVisible} timeout={1000}>
-          <Card>
+          <Card sx={{
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
+            border: `1px solid ${theme.palette.primary.main}30`,
+            borderRadius: 3
+          }}>
             <CardContent sx={{ p: 3, textAlign: 'center' }}>
               <Avatar sx={{ 
                 bgcolor: theme.palette.warning.main, 
@@ -169,7 +177,11 @@ const AdvancedMetrics: React.FC<AdvancedMetricsProps> = ({ analytics, loanData }
         </Fade>
 
         <Fade in={isVisible} timeout={1200}>
-          <Card>
+          <Card sx={{
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
+            border: `1px solid ${theme.palette.primary.main}30`,
+            borderRadius: 3
+          }}>
             <CardContent sx={{ p: 3, textAlign: 'center' }}>
               <Avatar sx={{ 
                 bgcolor: theme.palette.error.main, 
@@ -194,7 +206,11 @@ const AdvancedMetrics: React.FC<AdvancedMetricsProps> = ({ analytics, loanData }
         </Fade>
 
         <Fade in={isVisible} timeout={1400}>
-          <Card>
+          <Card sx={{
+            background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
+            border: `1px solid ${theme.palette.primary.main}30`,
+            borderRadius: 3
+          }}>
             <CardContent sx={{ p: 3, textAlign: 'center' }}>
               <Avatar sx={{ 
                 bgcolor: theme.palette.info.main, 

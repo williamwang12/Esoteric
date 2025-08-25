@@ -264,20 +264,22 @@ const LoanGrowthChart: React.FC<LoanGrowthChartProps> = ({ analytics, height = 4
 
   return (
     <Fade in={isVisible} timeout={1000}>
-      <Box>
-        <Box 
-          sx={{ 
-            position: 'relative', 
-            height,
-            background: alpha(theme.palette.primary.main, 0.02),
-            borderRadius: '16px',
-            padding: 3,
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-          }}
-        >
-          <Chart type="bar" data={data} options={options} />
-        </Box>
-      </Box>
+      <Card sx={{
+        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+        border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+        borderRadius: 3
+      }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box 
+            sx={{ 
+              position: 'relative', 
+              height,
+            }}
+          >
+            <Chart type="bar" data={data} options={options} />
+          </Box>
+        </CardContent>
+      </Card>
     </Fade>
   );
 };

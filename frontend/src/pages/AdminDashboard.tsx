@@ -2246,9 +2246,30 @@ const AdminDashboard: React.FC = () => {
       </Container>
 
       {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Upload Document</DialogTitle>
-        <DialogContent>
+      <Dialog 
+        open={uploadDialogOpen} 
+        onClose={() => setUploadDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Upload />
+          Upload Document
+        </DialogTitle>
+        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <TextField
               label="Document Title"
@@ -2321,7 +2342,19 @@ const AdminDashboard: React.FC = () => {
       </Dialog>
 
       {/* Loan Edit Dialog */}
-      <Dialog open={loanEditDialogOpen} onClose={() => setLoanEditDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog 
+        open={loanEditDialogOpen} 
+        onClose={() => setLoanEditDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          }
+        }}
+      >
         <DialogTitle sx={{ 
           background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
           color: 'white',
@@ -2332,7 +2365,7 @@ const AdminDashboard: React.FC = () => {
           <Edit />
           Edit Loan Account
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2, mt: 2 }}>
             <TextField
               label="Principal Amount"
@@ -2812,9 +2845,21 @@ const AdminDashboard: React.FC = () => {
       </Dialog>
 
       {/* Transactions Modal */}
-      <Dialog open={transactionsModalOpen} onClose={() => setTransactionsModalOpen(false)} maxWidth="lg" fullWidth>
+      <Dialog 
+        open={transactionsModalOpen} 
+        onClose={() => setTransactionsModalOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333',
+            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          }
+        }}
+      >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -2823,7 +2868,7 @@ const AdminDashboard: React.FC = () => {
           <Receipt />
           Loan Transactions
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
           {selectedLoanForTransactionView && (
             <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
               <Typography variant="h6" gutterBottom>
