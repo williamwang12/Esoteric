@@ -346,14 +346,14 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchUserDetails = useCallback(async (userId: string) => {
+  const fetchUserDetails = useCallback(async (userId: string, forceRefresh = false) => {
     try {
-      // Check cache first
+      // Check cache first (unless forcing refresh)
       const cacheKey = `user_${userId}`;
       const cachedData = userCache.get(cacheKey);
       const now = Date.now();
       
-      if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
+      if (!forceRefresh && cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
         setSelectedUser(cachedData.user);
         setUserDocuments(cachedData.documents);
         setUserLoans(cachedData.loans);
@@ -622,8 +622,11 @@ const AdminDashboard: React.FC = () => {
         severity: 'success'
       });
       
-      // Refresh user loan data
-      await fetchUserDetails(selectedUser.id);
+      // Refresh user loan data and users list
+      await Promise.all([
+        fetchUserDetails(selectedUser.id, true), // Force refresh user details
+        fetchUsers(true) // Force refresh the users list
+      ]);
       
       // Reset form and close dialog
       setCreateLoanForm({
