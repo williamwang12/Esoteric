@@ -770,30 +770,22 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[0]} timeout={800}>
                   <Card
                     sx={{
-                      background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                      color: 'white',
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                      border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                      borderRadius: 3,
+                      color: 'text.primary',
                       position: 'relative',
                       overflow: 'hidden',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%)',
-                        pointerEvents: 'none'
-                      }
                     }}
                   >
                     <CardContent sx={{ position: 'relative', zIndex: 1, p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <AccountBalanceWallet sx={{ fontSize: 32, mr: 2, opacity: 0.9 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 600, opacity: 0.9 }}>
+                        <AccountBalanceWallet sx={{ fontSize: 32, mr: 2, color: '#6B46C1' }} />
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Current Balance
                         </Typography>
                       </Box>
-                      <Typography variant="h2" component="div" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+                      <Typography variant="h2" component="div" color="text.primary" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
                         ${parseFloat(loanData.current_balance).toLocaleString()}
                       </Typography>
                     </CardContent>
@@ -801,17 +793,15 @@ const Dashboard: React.FC = () => {
                 </Fade>
 
                 <Fade in={cardAnimations[1]} timeout={1000}>
-                  <Card sx={{ position: 'relative' }}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    borderRadius: 3,
+                  }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ 
-                          background: 'linear-gradient(135deg, #9333EA, #A855F7)', 
-                          borderRadius: '12px', 
-                          p: 1.5, 
-                          mr: 2 
-                        }}>
-                          <AttachMoney sx={{ fontSize: 28, color: 'white' }} />
-                        </Box>
+                        <AttachMoney sx={{ fontSize: 32, mr: 2, color: '#9333EA' }} />
                         <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Total Bonuses
                         </Typography>
@@ -824,17 +814,15 @@ const Dashboard: React.FC = () => {
                 </Fade>
 
                 <Fade in={cardAnimations[2]} timeout={1200}>
-                  <Card sx={{ position: 'relative' }}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    borderRadius: 3,
+                  }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ 
-                          background: 'linear-gradient(135deg, #10B981, #34D399)', 
-                          borderRadius: '12px', 
-                          p: 1.5, 
-                          mr: 2 
-                        }}>
-                          <Timeline sx={{ fontSize: 28, color: 'white' }} />
-                        </Box>
+                        <Timeline sx={{ fontSize: 32, mr: 2, color: '#10B981' }} />
                         <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Monthly Rate
                         </Typography>
@@ -847,17 +835,15 @@ const Dashboard: React.FC = () => {
                 </Fade>
 
                 <Fade in={cardAnimations[3]} timeout={1400}>
-                  <Card sx={{ position: 'relative' }}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    borderRadius: 3,
+                  }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ 
-                          background: 'linear-gradient(135deg, #3B82F6, #60A5FA)', 
-                          borderRadius: '12px', 
-                          p: 1.5, 
-                          mr: 2 
-                        }}>
-                          <CreditCard sx={{ fontSize: 28, color: 'white' }} />
-                        </Box>
+                        <CreditCard sx={{ fontSize: 32, mr: 2, color: '#3B82F6' }} />
                         <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Account Number
                         </Typography>
@@ -879,17 +865,15 @@ const Dashboard: React.FC = () => {
                 </Fade>
 
                 <Fade in={cardAnimations[4]} timeout={1600}>
-                  <Card sx={{ position: 'relative' }}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    borderRadius: 3,
+                  }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ 
-                          background: 'linear-gradient(135deg, #EF4444, #F87171)', 
-                          borderRadius: '12px', 
-                          p: 1.5, 
-                          mr: 2 
-                        }}>
-                          <Payment sx={{ fontSize: 28, color: 'white' }} />
-                        </Box>
+                        <Payment sx={{ fontSize: 32, mr: 2, color: '#EF4444' }} />
                         <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Monthly Payment
                         </Typography>
@@ -902,17 +886,15 @@ const Dashboard: React.FC = () => {
                 </Fade>
 
                 <Fade in={cardAnimations[5]} timeout={1800}>
-                  <Card sx={{ position: 'relative' }}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    borderRadius: 3,
+                  }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <Box sx={{ 
-                          background: 'linear-gradient(135deg, #F59E0B, #FBBF24)', 
-                          borderRadius: '12px', 
-                          p: 1.5, 
-                          mr: 2 
-                        }}>
-                          <TrendingUp sx={{ fontSize: 28, color: 'white', transform: 'rotate(180deg)' }} />
-                        </Box>
+                        <TrendingUp sx={{ fontSize: 32, mr: 2, color: '#F59E0B', transform: 'rotate(180deg)' }} />
                         <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Total Withdrawals
                         </Typography>
