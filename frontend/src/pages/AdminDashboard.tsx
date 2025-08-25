@@ -180,6 +180,11 @@ const AdminDashboard: React.FC = () => {
   const pendingMeetingCount = useMemo(() => {
     return meetingRequests.filter(req => req.status === 'pending').length;
   }, [meetingRequests]);
+
+  // Memoized pending withdrawal requests count for notification badge
+  const pendingWithdrawalCount = useMemo(() => {
+    return withdrawalRequests.filter(req => req.status === 'pending').length;
+  }, [withdrawalRequests]);
   
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -714,6 +719,33 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleCompleteWithdrawal = async (requestId: string) => {
+    try {
+      const response = await fetch(`http://localhost:5002/api/admin/withdrawal-requests/${requestId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete withdrawal request');
+      }
+
+      // Refresh the withdrawal requests
+      await fetchWithdrawalRequests();
+      setSnackbar({
+        open: true,
+        message: 'Withdrawal completed successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Complete withdrawal error:', error);
+      setError('Failed to complete withdrawal request');
+    }
+  };
+
   // Open scheduling dialog
   const handleScheduleClick = (request: any) => {
     setSelectedMeetingRequest(request);
@@ -845,7 +877,23 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-1"
                 />
                 <Tab 
-                  icon={<AccountBalanceWallet />} 
+                  icon={
+                    <Badge 
+                      badgeContent={pendingWithdrawalCount} 
+                      color="error"
+                      invisible={pendingWithdrawalCount === 0}
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          backgroundColor: '#EF4444',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                        }
+                      }}
+                    >
+                      <AccountBalanceWallet />
+                    </Badge>
+                  } 
                   label="Withdrawal Requests" 
                   id="admin-tab-2"
                   aria-controls="admin-tabpanel-2"
@@ -1544,135 +1592,369 @@ const AdminDashboard: React.FC = () => {
 
             {/* Withdrawal Requests Tab */}
             <TabPanel value={tabValue} index={2}>
-              <Card>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">Withdrawal Requests</Typography>
-                    <Button
-                      startIcon={<AccountBalanceWallet />}
-                      onClick={fetchWithdrawalRequests}
-                      disabled={loadingWithdrawalRequests}
-                    >
-                      Refresh
-                    </Button>
-                  </Box>
-                  {loadingWithdrawalRequests ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : (
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>User</TableCell>
-                            <TableCell>Amount</TableCell>
-                            <TableCell>Reason</TableCell>
-                            <TableCell>Priority</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Requested</TableCell>
-                            <TableCell>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {withdrawalRequests.map((request) => (
-                            <TableRow key={request.id}>
-                              <TableCell>
-                                <Box>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    {request.first_name} {request.last_name}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {request.email}
-                                  </Typography>
-                                  <Typography variant="caption" display="block" color="text.secondary">
-                                    Account: {request.account_number}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>
-                                <Typography variant="h6" color="warning.main">
-                                  ${parseFloat(request.amount).toLocaleString()}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Balance: ${parseFloat(request.current_balance).toLocaleString()}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Typography variant="body2">
-                                  {request.reason}
-                                </Typography>
-                                {request.notes && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    Notes: {request.notes}
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Chip 
-                                  label={request.urgency.toUpperCase()} 
-                                  size="small"
-                                  color={
-                                    request.urgency === 'urgent' ? 'error' : 
-                                    request.urgency === 'high' ? 'warning' : 
-                                    request.urgency === 'normal' ? 'primary' : 'default'
-                                  }
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Chip 
-                                  label={request.status.toUpperCase()} 
-                                  size="small"
-                                  color={
-                                    request.status === 'approved' ? 'success' : 
-                                    request.status === 'rejected' ? 'error' : 
-                                    request.status === 'processed' ? 'info' : 'default'
-                                  }
-                                />
-                                {request.admin_notes && (
-                                  <Typography variant="caption" display="block" color="text.secondary">
-                                    Admin notes: {request.admin_notes}
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Typography variant="body2">
-                                  {new Date(request.created_at).toLocaleDateString()}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {new Date(request.created_at).toLocaleTimeString()}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                {request.status === 'pending' && (
-                                  <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <Button
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                  Withdrawal Management
+                </Typography>
+                <Button
+                  startIcon={<AccountBalanceWallet />}
+                  onClick={fetchWithdrawalRequests}
+                  disabled={loadingWithdrawalRequests}
+                  variant="contained"
+                >
+                  Refresh
+                </Button>
+              </Box>
+              {loadingWithdrawalRequests ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress size={60} />
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  
+                  {/* Pending Withdrawal Requests Section */}
+                  <Card>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                        <RequestPage sx={{ color: 'warning.main', fontSize: 28 }} />
+                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                          Pending Withdrawal Requests ({pendingWithdrawalCount})
+                        </Typography>
+                      </Box>
+                      
+                      {pendingWithdrawalCount === 0 ? (
+                        <Box sx={{ 
+                          textAlign: 'center', 
+                          py: 4,
+                          background: 'rgba(245, 158, 11, 0.05)',
+                          borderRadius: 2,
+                          border: '1px dashed rgba(245, 158, 11, 0.3)'
+                        }}>
+                          <RequestPage sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
+                          <Typography variant="h6" color="text.secondary">
+                            No pending withdrawal requests
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Withdrawal requests will appear here for review
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <TableContainer component={Paper} variant="outlined">
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>User</TableCell>
+                                <TableCell>Amount</TableCell>
+                                <TableCell>Reason</TableCell>
+                                <TableCell>Priority</TableCell>
+                                <TableCell>Requested</TableCell>
+                                <TableCell>Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {withdrawalRequests.filter(req => req.status === 'pending').map((request) => (
+                                <TableRow key={request.id}>
+                                  <TableCell>
+                                    <Box>
+                                      <Typography variant="body2" fontWeight="medium">
+                                        {request.first_name} {request.last_name}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {request.email}
+                                      </Typography>
+                                      <Typography variant="caption" display="block" color="text.secondary">
+                                        Account: {request.account_number}
+                                      </Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="h6" color="warning.main">
+                                      ${parseFloat(request.amount).toLocaleString()}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Balance: ${parseFloat(request.current_balance).toLocaleString()}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2">
+                                      {request.reason}
+                                    </Typography>
+                                    {request.notes && (
+                                      <Typography variant="caption" color="text.secondary">
+                                        Notes: {request.notes}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip 
+                                      label={request.urgency.toUpperCase()} 
                                       size="small"
+                                      color={
+                                        request.urgency === 'urgent' ? 'error' : 
+                                        request.urgency === 'high' ? 'warning' : 
+                                        request.urgency === 'normal' ? 'primary' : 'default'
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2">
+                                      {new Date(request.created_at).toLocaleDateString()}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {new Date(request.created_at).toLocaleTimeString()}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        color="success"
+                                        startIcon={<CheckCircle />}
+                                        onClick={() => updateWithdrawalRequestStatus(request.id, 'approved')}
+                                      >
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="error"
+                                        startIcon={<CancelIcon />}
+                                        onClick={() => updateWithdrawalRequestStatus(request.id, 'rejected')}
+                                      >
+                                        Reject
+                                      </Button>
+                                    </Box>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Approved/Processed Withdrawals Section */}
+                  <Card>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                        <CheckCircle sx={{ color: 'success.main', fontSize: 28 }} />
+                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                          Approved Withdrawals ({withdrawalRequests.filter(req => req.status === 'approved').length})
+                        </Typography>
+                      </Box>
+                      
+                      {withdrawalRequests.filter(req => req.status === 'approved').length === 0 ? (
+                        <Box sx={{ 
+                          textAlign: 'center', 
+                          py: 4,
+                          background: 'rgba(34, 197, 94, 0.05)',
+                          borderRadius: 2,
+                          border: '1px dashed rgba(34, 197, 94, 0.3)'
+                        }}>
+                          <CheckCircle sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
+                          <Typography variant="h6" color="text.secondary">
+                            No approved withdrawals
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Approved withdrawals will appear here
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <TableContainer component={Paper} variant="outlined">
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>User</TableCell>
+                                <TableCell>Amount</TableCell>
+                                <TableCell>Reason</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell>Dates</TableCell>
+                                <TableCell>Admin Notes</TableCell>
+                                <TableCell>Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {withdrawalRequests.filter(req => req.status === 'approved').map((request) => (
+                                <TableRow key={request.id}>
+                                  <TableCell>
+                                    <Box>
+                                      <Typography variant="body2" fontWeight="medium">
+                                        {request.first_name} {request.last_name}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        Account: {request.account_number}
+                                      </Typography>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="h6" color="success.main">
+                                      ${parseFloat(request.amount).toLocaleString()}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2">
+                                      {request.reason}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip 
+                                      label={request.status.toUpperCase()} 
+                                      size="small"
+                                      color={
+                                        request.status === 'approved' ? 'success' : 
+                                        request.status === 'processed' ? 'info' : 'default'
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2">
+                                      Requested: {new Date(request.created_at).toLocaleDateString()}
+                                    </Typography>
+                                    {request.reviewed_at && (
+                                      <Typography variant="caption" color="text.secondary">
+                                        Reviewed: {new Date(request.reviewed_at).toLocaleDateString()}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {request.admin_notes || 'No notes'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
                                       variant="contained"
+                                      size="small"
                                       color="success"
-                                      onClick={() => updateWithdrawalRequestStatus(request.id, 'approved')}
+                                      onClick={() => handleCompleteWithdrawal(request.id)}
+                                      sx={{
+                                        background: 'linear-gradient(135deg, #22C55E, #16A34A)',
+                                        '&:hover': {
+                                          background: 'linear-gradient(135deg, #16A34A, #15803D)',
+                                        }
+                                      }}
                                     >
-                                      Approve
+                                      Complete
                                     </Button>
-                                    <Button
-                                      size="small"
-                                      variant="contained"
-                                      color="error"
-                                      onClick={() => updateWithdrawalRequestStatus(request.id, 'rejected')}
-                                    >
-                                      Reject
-                                    </Button>
-                                  </Box>
-                                )}
-                              </TableCell>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
+              {/* Completed Withdrawals Section */}
+              <Box sx={{ mt: 4 }}>
+                <Card sx={{ 
+                  bgcolor: 'background.paper', 
+                  borderRadius: 3, 
+                  border: '1px solid',
+                  borderColor: 'divider'
+                }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <CheckCircle sx={{ color: 'info.main', fontSize: 28 }} />
+                      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                        Completed Withdrawals ({withdrawalRequests.filter(req => req.status === 'completed').length})
+                      </Typography>
+                    </Box>
+                    
+                    {withdrawalRequests.filter(req => req.status === 'completed').length === 0 ? (
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        background: 'rgba(59, 130, 246, 0.05)',
+                        borderRadius: 2,
+                        border: '1px dashed',
+                        borderColor: 'info.main'
+                      }}>
+                        <CheckCircle sx={{ fontSize: 48, color: 'info.main', mb: 2, opacity: 0.5 }} />
+                        <Typography variant="h6" color="text.secondary" gutterBottom>
+                          No Completed Withdrawals
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Completed withdrawal transactions will appear here
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <TableContainer>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>User</TableCell>
+                              <TableCell>Amount</TableCell>
+                              <TableCell>Reason</TableCell>
+                              <TableCell>Status</TableCell>
+                              <TableCell>Dates</TableCell>
+                              <TableCell>Admin Notes</TableCell>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </CardContent>
-              </Card>
+                          </TableHead>
+                          <TableBody>
+                            {withdrawalRequests.filter(req => req.status === 'completed').map((request) => (
+                              <TableRow key={request.id}>
+                                <TableCell>
+                                  <Box>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {request.first_name} {request.last_name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      Account: {request.account_number}
+                                    </Typography>
+                                  </Box>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="h6" color="info.main">
+                                    ${parseFloat(request.amount).toLocaleString()}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2">
+                                    {request.reason}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    label="COMPLETED" 
+                                    size="small"
+                                    color="info"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2">
+                                    Requested: {new Date(request.created_at).toLocaleDateString()}
+                                  </Typography>
+                                  {request.reviewed_at && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ display: 'block' }}>
+                                      Approved: {new Date(request.reviewed_at).toLocaleDateString()}
+                                    </Typography>
+                                  )}
+                                  {request.completed_at && (
+                                    <Typography variant="body2" color="info.main" sx={{ display: 'block' }}>
+                                      Completed: {new Date(request.completed_at).toLocaleDateString()}
+                                    </Typography>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {request.admin_notes || 'No notes'}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </CardContent>
+                </Card>
+              </Box>
             </TabPanel>
 
             {/* Meetings Tab */}

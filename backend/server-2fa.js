@@ -547,6 +547,79 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
     }
 });
 
+// Complete withdrawal request (subtract from balance and mark as completed)
+app.post('/api/admin/withdrawal-requests/:requestId/complete', authenticateAdmin, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const adminUserId = req.user.userId;
+
+        // Get withdrawal request details and verify it's approved
+        const withdrawalResult = await pool.query(`
+            SELECT wr.*, la.id as loan_account_id, la.current_balance
+            FROM withdrawal_requests wr
+            JOIN loan_accounts la ON wr.loan_account_id = la.id
+            WHERE wr.id = $1 AND wr.status = 'approved'
+        `, [requestId]);
+
+        if (withdrawalResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Approved withdrawal request not found' });
+        }
+
+        const withdrawal = withdrawalResult.rows[0];
+        const withdrawalAmount = parseFloat(withdrawal.amount);
+        const currentBalance = parseFloat(withdrawal.current_balance);
+
+        // Verify sufficient balance (double-check)
+        if (withdrawalAmount > currentBalance) {
+            return res.status(400).json({ error: 'Insufficient balance to complete withdrawal' });
+        }
+
+        // Begin transaction
+        await pool.query('BEGIN');
+
+        try {
+            // Subtract amount from loan account
+            const newBalance = currentBalance - withdrawalAmount;
+            await pool.query(`
+                UPDATE loan_accounts 
+                SET current_balance = $1 
+                WHERE id = $2
+            `, [newBalance, withdrawal.loan_account_id]);
+
+            // Update withdrawal request to completed
+            await pool.query(`
+                UPDATE withdrawal_requests 
+                SET status = 'completed', completed_at = NOW(), completed_by = $1
+                WHERE id = $2
+            `, [adminUserId, requestId]);
+
+            // Create transaction record
+            await pool.query(`
+                INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
+                VALUES ($1, $2, 'withdrawal', $3, CURRENT_DATE, NOW())
+            `, [withdrawal.loan_account_id, -withdrawalAmount, `Withdrawal: ${withdrawal.reason}`]);
+
+            // Commit transaction
+            await pool.query('COMMIT');
+
+            res.json({
+                message: 'Withdrawal completed successfully',
+                newBalance: newBalance,
+                withdrawalAmount: withdrawalAmount
+            });
+
+        } catch (error) {
+            // Rollback on error
+            await pool.query('ROLLBACK');
+            throw error;
+        }
+
+    } catch (error) {
+        console.error('Complete withdrawal error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Admin route - Create loan account for user
 app.post('/api/admin/create-loan', authenticateAdmin, [
     body('userId').isInt().withMessage('Valid user ID required'),
@@ -1618,6 +1691,7 @@ app.put('/api/admin/withdrawal-requests/:requestId', authenticateAdmin, [
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 // Admin route - Get all meeting requests
 app.get('/api/admin/meeting-requests', authenticateAdmin, async (req, res) => {

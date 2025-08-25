@@ -64,23 +64,35 @@ const WithdrawalRequestDialog: React.FC<WithdrawalRequestDialogProps> = ({
       setError(null);
 
       const token = localStorage.getItem('authToken');
+      
+      const requestBody: {
+        amount: number;
+        reason: string;
+        urgency: string;
+        notes?: string;
+      } = {
+        amount: amount,
+        reason: formData.reason,
+        urgency: formData.urgency
+      };
+      
+      // Only include notes if it's not empty
+      if (formData.notes && formData.notes.trim()) {
+        requestBody.notes = formData.notes.trim();
+      }
+      
       const response = await fetch('http://localhost:5002/api/withdrawal-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          amount: amount,
-          reason: formData.reason,
-          urgency: formData.urgency,
-          notes: formData.notes || null
-        }),
+        body: JSON.stringify(requestBody),
       });
-
+      
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit withdrawal request');
+        throw new Error(errorData.error || errorData.message || errorData.errors?.[0]?.msg || 'Failed to submit withdrawal request');
       }
 
       // Reset form and close dialog

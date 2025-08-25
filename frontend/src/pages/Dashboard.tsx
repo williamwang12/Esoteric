@@ -951,12 +951,19 @@ const Dashboard: React.FC = () => {
                         onClick={() => setWithdrawalDialogOpen(true)}
                         sx={{
                           py: 2,
-                          background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+                          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
                           color: 'white',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          borderRadius: 3,
+                          fontWeight: 600,
                           '&:hover': {
-                            background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                            border: '1px solid rgba(255, 255, 255, 0.5)',
+                            transform: 'translateY(-2px)',
                           },
-                          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                          boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                          transition: 'all 0.2s ease-in-out',
                         }}
                       >
                         Request Withdrawal
@@ -965,21 +972,22 @@ const Dashboard: React.FC = () => {
                         <Button
                           variant="contained"
                           size="large"
-                          startIcon={<CalendarMonth sx={{ color: '#3B82F6' }} />}
+                          startIcon={<CalendarMonth />}
                           onClick={() => setMeetingDialogOpen(true)}
                           sx={{
                             py: 2,
                             background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                            color: '#3B82F6',
-                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            borderRadius: 3,
                             fontWeight: 600,
                             '&:hover': {
                               background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                              boxShadow: '0 8px 16px rgba(59, 130, 246, 0.4)',
-                              border: '1px solid rgba(59, 130, 246, 0.5)',
+                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                              border: '1px solid rgba(255, 255, 255, 0.5)',
                               transform: 'translateY(-2px)',
                             },
-                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
                             transition: 'all 0.2s ease-in-out',
                           }}
                         >
@@ -1014,11 +1022,17 @@ const Dashboard: React.FC = () => {
                             px: 3,
                             textAlign: 'center',
                             cursor: 'pointer',
+                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            borderRadius: 3,
                             transition: 'all 0.2s ease-in-out',
                             '&:hover': {
+                              background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                              border: '1px solid rgba(255, 255, 255, 0.5)',
                               transform: 'translateY(-2px)',
-                              boxShadow: 2,
-                            }
+                            },
+                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
                           }}
                           onClick={() => setMeetingDetailsOpen(true)}
                         >
