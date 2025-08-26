@@ -209,7 +209,7 @@ const Login: React.FC = () => {
                     color="text.secondary"
                     sx={{ fontWeight: 400, opacity: 0.8 }}
                   >
-                    Premium Loan Management Platform
+                    Venture Capital Management Platform
                   </Typography>
                 </Box>
               </Slide>

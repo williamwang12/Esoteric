@@ -185,6 +185,11 @@ const AdminDashboard: React.FC = () => {
   const pendingWithdrawalCount = useMemo(() => {
     return withdrawalRequests.filter(req => req.status === 'pending').length;
   }, [withdrawalRequests]);
+
+  // Memoized pending verification requests count for notification badge
+  const pendingVerificationCount = useMemo(() => {
+    return verificationRequests.filter(req => req.status === 'pending').length;
+  }, [verificationRequests]);
   
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -874,7 +879,23 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-0"
                 />
                 <Tab 
-                  icon={<Verified />} 
+                  icon={
+                    <Badge 
+                      badgeContent={pendingVerificationCount} 
+                      color="error"
+                      invisible={pendingVerificationCount === 0}
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          backgroundColor: '#EF4444',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.75rem',
+                        }
+                      }}
+                    >
+                      <Verified />
+                    </Badge>
+                  } 
                   label="Verification Requests" 
                   id="admin-tab-1"
                   aria-controls="admin-tabpanel-1"
