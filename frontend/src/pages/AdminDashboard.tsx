@@ -2966,13 +2966,18 @@ const AdminDashboard: React.FC = () => {
           setVerificationAction(null);
           setVerificationNotes('');
         }} 
-        maxWidth="md" 
+        maxWidth="sm" 
         fullWidth
+        PaperProps={{
+          sx: {
+            background: '#1a1a1a',
+            border: '1px solid rgba(107, 70, 193, 0.3)',
+            borderRadius: '16px',
+          }
+        }}
       >
         <DialogTitle sx={{ 
-          background: verificationAction === 'approved' 
-            ? 'linear-gradient(135deg, #10B981 0%, #34D399 100%)'
-            : 'linear-gradient(135deg, #EF4444 0%, #F87171 100%)',
+          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -2981,10 +2986,14 @@ const AdminDashboard: React.FC = () => {
           {verificationAction === 'approved' ? <CheckCircle /> : <CancelIcon />}
           {verificationAction === 'approved' ? 'Approve' : 'Reject'} Account Verification
         </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
+        <DialogContent>
           {selectedVerificationRequest && (
-            <Box>
-              <Box sx={{ mb: 3, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                {verificationAction === 'approved' ? 'Approve' : 'Reject'} Account Verification
+              </Typography>
+              
+              <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%)', borderRadius: 2, border: '1px solid rgba(107, 70, 193, 0.2)' }}>
                 <Typography variant="h6" gutterBottom>
                   {selectedVerificationRequest.first_name} {selectedVerificationRequest.last_name}
                 </Typography>
@@ -2996,32 +3005,17 @@ const AdminDashboard: React.FC = () => {
                 </Typography>
               </Box>
               
-              <Typography variant="body1" gutterBottom>
-                Are you sure you want to <strong>{verificationAction}</strong> this account verification request?
-              </Typography>
-              
               {verificationAction === 'approved' && (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   This will mark the user's account as verified and grant them full access to platform features.
                 </Typography>
               )}
               
               {verificationAction === 'rejected' && (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   This will reject the verification request. The user will remain unverified and can submit a new request.
                 </Typography>
               )}
-
-              <TextField
-                fullWidth
-                label="Admin Notes (Optional)"
-                multiline
-                rows={3}
-                value={verificationNotes}
-                onChange={(e) => setVerificationNotes(e.target.value)}
-                placeholder="Add any notes about this decision..."
-                sx={{ mt: 2 }}
-              />
             </Box>
           )}
         </DialogContent>

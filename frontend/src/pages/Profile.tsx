@@ -442,7 +442,7 @@ const Profile: React.FC = () => {
 
                 <Fade in={true} timeout={1400}>
                   <Card sx={{ 
-                    height: 'fit-content',
+                    height: '100%',
                     background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.02)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
                     border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
                     borderRadius: '16px',
@@ -586,12 +586,18 @@ const Profile: React.FC = () => {
                       </Typography>
                       {!profileData.accountVerified && (
                         <Button
-                          variant="outlined"
+                          variant="contained"
                           color="primary"
                           size="small"
                           onClick={handleRequestAccountVerification}
                           disabled={verificationRequestLoading || verificationRequestSent}
                           startIcon={verificationRequestLoading ? <CircularProgress size={16} /> : <Verified />}
+                          sx={{ 
+                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                            }
+                          }}
                         >
                           {verificationRequestLoading 
                             ? 'Requesting...' 
@@ -614,15 +620,15 @@ const Profile: React.FC = () => {
                         Two-factor authentication status
                       </Typography>
                       <Button
-                        variant={twoFAStatus?.isEnabled ? "outlined" : "contained"}
-                        color={twoFAStatus?.isEnabled ? "error" : "primary"}
+                        variant="contained"
+                        color="primary"
                         size="small"
                         onClick={twoFAStatus?.isEnabled ? () => setTwoFADialogOpen(true) : handleSetup2FA}
                         disabled={twoFALoading}
                         startIcon={twoFALoading ? <CircularProgress size={16} /> : <Security />}
                         sx={{ 
-                          background: twoFAStatus?.isEnabled ? undefined : 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                          '&:hover': twoFAStatus?.isEnabled ? undefined : {
+                          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                          '&:hover': {
                             background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
                           }
                         }}
@@ -653,9 +659,9 @@ const Profile: React.FC = () => {
                           disabled={emailVerificationLoading}
                           startIcon={emailVerificationLoading ? <CircularProgress size={16} /> : <Email />}
                           sx={{ 
-                            background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
                             '&:hover': {
-                              background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+                              background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
                             }
                           }}
                         >
@@ -680,8 +686,15 @@ const Profile: React.FC = () => {
             setTwoFAError(null);
             setTwoFASetupData(null);
           }} 
-          maxWidth="md" 
+          maxWidth="sm" 
           fullWidth
+          PaperProps={{
+            sx: {
+              background: '#1a1a1a',
+              border: '1px solid rgba(107, 70, 193, 0.3)',
+              borderRadius: '16px',
+            }
+          }}
         >
           <DialogTitle sx={{ 
             background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
@@ -820,9 +833,16 @@ const Profile: React.FC = () => {
           }}
           maxWidth="sm" 
           fullWidth
+          PaperProps={{
+            sx: {
+              background: '#1a1a1a',
+              border: '1px solid rgba(107, 70, 193, 0.3)',
+              borderRadius: '16px',
+            }
+          }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -831,34 +851,34 @@ const Profile: React.FC = () => {
             <Email />
             Email Verification
           </DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
+          <DialogContent>
             {emailVerificationError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
                 {emailVerificationError}
               </Alert>
             )}
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              A verification token has been sent to your email. Please enter the token below to verify your email address.
-            </Typography>
-            <TextField
-              fullWidth
-              label="Verification Token"
-              value={emailVerificationToken}
-              onChange={(e) => setEmailVerificationToken(e.target.value)}
-              placeholder="Enter verification token"
-              margin="normal"
-              disabled={emailVerificationLoading}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: '#3B82F6',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#3B82F6',
-                  },
-                },
-              }}
-            />
+            
+            <Box sx={{ textAlign: 'center', mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Email Verification
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                A verification token has been sent to your email. Please enter the token below to verify your email address.
+              </Typography>
+              
+              <TextField
+                label="Enter verification token"
+                value={emailVerificationToken}
+                onChange={(e) => setEmailVerificationToken(e.target.value)}
+                fullWidth
+                placeholder="Enter token"
+                inputProps={{ 
+                  style: { textAlign: 'center', fontSize: '1.1rem' }
+                }}
+                sx={{ mb: 2 }}
+                disabled={emailVerificationLoading}
+              />
+            </Box>
           </DialogContent>
           <DialogActions sx={{ p: 3, gap: 1 }}>
             <Button 
@@ -877,9 +897,9 @@ const Profile: React.FC = () => {
               disabled={emailVerificationLoading || !emailVerificationToken.trim()}
               startIcon={emailVerificationLoading ? <CircularProgress size={16} /> : <Verified />}
               sx={{
-                background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+                  background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
                 }
               }}
             >
@@ -889,7 +909,19 @@ const Profile: React.FC = () => {
         </Dialog>
 
         {/* Edit Profile Dialog */}
-        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+        <Dialog 
+          open={editDialogOpen} 
+          onClose={() => setEditDialogOpen(false)} 
+          maxWidth="sm" 
+          fullWidth
+          PaperProps={{
+            sx: {
+              background: '#1a1a1a',
+              border: '1px solid rgba(107, 70, 193, 0.3)',
+              borderRadius: '16px',
+            }
+          }}
+        >
           <DialogTitle sx={{ 
             background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
             color: 'white',
