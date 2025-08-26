@@ -941,14 +941,14 @@ const Dashboard: React.FC = () => {
                         onClick={() => setWithdrawalDialogOpen(true)}
                         sx={{
                           py: 2,
-                          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
                           color: 'white',
                           border: '1px solid rgba(255, 255, 255, 0.3)',
                           borderRadius: 3,
                           fontWeight: 600,
                           fontSize: '1rem',
                           '&:hover': {
-                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
                             boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
                             border: '1px solid rgba(255, 255, 255, 0.5)',
                             transform: 'translateY(-2px)',
@@ -967,14 +967,14 @@ const Dashboard: React.FC = () => {
                           onClick={() => setMeetingDialogOpen(true)}
                           sx={{
                             py: 2,
-                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
                             color: 'white',
                             border: '1px solid rgba(255, 255, 255, 0.3)',
                             borderRadius: 3,
                             fontWeight: 600,
                             fontSize: '1rem',
                             '&:hover': {
-                              background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
                               boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
                               border: '1px solid rgba(255, 255, 255, 0.5)',
                               transform: 'translateY(-2px)',
@@ -1060,14 +1060,14 @@ const Dashboard: React.FC = () => {
                           onClick={() => setMeetingDialogOpen(true)}
                           sx={{
                             py: 2,
-                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
                             color: 'white',
                             border: '1px solid rgba(255, 255, 255, 0.3)',
                             borderRadius: 3,
                             fontWeight: 600,
                             fontSize: '1rem',
                             '&:hover': {
-                              background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
                               boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
                               border: '1px solid rgba(255, 255, 255, 0.5)',
                               transform: 'translateY(-2px)',
