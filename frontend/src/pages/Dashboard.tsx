@@ -24,6 +24,8 @@ import {
   DialogContent,
   DialogActions,
   Paper,
+  keyframes,
+  styled,
 } from '@mui/material';
 import { 
   AccountBalance, 
@@ -61,6 +63,19 @@ import AppNavigation from '../components/AppNavigation';
 import WithdrawalRequestDialog from '../components/WithdrawalRequestDialog';
 import MeetingRequestDialog from '../components/MeetingRequestDialog';
 import { documentsApi, adminApi } from '../services/api';
+
+const FloatingOrb = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  borderRadius: '50%',
+  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.15), rgba(147, 51, 234, 0.15))',
+  filter: 'blur(80px)',
+  animation: `${keyframes`
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+    33% { transform: translate(40px, -40px) scale(1.1); opacity: 0.4; }
+    66% { transform: translate(-30px, 30px) scale(0.9); opacity: 0.8; }
+  `} 15s ease-in-out infinite`,
+  pointerEvents: 'none',
+}));
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -337,7 +352,12 @@ const Dashboard: React.FC = () => {
   }, [location.state, location.pathname, navigate]);
 
   return (
-    <Box sx={{ minHeight: '100vh', position: 'relative' }}>
+    <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+      {/* Background Orbs */}
+      <FloatingOrb sx={{ width: 300, height: 300, top: '5%', left: '5%' }} />
+      <FloatingOrb sx={{ width: 200, height: 200, top: '70%', right: '10%', animationDelay: '-5s' }} />
+      <FloatingOrb sx={{ width: 150, height: 150, bottom: '20%', left: '80%', animationDelay: '-2s' }} />
+
       {/* Navigation Bar */}
       <AppNavigation 
         onLogout={handleLogout} 
@@ -346,22 +366,23 @@ const Dashboard: React.FC = () => {
       />
 
       {/* Main Content */}
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, position: 'relative', zIndex: 1 }}>
         {/* Dynamic Welcome Section Based on Tab */}
         <Fade in={true} timeout={1000}>
-          <Box mb={3}>
+          <Box mb={5}>
             <Typography 
               variant="h2" 
               component="h1" 
               gutterBottom
               sx={{
-                background: 'linear-gradient(135deg, #F9FAFB 0%, #D1D5DB 100%)',
+                background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                fontWeight: 800,
-                letterSpacing: '-0.02em',
-                mb: 2
+                fontWeight: 900,
+                letterSpacing: '-0.03em',
+                mb: 2,
+                textAlign: 'center'
               }}
             >
               {tabValue === 0 && `Welcome back, ${user?.firstName}!`}
@@ -374,13 +395,16 @@ const Dashboard: React.FC = () => {
               variant="h6" 
               color="text.secondary"
               sx={{ 
-                fontSize: '1.1rem',
+                fontSize: '1.2rem',
                 fontWeight: 400,
                 opacity: 0.9,
-                maxWidth: '600px'
+                maxWidth: '800px',
+                mx: 'auto',
+                textAlign: 'center',
+                lineHeight: 1.5
               }}
             >
-              {tabValue === 0 && `Here's an overview of your loan performance with Esoteric Enterprises. Track your growth, manage your investments, and explore your financial journey.`}
+              {tabValue === 0 && `Here's an overview of your loan performance with Esoteric. Track your growth, manage your investments, and explore your financial journey.`}
               {tabValue === 1 && `Analyze your investment performance with comprehensive charts, metrics, and insights to track your loan growth and returns over time.`}
               {tabValue === 2 && `Review all your transaction history including loan disbursements, monthly payments, bonuses, and withdrawals with detailed records.`}
               {tabValue === 3 && `Access and manage all your important loan documents, contracts, statements, and reports in one secure location.`}
@@ -803,9 +827,17 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[1]} timeout={1000}>
                   <Card sx={{ 
                     position: 'relative',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    borderRadius: 3,
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
+                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                    },
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -824,9 +856,17 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[2]} timeout={1200}>
                   <Card sx={{ 
                     position: 'relative',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    borderRadius: 3,
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
+                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                    },
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -845,9 +885,17 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[3]} timeout={1400}>
                   <Card sx={{ 
                     position: 'relative',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    borderRadius: 3,
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
+                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                    },
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -875,9 +923,17 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[4]} timeout={1600}>
                   <Card sx={{ 
                     position: 'relative',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    borderRadius: 3,
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
+                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                    },
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -896,9 +952,17 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[5]} timeout={1800}>
                   <Card sx={{ 
                     position: 'relative',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                    borderRadius: 3,
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
+                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                    },
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -918,10 +982,23 @@ const Dashboard: React.FC = () => {
               {/* Quick Actions Section */}
               <Fade in={true} timeout={2000}>
                 <Card sx={{
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                  borderRadius: 3,
-                  mt: 4
+                  background: 'rgba(31, 41, 55, 0.6)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(107, 70, 193, 0.3)',
+                  borderRadius: '20px',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                  mt: 4,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.6), transparent)',
+                  },
                 }}>
                   <CardContent sx={{ p: 4 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>

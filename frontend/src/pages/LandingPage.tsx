@@ -418,7 +418,7 @@ const LandingPage: React.FC = () => {
                 Investment Excellence Through Innovation
               </Typography>
               <Typography variant="h6" color="text.secondary" sx={{ mb: 4, lineHeight: 1.8 }}>
-                Esoteric Enterprises combines cutting-edge technology with proven investment strategies 
+                Esoteric combines cutting-edge technology with proven investment strategies 
                 to deliver exceptional returns. Our platform offers institutional-grade portfolio management 
                 with the accessibility and transparency that individual investors deserve.
               </Typography>
@@ -595,7 +595,7 @@ const LandingPage: React.FC = () => {
               ESOTERIC
             </HeroGradientText>
             <Typography variant="body2" color="text.secondary">
-              © 2024 Esoteric Enterprises. Professional investment management redefined.
+              © 2024 Esoteric. Professional investment management redefined.
             </Typography>
           </Box>
         </Container>

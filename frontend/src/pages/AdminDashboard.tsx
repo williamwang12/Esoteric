@@ -30,6 +30,8 @@ import {
   Paper,
   Snackbar,
   Badge,
+  keyframes,
+  styled,
 } from '@mui/material';
 import {
   Upload,
@@ -56,6 +58,19 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../services/api';
 import AppNavigation from '../components/AppNavigation';
+
+const FloatingOrb = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  borderRadius: '50%',
+  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(147, 51, 234, 0.15))',
+  filter: 'blur(80px)',
+  animation: `${keyframes`
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+    33% { transform: translate(50px, -50px) scale(1.1); opacity: 0.4; }
+    66% { transform: translate(-40px, 40px) scale(0.9); opacity: 0.8; }
+  `} 20s ease-in-out infinite`,
+  pointerEvents: 'none',
+}));
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -837,7 +852,12 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+      {/* Background Orbs */}
+      <FloatingOrb sx={{ width: 300, height: 300, top: '8%', left: '3%' }} />
+      <FloatingOrb sx={{ width: 200, height: 200, bottom: '10%', right: '8%', animationDelay: '-7s' }} />
+      <FloatingOrb sx={{ width: 150, height: 150, top: '50%', left: '85%', animationDelay: '-3s' }} />
+
       {/* Navigation Bar */}
       <AppNavigation 
         onTabChange={(tabIndex) => {
@@ -846,7 +866,7 @@ const AdminDashboard: React.FC = () => {
         }}
       />
 
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, position: 'relative', zIndex: 1 }}>
         {/* Error State */}
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>

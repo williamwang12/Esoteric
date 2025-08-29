@@ -18,6 +18,8 @@ import {
   Fade,
   useTheme,
   alpha,
+  keyframes,
+  styled,
 } from '@mui/material';
 import {
   Person,
@@ -38,6 +40,19 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { userApi, loansApi, twoFAApi } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+
+const FloatingOrb = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  borderRadius: '50%',
+  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.15), rgba(147, 51, 234, 0.15))',
+  filter: 'blur(80px)',
+  animation: `${keyframes`
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+    33% { transform: translate(40px, -40px) scale(1.1); opacity: 0.4; }
+    66% { transform: translate(-30px, 30px) scale(0.9); opacity: 0.8; }
+  `} 18s ease-in-out infinite`,
+  pointerEvents: 'none',
+}));
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
@@ -285,15 +300,27 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+      {/* Background Orbs */}
+      <FloatingOrb sx={{ width: 250, height: 250, top: '10%', left: '5%' }} />
+      <FloatingOrb sx={{ width: 180, height: 180, bottom: '15%', right: '10%', animationDelay: '-6s' }} />
+      <FloatingOrb sx={{ width: 120, height: 120, top: '60%', left: '75%', animationDelay: '-3s' }} />
+
       {/* Header with Back Button */}
       <Box sx={{ 
-        background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        background: 'rgba(31, 41, 55, 0.9)',
+        backdropFilter: 'blur(20px)',
         color: 'white',
-        py: 2
+        py: 2,
+        borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
+        zIndex: 1000
       }}>
         <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
             <Button
               startIcon={<ArrowBack />}
               onClick={() => navigate('/dashboard')}
@@ -306,14 +333,33 @@ const Profile: React.FC = () => {
             >
               Back to Dashboard
             </Button>
-            <Typography variant="h4" sx={{ fontWeight: 700, flexGrow: 1 }}>
-              My Profile
-            </Typography>
+            
+            {/* Centered ESOTERIC Logo */}
+            <Box sx={{ 
+              position: 'absolute', 
+              left: '50%', 
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <Typography variant="h4" sx={{ 
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                ESOTERIC
+              </Typography>
+            </Box>
+            
+            {/* Right spacer to balance the layout */}
+            <Box sx={{ width: '140px' }} />
           </Box>
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ mt: 3, mb: 3 }}>
+      <Container maxWidth="lg" sx={{ mt: 12, mb: 3, position: 'relative', zIndex: 1 }}>
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress size={60} />
@@ -332,13 +378,26 @@ const Profile: React.FC = () => {
               {/* Profile Header Card */}
               <Card sx={{ 
                 mb: 3,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.secondary.main, 0.02)} 100%)`,
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                borderRadius: '16px',
+                background: 'rgba(31, 41, 55, 0.8)',
+                backdropFilter: 'blur(30px)',
+                border: '1px solid rgba(107, 70, 193, 0.3)',
+                borderRadius: '24px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                position: 'relative',
+                overflow: 'hidden',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 20px 40px rgba(107, 70, 193, 0.15)'
+                  boxShadow: '0 30px 60px rgba(107, 70, 193, 0.2)'
+                },
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
                 }
               }}>
                 <CardContent sx={{ p: 4 }}>
@@ -346,9 +405,12 @@ const Profile: React.FC = () => {
                     <Typography 
                       variant="h4" 
                       sx={{ 
-                        fontWeight: 700, 
-                        color: theme.palette.text.primary,
-                        letterSpacing: '-0.01em'
+                        fontWeight: 800, 
+                        background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        letterSpacing: '-0.02em'
                       }}
                     >
                       {profileData.firstName} {profileData.lastName}
@@ -362,13 +424,26 @@ const Profile: React.FC = () => {
                 <Fade in={true} timeout={1200}>
                   <Card sx={{ 
                     height: 'fit-content',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.secondary.main, 0.02)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                    borderRadius: '16px',
+                    background: 'rgba(31, 41, 55, 0.8)',
+                    backdropFilter: 'blur(30px)',
+                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    borderRadius: '20px',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                    position: 'relative',
+                    overflow: 'hidden',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.15)'
+                      boxShadow: '0 25px 50px rgba(107, 70, 193, 0.2)'
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '1px',
+                      background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.6), transparent)',
                     }
                   }}>
                     <CardContent sx={{ p: 4 }}>
@@ -443,13 +518,26 @@ const Profile: React.FC = () => {
                 <Fade in={true} timeout={1400}>
                   <Card sx={{ 
                     height: '100%',
-                    background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.02)} 0%, ${alpha(theme.palette.info.main, 0.02)} 100%)`,
-                    border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
-                    borderRadius: '16px',
+                    background: 'rgba(31, 41, 55, 0.8)',
+                    backdropFilter: 'blur(30px)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '20px',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                    position: 'relative',
+                    overflow: 'hidden',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(16, 185, 129, 0.15)'
+                      boxShadow: '0 25px 50px rgba(16, 185, 129, 0.2)'
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '1px',
+                      background: 'linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.6), transparent)',
                     }
                   }}>
                     <CardContent sx={{ p: 4 }}>
@@ -539,13 +627,26 @@ const Profile: React.FC = () => {
               <Fade in={true} timeout={1600}>
                 <Card sx={{ 
                   mt: 3,
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.02)} 0%, ${alpha(theme.palette.error.main, 0.02)} 100%)`,
-                  border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-                  borderRadius: '16px',
+                  background: 'rgba(31, 41, 55, 0.8)',
+                  backdropFilter: 'blur(30px)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: '20px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                  position: 'relative',
+                  overflow: 'hidden',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: '0 20px 40px rgba(245, 158, 11, 0.15)'
+                    boxShadow: '0 25px 50px rgba(245, 158, 11, 0.2)'
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    background: 'linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.6), transparent)',
                   }
                 }}>
                   <CardContent sx={{ p: 4 }}>
@@ -690,9 +791,11 @@ const Profile: React.FC = () => {
           fullWidth
           PaperProps={{
             sx: {
-              background: '#1a1a1a',
+              background: 'rgba(31, 41, 55, 0.95)',
+              backdropFilter: 'blur(20px)',
               border: '1px solid rgba(107, 70, 193, 0.3)',
-              borderRadius: '16px',
+              borderRadius: '20px',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
             }
           }}
         >
@@ -835,9 +938,11 @@ const Profile: React.FC = () => {
           fullWidth
           PaperProps={{
             sx: {
-              background: '#1a1a1a',
+              background: 'rgba(31, 41, 55, 0.95)',
+              backdropFilter: 'blur(20px)',
               border: '1px solid rgba(107, 70, 193, 0.3)',
-              borderRadius: '16px',
+              borderRadius: '20px',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
             }
           }}
         >
@@ -916,9 +1021,11 @@ const Profile: React.FC = () => {
           fullWidth
           PaperProps={{
             sx: {
-              background: '#1a1a1a',
+              background: 'rgba(31, 41, 55, 0.95)',
+              backdropFilter: 'blur(20px)',
               border: '1px solid rgba(107, 70, 193, 0.3)',
-              borderRadius: '16px',
+              borderRadius: '20px',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
             }
           }}
         >

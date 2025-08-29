@@ -15,26 +15,32 @@ import {
   IconButton,
   keyframes,
   styled,
+  InputAdornment,
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LockOutlined, EmailOutlined, Visibility, VisibilityOff } from '@mui/icons-material';
+import { 
+  LockOutlined, 
+  EmailOutlined, 
+  Visibility, 
+  VisibilityOff, 
+  ArrowBack 
+} from '@mui/icons-material';
 
-// Styled components for enhanced animations
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.3), rgba(147, 51, 234, 0.3))',
-  filter: 'blur(40px)',
+  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.2), rgba(147, 51, 234, 0.2))',
+  filter: 'blur(60px)',
   animation: `${keyframes`
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -30px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+    33% { transform: translate(30px, -30px) scale(1.1); opacity: 0.6; }
+    66% { transform: translate(-20px, 20px) scale(0.9); opacity: 1; }
   `} 8s ease-in-out infinite`,
 }));
 
 const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -63,7 +69,6 @@ const Login: React.FC = () => {
       ...prev,
       [name]: value,
     }));
-    // Clear error when user starts typing
     if (error) setError('');
   };
 
@@ -79,12 +84,10 @@ const Login: React.FC = () => {
       const result = await login(formData.email, formData.password);
       
       if (result.requires2FA) {
-        // Show 2FA form
         setShow2FA(true);
         setSessionToken(result.sessionToken);
         setError('');
       } else {
-        // Direct login success
         navigate('/dashboard');
       }
     } catch (err: any) {
@@ -113,73 +116,111 @@ const Login: React.FC = () => {
   }, []);
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        padding: 2,
-      }}
-    >
-      {/* Floating Background Orbs */}
-      <FloatingOrb
-        sx={{
-          width: 200,
-          height: 200,
-          top: '10%',
-          left: '10%',
-        }}
-      />
-      <FloatingOrb
-        sx={{
-          width: 300,
-          height: 300,
-          bottom: '10%',
-          right: '10%',
-          animationDelay: '-4s',
-        }}
-      />
-      <FloatingOrb
-        sx={{
-          width: 150,
-          height: 150,
-          top: '60%',
-          left: '80%',
-          animationDelay: '-2s',
-        }}
-      />
+    <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+      {/* Background Orbs */}
+      <FloatingOrb sx={{ width: 200, height: 200, top: '10%', left: '10%' }} />
+      <FloatingOrb sx={{ width: 300, height: 300, bottom: '10%', right: '10%', animationDelay: '-4s' }} />
+      <FloatingOrb sx={{ width: 150, height: 150, top: '60%', left: '80%', animationDelay: '-2s' }} />
 
-      <Container maxWidth="sm">
-        <Fade in={isVisible} timeout={1000}>
-          <Card
-            sx={{
-              maxWidth: 480,
-              mx: 'auto',
-              backdropFilter: 'blur(30px)',
-              background: 'rgba(31, 41, 55, 0.7)',
-              border: '1px solid rgba(107, 70, 193, 0.3)',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 5 }}>
-              {/* Logo and Title */}
-              <Slide direction="down" in={isVisible} timeout={1200}>
-                <Box textAlign="center" mb={5}>
-                  <Box sx={{ mb: 3 }}>
+      {/* Navigation */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          background: 'rgba(31, 41, 55, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
+          zIndex: 1000,
+          py: 2,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+            <IconButton
+              component={RouterLink}
+              to="/"
+              sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+            >
+              <ArrowBack />
+            </IconButton>
+            
+            {/* Centered ESOTERIC Logo */}
+            <Box sx={{ 
+              position: 'absolute', 
+              left: '50%', 
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <GradientText variant="h4" sx={{ fontWeight: 800 }}>
+                ESOTERIC
+              </GradientText>
+            </Box>
+            
+            {/* Right side button */}
+            <Box sx={{ marginLeft: 'auto' }}>
+              <Button
+                component={RouterLink}
+                to="/register"
+                variant="outlined"
+                sx={{
+                  borderColor: 'rgba(107, 70, 193, 0.5)',
+                  color: '#6B46C1',
+                  '&:hover': {
+                    borderColor: '#6B46C1',
+                    backgroundColor: 'rgba(107, 70, 193, 0.1)',
+                  },
+                }}
+              >
+                Sign Up
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Main Content */}
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pt: 12,
+          pb: 4,
+          px: 2,
+        }}
+      >
+        <Container maxWidth="sm">
+          <Fade in={isVisible} timeout={1000}>
+            <Card
+              sx={{
+                maxWidth: 480,
+                mx: 'auto',
+                backdropFilter: 'blur(30px)',
+                background: 'rgba(31, 41, 55, 0.8)',
+                border: '1px solid rgba(107, 70, 193, 0.3)',
+                borderRadius: '24px',
+                boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 5 }}>
+                {/* Header */}
+                <Slide direction="down" in={isVisible} timeout={1200}>
+                  <Box textAlign="center" mb={5}>
                     <Box
                       sx={{
                         width: 80,
@@ -200,84 +241,84 @@ const Login: React.FC = () => {
                     >
                       <LockOutlined sx={{ fontSize: 40, color: 'white' }} />
                     </Box>
-                  </Box>
-                  <GradientText variant="h3" sx={{ mb: 1 }}>
-                    ESOTERIC
-                  </GradientText>
-                  <Typography 
-                    variant="h6" 
-                    color="text.secondary"
-                    sx={{ fontWeight: 400, opacity: 0.8 }}
-                  >
-                    Venture Capital Management Platform
-                  </Typography>
-                </Box>
-              </Slide>
-
-              {/* Error Alert */}
-              <Slide direction="up" in={!!error} timeout={500}>
-                <Box>
-                  {error && (
-                    <Alert 
-                      severity="error" 
-                      sx={{ 
-                        mb: 3,
-                        borderRadius: '12px',
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        backdropFilter: 'blur(10px)',
-                      }}
+                    <GradientText variant="h3" sx={{ mb: 1 }}>
+                      Welcome Back
+                    </GradientText>
+                    <Typography 
+                      variant="h6" 
+                      color="text.secondary"
+                      sx={{ fontWeight: 400, opacity: 0.8 }}
                     >
-                      {error}
-                    </Alert>
-                  )}
-                </Box>
-              </Slide>
+                      Sign in to your Esoteric account
+                    </Typography>
+                  </Box>
+                </Slide>
 
-              {/* Login Form */}
-              <Slide direction="up" in={isVisible} timeout={1400}>
-                <Box component="form" onSubmit={show2FA ? handle2FASubmit : handleSubmit} noValidate>
-                  {show2FA ? (
-                    /* 2FA Form */
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
-                        Two-Factor Authentication
-                      </Typography>
-                      <Typography variant="body2" sx={{ mb: 3, textAlign: 'center', color: 'text.secondary' }}>
-                        Enter the 6-digit code from your authenticator app
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        id="totpCode"
-                        name="totpCode"
-                        label="6-Digit Code"
-                        type="text"
-                        value={totpCode}
-                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        required
-                        autoComplete="one-time-code"
-                        autoFocus
-                        disabled={isLoading}
-                        inputProps={{ maxLength: 6, pattern: '[0-9]*' }}
-                        InputProps={{
-                          startAdornment: (
-                            <LockOutlined sx={{ mr: 1, color: 'text.secondary' }} />
-                          ),
+                {/* Error Alert */}
+                <Slide direction="up" in={!!error} timeout={500}>
+                  <Box>
+                    {error && (
+                      <Alert 
+                        severity="error" 
+                        sx={{ 
+                          mb: 3,
+                          borderRadius: '12px',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          backdropFilter: 'blur(10px)',
                         }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            '&:hover': {
-                              transform: 'translateY(-2px)',
+                      >
+                        {error}
+                      </Alert>
+                    )}
+                  </Box>
+                </Slide>
+
+                {/* Login Form */}
+                <Slide direction="up" in={isVisible} timeout={1400}>
+                  <Box component="form" onSubmit={show2FA ? handle2FASubmit : handleSubmit} noValidate>
+                    {show2FA ? (
+                      /* 2FA Form */
+                      <Box sx={{ mb: 4 }}>
+                        <Typography variant="h5" sx={{ mb: 2, textAlign: 'center', fontWeight: 700 }}>
+                          Two-Factor Authentication
+                        </Typography>
+                        <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', color: 'text.secondary' }}>
+                          Enter the 6-digit code from your authenticator app
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          id="totpCode"
+                          name="totpCode"
+                          label="6-Digit Code"
+                          type="text"
+                          value={totpCode}
+                          onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          required
+                          autoComplete="one-time-code"
+                          autoFocus
+                          disabled={isLoading}
+                          inputProps={{ maxLength: 6, pattern: '[0-9]*' }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <LockOutlined sx={{ color: 'text.secondary' }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                              },
                             },
-                          },
-                        }}
-                      />
-                    </Box>
-                  ) : (
-                    /* Login Form */
-                    <>
-                      <Box sx={{ mb: 3 }}>
+                          }}
+                        />
+                      </Box>
+                    ) : (
+                      /* Login Form */
+                      <>
                         <TextField
                           fullWidth
                           id="email"
@@ -292,10 +333,13 @@ const Login: React.FC = () => {
                           disabled={isLoading}
                           InputProps={{
                             startAdornment: (
-                              <EmailOutlined sx={{ mr: 1, color: 'text.secondary' }} />
+                              <InputAdornment position="start">
+                                <EmailOutlined sx={{ color: 'text.secondary' }} />
+                              </InputAdornment>
                             ),
                           }}
                           sx={{
+                            mb: 3,
                             '& .MuiOutlinedInput-root': {
                               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                               '&:hover': {
@@ -304,9 +348,7 @@ const Login: React.FC = () => {
                             },
                           }}
                         />
-                      </Box>
-                  
-                      <Box sx={{ mb: 4 }}>
+                    
                         <TextField
                           fullWidth
                           id="password"
@@ -320,20 +362,24 @@ const Login: React.FC = () => {
                           disabled={isLoading}
                           InputProps={{
                             startAdornment: (
-                              <LockOutlined sx={{ mr: 1, color: 'text.secondary' }} />
+                              <InputAdornment position="start">
+                                <LockOutlined sx={{ color: 'text.secondary' }} />
+                              </InputAdornment>
                             ),
                             endAdornment: (
-                              <IconButton
-                                aria-label="toggle password visibility"
-                                onClick={() => setShowPassword(!showPassword)}
-                                edge="end"
-                                size="small"
-                              >
-                                {showPassword ? <VisibilityOff /> : <Visibility />}
-                              </IconButton>
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  edge="end"
+                                  size="small"
+                                >
+                                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                              </InputAdornment>
                             ),
                           }}
                           sx={{
+                            mb: 4,
                             '& .MuiOutlinedInput-root': {
                               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                               '&:hover': {
@@ -342,81 +388,106 @@ const Login: React.FC = () => {
                             },
                           }}
                         />
-                      </Box>
-                    </>
-                  )}
-
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    sx={{ 
-                      py: 2, 
-                      mb: 3,
-                      fontSize: '1.1rem',
-                      fontWeight: 600,
-                      position: 'relative',
-                      overflow: 'hidden',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: '-100%',
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
-                        transition: 'left 0.6s',
-                      },
-                      '&:hover::before': {
-                        left: '100%',
-                      },
-                    }}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <CircularProgress size={20} color="inherit" />
-                        <Typography>Signing In...</Typography>
-                      </Box>
-                    ) : (
-                      show2FA ? 'Verify 2FA Code' : 'Sign In to Dashboard'
+                      </>
                     )}
-                  </Button>
 
-
-                  {/* Links */}
-                  <Box textAlign="center">
-                    <Link
-                      component={RouterLink}
-                      to="/register"
-                      variant="body2"
-                      sx={{
-                        color: 'primary.main',
-                        textDecoration: 'none',
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      sx={{ 
+                        py: 2, 
+                        mb: 3,
+                        fontSize: '1.1rem',
                         fontWeight: 600,
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        background: 'rgba(107, 70, 193, 0.1)',
-                        border: '1px solid rgba(107, 70, 193, 0.2)',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': {
-                          background: 'rgba(107, 70, 193, 0.2)',
-                          transform: 'translateY(-2px)',
-                          textDecoration: 'none',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: 0,
+                          left: '-100%',
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+                          transition: 'left 0.6s',
+                        },
+                        '&:hover::before': {
+                          left: '100%',
                         },
                       }}
+                      disabled={isLoading}
                     >
-                      Don't have an account? Sign up
-                    </Link>
+                      {isLoading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <CircularProgress size={20} color="inherit" />
+                          <Typography>Signing In...</Typography>
+                        </Box>
+                      ) : (
+                        show2FA ? 'Verify 2FA Code' : 'Sign In to Dashboard'
+                      )}
+                    </Button>
+
+                    {/* Links */}
+                    {!show2FA && (
+                      <Box textAlign="center">
+                        <Link
+                          component={RouterLink}
+                          to="/register"
+                          variant="body2"
+                          sx={{
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            fontWeight: 600,
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            background: 'rgba(107, 70, 193, 0.1)',
+                            border: '1px solid rgba(107, 70, 193, 0.2)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            '&:hover': {
+                              background: 'rgba(107, 70, 193, 0.2)',
+                              transform: 'translateY(-2px)',
+                              textDecoration: 'none',
+                            },
+                          }}
+                        >
+                          Don't have an account? Sign up
+                        </Link>
+                      </Box>
+                    )}
+
+                    {show2FA && (
+                      <Box textAlign="center">
+                        <Button
+                          variant="text"
+                          onClick={() => {
+                            setShow2FA(false);
+                            setTotpCode('');
+                            setError('');
+                          }}
+                          sx={{
+                            color: 'text.secondary',
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            '&:hover': {
+                              color: 'primary.main',
+                              backgroundColor: 'rgba(107, 70, 193, 0.1)',
+                            },
+                          }}
+                        >
+                          ← Back to Login
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
-                </Box>
-              </Slide>
-            </CardContent>
-          </Card>
-        </Fade>
-      </Container>
+                </Slide>
+              </CardContent>
+            </Card>
+          </Fade>
+        </Container>
+      </Box>
     </Box>
   );
 };
 
-export default Login; 
+export default Login;

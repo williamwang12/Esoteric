@@ -13,6 +13,8 @@ import {
   Slide,
   useTheme,
   alpha,
+  styled,
+  keyframes,
 } from '@mui/material';
 import {
   ExitToApp,
@@ -25,6 +27,15 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
+
+const GradientText = styled(Typography)(({ theme }) => ({
+  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+  backgroundClip: 'text',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  fontWeight: 800,
+  letterSpacing: '-0.02em',
+}));
 
 interface AppNavigationProps {
   onLogout?: () => void;
@@ -85,26 +96,38 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
   
   return (
     <Slide direction="down" in={true} mountOnEnter unmountOnExit>
-      <AppBar position="static" elevation={0}>
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{
+          background: 'rgba(31, 41, 55, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+          }
+        }}
+      >
         {/* Main Navigation Row */}
-        <Toolbar sx={{ py: 1, minHeight: '64px !important' }}>
+        <Toolbar sx={{ py: 1, minHeight: '64px !important', pl: 80 }}>
           {/* Company Logo/Name */}
-          <Typography 
+          <GradientText 
             variant="h5" 
-            component="div" 
             sx={{ 
-              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)', 
-              backgroundClip: 'text', 
-              WebkitBackgroundClip: 'text', 
-              WebkitTextFillColor: 'transparent', 
-              fontWeight: 800,
-              letterSpacing: '-0.01em',
               fontSize: '1.75rem',
               mr: 4
             }}
+            pl={44}
           >
-            ESOTERIC ENTERPRISES
-          </Typography>
+            ESOTERIC
+          </GradientText>
 
           {/* Main Navigation Tabs - Dashboard Tabs as Main Navigation */}
           <Box sx={{ flexGrow: 1 }}>
@@ -246,9 +269,19 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                 sx: {
                   mt: 1,
                   minWidth: 180,
+                  background: 'rgba(31, 41, 55, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(107, 70, 193, 0.3)',
+                  borderRadius: '12px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
                   '& .MuiMenuItem-root': {
                     px: 2,
                     py: 1.5,
+                    borderRadius: '8px',
+                    mx: 1,
+                    '&:hover': {
+                      background: 'rgba(107, 70, 193, 0.2)',
+                    },
                   },
                 },
               }}
