@@ -277,6 +277,9 @@ const AdminDashboard: React.FC = () => {
     // If switching away from the users tab (index 0), clear the selected user details sub-tab
     if (newValue !== 0) {
       setUserDetailsTabValue(0); // Reset user details sub-tab
+    } else if (newValue === 0) {
+      // If switching to the users tab, refresh users data to show latest verification status
+      fetchUsers(true);
     }
   };
 
