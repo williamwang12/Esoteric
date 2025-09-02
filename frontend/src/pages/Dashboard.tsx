@@ -18,7 +18,6 @@ import {
   MenuItem,
   InputAdornment,
   Chip,
-  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -47,11 +46,9 @@ import {
   Folder,
   CalendarMonth,
   RequestPage,
-  CheckCircle,
-  Schedule,
-  Pending,
-  Phone,
-  Cancel
+  Cancel,
+  VideoCall,
+  Phone
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -122,7 +119,7 @@ const Dashboard: React.FC = () => {
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
   const [meetingDetailsOpen, setMeetingDetailsOpen] = useState(false);
   const [meetingRequest, setMeetingRequest] = useState<any>(null);
-  const [withdrawalRequest, setWithdrawalRequest] = useState<any>(null);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
 
   const handleLogout = () => {
     logout();
@@ -299,14 +296,8 @@ const Dashboard: React.FC = () => {
         });
         
         if (withdrawalResponse.ok) {
-          const withdrawalRequests = await withdrawalResponse.json();
-          // Get the most recent withdrawal request
-          if (withdrawalRequests.length > 0) {
-            const latestRequest = withdrawalRequests.sort((a: any, b: any) => 
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            )[0];
-            setWithdrawalRequest(latestRequest);
-          }
+          const withdrawalRequestsData = await withdrawalResponse.json();
+          setWithdrawalRequests(withdrawalRequestsData);
         }
       } catch (withdrawalError) {
         console.error('Withdrawal requests fetch error:', withdrawalError);
@@ -1004,185 +995,364 @@ const Dashboard: React.FC = () => {
                         Account Actions
                       </Typography>
                     </Box>
-                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
                       Manage your account with quick actions for withdrawals and consultations
                     </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 3 }}>
-                      {!withdrawalRequest || withdrawalRequest.status === 'processed' || withdrawalRequest.status === 'cancelled' ? (
-                        <Button
-                          variant="contained"
-                          size="large"
-                          startIcon={<AccountBalanceWallet />}
-                          onClick={() => setWithdrawalDialogOpen(true)}
-                          sx={{
-                            py: 2,
-                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                            color: 'white',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            borderRadius: 3,
-                            fontWeight: 600,
-                            fontSize: '1rem',
-                            '&:hover': {
+                    
+                    {/* Two Side-by-Side Blocks */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 4 }}>
+                      {/* Withdrawals Block */}
+                      <Card sx={{
+                        background: 'rgba(31, 41, 55, 0.6)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(107, 70, 193, 0.3)',
+                        borderRadius: '16px',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                        height: 'fit-content'
+                      }}>
+                        <CardContent sx={{ p: 4 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                            <AccountBalanceWallet sx={{ fontSize: 28, color: 'primary.main' }} />
+                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                              Withdrawals
+                            </Typography>
+                          </Box>
+                          
+                          <Button
+                            variant="contained"
+                            size="large"
+                            fullWidth
+                            startIcon={<AccountBalanceWallet />}
+                            onClick={() => setWithdrawalDialogOpen(true)}
+                            sx={{
+                              py: 2,
+                              mb: 3,
                               background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
-                              border: '1px solid rgba(255, 255, 255, 0.5)',
-                              transform: 'translateY(-2px)',
-                            },
-                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
-                            transition: 'all 0.2s ease-in-out',
-                          }}
-                        >
-                          Request Withdrawal
-                        </Button>
-                      ) : (
-                        <Card sx={{
-                          py: 2,
-                          px: 3,
-                          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                          color: 'white',
-                          textAlign: 'center',
-                          border: '1px solid rgba(245, 158, 11, 0.3)',
-                          borderRadius: 3,
-                          minHeight: '64px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
-                          transition: 'all 0.2s ease-in-out',
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <Pending sx={{ fontSize: 24, color: '#F59E0B' }} />
-                            <Box>
-                              <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#F59E0B' }}>
-                                Withdrawal Request Pending
+                              color: 'white',
+                              border: '1px solid rgba(255, 255, 255, 0.3)',
+                              borderRadius: 3,
+                              fontWeight: 600,
+                              fontSize: '1rem',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                                boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                                border: '1px solid rgba(255, 255, 255, 0.5)',
+                                transform: 'translateY(-2px)',
+                              },
+                              boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                              transition: 'all 0.2s ease-in-out',
+                            }}
+                          >
+                            Request Withdrawal
+                          </Button>
+
+                          {/* Pending Withdrawal Requests */}
+                          {withdrawalRequests.filter(req => req.status === 'pending' || req.status === 'approved').length > 0 ? (
+                            <Box sx={{ mb: 3 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                                Pending Requests
                               </Typography>
-                              <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
-                                ${parseFloat(withdrawalRequest.amount).toLocaleString()} requested
-                              </Typography>
+                              {withdrawalRequests
+                                .filter(req => req.status === 'pending' || req.status === 'approved')
+                                .map((request) => (
+                                  <Card key={request.id} sx={{
+                                    mb: 2,
+                                    p: 2,
+                                    background: 'rgba(245, 158, 11, 0.1)',
+                                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                                    borderRadius: 2,
+                                  }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                        ${parseFloat(request.amount).toLocaleString()}
+                                      </Typography>
+                                      <Chip 
+                                        label={request.status} 
+                                        size="small" 
+                                        color={request.status === 'approved' ? 'info' : 'warning'}
+                                      />
+                                    </Box>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                      {request.reason}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                      {new Date(request.created_at).toLocaleDateString()}
+                                    </Typography>
+                                  </Card>
+                                ))
+                              }
                             </Box>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center', py: 2 }}>
+                              <b>No pending requests</b>
+                            </Typography>
+                          )}
+
+                          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center' }}>
+                            Completed transactions can be viewed in the Transactions page.
+                          </Typography>
+                        </CardContent>
+                      </Card>
+
+                      {/* Meetings Block */}
+                      <Card sx={{
+                        background: 'rgba(31, 41, 55, 0.6)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(107, 70, 193, 0.3)',
+                        borderRadius: '16px',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                        height: 'fit-content'
+                      }}>
+                        <CardContent sx={{ p: 4 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                            <CalendarMonth sx={{ fontSize: 28, color: 'primary.main' }} />
+                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                              Meetings
+                            </Typography>
                           </Box>
-                        </Card>
-                      )}
-                      {!meetingRequest ? (
-                        <Button
-                          variant="contained"
-                          size="large"
-                          startIcon={<CalendarMonth />}
-                          onClick={() => setMeetingDialogOpen(true)}
-                          sx={{
-                            py: 2,
-                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                            color: 'white',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            borderRadius: 3,
-                            fontWeight: 600,
-                            fontSize: '1rem',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
-                              border: '1px solid rgba(255, 255, 255, 0.5)',
-                              transform: 'translateY(-2px)',
-                            },
-                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
-                            transition: 'all 0.2s ease-in-out',
-                          }}
-                        >
-                          Schedule Meeting
-                        </Button>
-                      ) : meetingRequest.status === 'pending' ? (
-                        <Card sx={{
-                          py: 2,
-                          px: 3,
-                          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                          color: 'white',
-                          textAlign: 'center',
-                          border: '1px solid rgba(245, 158, 11, 0.3)',
-                          borderRadius: 3,
-                          minHeight: '64px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
-                          transition: 'all 0.2s ease-in-out',
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <Pending sx={{ fontSize: 24, color: '#F59E0B' }} />
-                            <Box>
-                              <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#F59E0B' }}>
-                                Meeting Request Pending
+                          
+                          {!meetingRequest ? (
+                            <>
+                              <Button
+                                variant="contained"
+                                size="large"
+                                fullWidth
+                                startIcon={<CalendarMonth />}
+                                onClick={() => setMeetingDialogOpen(true)}
+                                sx={{
+                                  py: 2,
+                                  mb: 3,
+                                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                                  color: 'white',
+                                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                                  borderRadius: 3,
+                                  fontWeight: 600,
+                                  fontSize: '1rem',
+                                  '&:hover': {
+                                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                                    boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                                    border: '1px solid rgba(255, 255, 255, 0.5)',
+                                    transform: 'translateY(-2px)',
+                                  },
+                                  boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                                  transition: 'all 0.2s ease-in-out',
+                                }}
+                              >
+                                Schedule Meeting
+                              </Button>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center' }}>
+                                You can feel free to schedule a meeting with us anytime.
                               </Typography>
-                              <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
-                                Requested for {formatDate(meetingRequest.preferred_date)}
+                            </>
+                          ) : meetingRequest.status === 'pending' ? (
+                            <>
+                              <Card sx={{
+                                p: 2,
+                                mb: 3,
+                                background: 'rgba(245, 158, 11, 0.1)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                borderRadius: 2,
+                              }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#F59E0B' }}>
+                                    Meeting Request Pending
+                                  </Typography>
+                                  <Chip 
+                                    label="pending" 
+                                    size="small" 
+                                    color="warning"
+                                  />
+                                </Box>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                  Preferred: {formatDate(meetingRequest.preferred_date)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(meetingRequest.created_at).toLocaleDateString()}
+                                </Typography>
+                              </Card>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center' }}>
+                                Meeting details will be populated once scheduled by our team.
                               </Typography>
-                            </Box>
-                          </Box>
-                        </Card>
-                      ) : meetingRequest.status === 'scheduled' ? (
-                        <Card 
-                          variant="outlined"
-                          sx={{
-                            py: 2,
-                            px: 3,
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            borderRadius: 3,
-                            minHeight: '64px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s ease-in-out',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
-                              border: '1px solid rgba(255, 255, 255, 0.5)',
-                              transform: 'translateY(-2px)',
-                            },
-                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
-                          }}
-                          onClick={() => setMeetingDetailsOpen(true)}
-                        >
-                          <Box>
-                            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: 'text.primary', mb: 1 }}>
-                              Meeting Scheduled
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                              {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
-                              {meetingRequest.scheduled_time && ` at ${formatTime(meetingRequest.scheduled_time)}`}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                              Click for details
-                            </Typography>
-                          </Box>
-                        </Card>
-                      ) : (
-                        <Button
-                          variant="contained"
-                          size="large"
-                          startIcon={<CalendarMonth />}
-                          onClick={() => setMeetingDialogOpen(true)}
-                          sx={{
-                            py: 2,
-                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                            color: 'white',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                            borderRadius: 3,
-                            fontWeight: 600,
-                            fontSize: '1rem',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
-                              border: '1px solid rgba(255, 255, 255, 0.5)',
-                              transform: 'translateY(-2px)',
-                            },
-                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
-                            transition: 'all 0.2s ease-in-out',
-                          }}
-                        >
-                          Schedule Meeting
-                        </Button>
-                      )}
+                            </>
+                          ) : meetingRequest.status === 'scheduled' ? (
+                            <>
+                              <Box sx={{ mb: 3 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                                  Scheduled Meeting
+                                </Typography>
+                                <Card sx={{
+                                  p: 2,
+                                  background: 'rgba(34, 197, 94, 0.1)',
+                                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                                  borderRadius: 2,
+                                }}>
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                      {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
+                                    </Typography>
+                                    <Chip 
+                                      label="scheduled" 
+                                      size="small" 
+                                      color="success"
+                                    />
+                                  </Box>
+                                  {meetingRequest.scheduled_time && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                      Time: {formatTime(meetingRequest.scheduled_time)}
+                                    </Typography>
+                                  )}
+                                  {meetingRequest.purpose && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                      Purpose: {meetingRequest.purpose}
+                                    </Typography>
+                                  )}
+                                  {meetingRequest.meeting_type && (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                      Type: {meetingRequest.meeting_type === 'video' ? 'Video Call' : 'Phone Call'}
+                                    </Typography>
+                                  )}
+                                  <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                                    Scheduled: {new Date(meetingRequest.created_at).toLocaleDateString()}
+                                  </Typography>
+                                  
+                                  {/* Join Meeting Button */}
+                                  {meetingRequest.meeting_type === 'video' && meetingRequest.meeting_link ? (
+                                    <Button
+                                      variant="contained"
+                                      size="medium"
+                                      fullWidth
+                                      startIcon={<VideoCall />}
+                                      href={meetingRequest.meeting_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      sx={{
+                                        py: 1.5,
+                                        background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                                        color: 'white',
+                                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                                        borderRadius: 2,
+                                        fontWeight: 600,
+                                        fontSize: '0.9rem',
+                                        '&:hover': {
+                                          background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                                          boxShadow: '0 6px 12px rgba(34, 197, 94, 0.3)',
+                                          border: '1px solid rgba(255, 255, 255, 0.5)',
+                                          transform: 'translateY(-1px)',
+                                        },
+                                        boxShadow: '0 3px 8px rgba(34, 197, 94, 0.2)',
+                                        transition: 'all 0.2s ease-in-out',
+                                      }}
+                                    >
+                                      Join Video Call
+                                    </Button>
+                                  ) : meetingRequest.meeting_type === 'phone' ? (
+                                    <Button
+                                      variant="contained"
+                                      size="medium"
+                                      fullWidth
+                                      startIcon={<Phone />}
+                                      disabled
+                                      sx={{
+                                        py: 1.5,
+                                        background: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)',
+                                        color: 'white',
+                                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                                        borderRadius: 2,
+                                        fontWeight: 600,
+                                        fontSize: '0.9rem',
+                                        '&.Mui-disabled': {
+                                          background: 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)',
+                                          color: 'rgba(255, 255, 255, 0.7)',
+                                        }
+                                      }}
+                                    >
+                                      Phone Call Scheduled
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="outlined"
+                                      size="medium"
+                                      fullWidth
+                                      onClick={() => setMeetingDetailsOpen(true)}
+                                      sx={{
+                                        py: 1.5,
+                                        color: '#22C55E',
+                                        border: '1px solid rgba(34, 197, 94, 0.5)',
+                                        borderRadius: 2,
+                                        fontWeight: 600,
+                                        fontSize: '0.9rem',
+                                        '&:hover': {
+                                          background: 'rgba(34, 197, 94, 0.1)',
+                                          border: '1px solid rgba(34, 197, 94, 0.7)',
+                                        }
+                                      }}
+                                    >
+                                      View Details
+                                    </Button>
+                                  )}
+                                  
+                                  {/* Cancel Meeting Button */}
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth
+                                    startIcon={<Cancel />}
+                                    onClick={handleCancelMeeting}
+                                    sx={{
+                                      mt: 2,
+                                      py: 1,
+                                      color: '#EF4444',
+                                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                                      borderRadius: 2,
+                                      fontWeight: 500,
+                                      fontSize: '0.8rem',
+                                      '&:hover': {
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        border: '1px solid rgba(239, 68, 68, 0.5)',
+                                      }
+                                    }}
+                                  >
+                                    Cancel Meeting
+                                  </Button>
+                                </Card>
+                              </Box>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="contained"
+                                size="large"
+                                fullWidth
+                                startIcon={<CalendarMonth />}
+                                onClick={() => setMeetingDialogOpen(true)}
+                                sx={{
+                                  py: 2,
+                                  mb: 3,
+                                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                                  color: 'white',
+                                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                                  borderRadius: 3,
+                                  fontWeight: 600,
+                                  fontSize: '1rem',
+                                  '&:hover': {
+                                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                                    boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                                    border: '1px solid rgba(255, 255, 255, 0.5)',
+                                    transform: 'translateY(-2px)',
+                                  },
+                                  boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                                  transition: 'all 0.2s ease-in-out',
+                                }}
+                              >
+                                Schedule Meeting
+                              </Button>
+                              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', textAlign: 'center' }}>
+                                You can feel free to schedule a meeting with us anytime.
+                              </Typography>
+                            </>
+                          )}
+                        </CardContent>
+                      </Card>
                     </Box>
                   </CardContent>
                 </Card>
