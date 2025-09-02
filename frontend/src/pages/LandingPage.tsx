@@ -304,7 +304,7 @@ const LandingPage: React.FC = () => {
           <Box sx={{ textAlign: 'center', mb: 8 }}>
             <Slide direction="down" in={isVisible} timeout={1200}>
               <Box>
-                <HeroGradientText variant="h1" sx={{ mb: 3, fontSize: { xs: '3rem', md: '4rem' } }}>
+                <HeroGradientText variant="h1" sx={{ mb: 3, fontSize: { xs: '3rem', md: '4rem' }, lineHeight: 1.5 }}>
                   Venture Capital
                   <br />
                   Redefined
