@@ -356,7 +356,7 @@ const LandingPage: React.FC = () => {
                   onClick={() => {
                     document.getElementById('features')?.scrollIntoView({ 
                       behavior: 'smooth',
-                      block: 'start'
+                      block: 'center'
                     });
                   }}
                   sx={{
