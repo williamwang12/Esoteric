@@ -372,7 +372,7 @@ app.get('/api/loans/:loanId/transactions', authenticateToken, async (req, res) =
 
         // Get transactions with pagination
         const transactionsQuery = `
-            SELECT id, transaction_type, amount, transaction_date, description, reference_id
+            SELECT id, transaction_type, amount, transaction_date, description, bonus_percentage
             FROM loan_transactions 
             WHERE ${whereClause}
             ORDER BY transaction_date DESC 
