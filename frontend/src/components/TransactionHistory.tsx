@@ -159,7 +159,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
       }
 
       const response = await fetch(
-        `http://localhost:5002/api/loans/${loanId}/transactions?${params}`,
+        `${process.env.REACT_APP_API_URL}/loans/${loanId}/transactions?${params}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,

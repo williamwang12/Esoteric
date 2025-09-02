@@ -81,7 +81,7 @@ const WithdrawalRequestDialog: React.FC<WithdrawalRequestDialogProps> = ({
         requestBody.notes = formData.notes.trim();
       }
       
-      const response = await fetch('http://localhost:5002/api/withdrawal-requests', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/withdrawal-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
