@@ -28,8 +28,8 @@
     "serve": "^14.2.0"
   },
   "scripts": {
-    "start": "serve -s build -l $PORT",
-    "dev": "react-scripts start",
+    "start": "react-scripts start",
+    "start:prod": "serve -s build -p ${PORT:-5000}",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
