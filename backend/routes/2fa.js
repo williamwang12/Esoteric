@@ -43,13 +43,13 @@ router.post('/setup', async (req, res) => {
         if (existing2FA.rows.length > 0) {
             // Update existing record
             await pool.query(
-                'UPDATE user_2fa SET secret = $1, qr_code_shown_at = NOW() WHERE user_id = $2',
+                'UPDATE user_2fa SET secret = $1 WHERE user_id = $2',
                 [secret, userId]
             );
         } else {
             // Create new record
             await pool.query(
-                'INSERT INTO user_2fa (user_id, secret, qr_code_shown_at) VALUES ($1, $2, NOW())',
+                'INSERT INTO user_2fa (user_id, secret) VALUES ($1, $2)',
                 [userId, secret]
             );
         }
