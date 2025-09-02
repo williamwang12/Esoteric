@@ -146,30 +146,18 @@ const Register: React.FC = () => {
         }}
       >
         <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-            <IconButton
-              component={RouterLink}
-              to="/"
-              sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
-            >
-              <ArrowBack />
-            </IconButton>
-            
-            {/* Centered ESOTERIC Logo */}
-            <Box sx={{ 
-              position: 'absolute', 
-              left: '50%', 
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              justifyContent: 'center'
-            }}>
-              <GradientText variant="h4" sx={{ fontWeight: 800 }}>
-                ESOTERIC
-              </GradientText>
-            </Box>
-            
-            {/* Right side button */}
-            <Box sx={{ marginLeft: 'auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <GradientText variant="h4" sx={{ fontWeight: 800 }}>
+              ESOTERIC
+            </GradientText>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <IconButton
+                component={RouterLink}
+                to="/"
+                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+              >
+                <ArrowBack />
+              </IconButton>
               <Button
                 component={RouterLink}
                 to="/login"

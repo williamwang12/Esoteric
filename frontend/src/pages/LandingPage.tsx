@@ -151,11 +151,20 @@ const LandingPage: React.FC = () => {
           top: 0,
           left: 0,
           right: 0,
-          background: 'rgba(31, 41, 55, 0.9)',
-          backdropFilter: 'blur(20px)',
+          background: 'rgba(31, 41, 55, 0.95)',
+          backdropFilter: 'blur(30px)',
           borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
           zIndex: 1000,
-          py: 2,
+          py: 2.5,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+          }
         }}
       >
         <Container maxWidth="lg">
@@ -163,17 +172,87 @@ const LandingPage: React.FC = () => {
             <HeroGradientText variant="h4" sx={{ fontWeight: 800 }}>
               ESOTERIC
             </HeroGradientText>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            
+            {/* All buttons on the right */}
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Button
+                onClick={() => {
+                  document.getElementById('features')?.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                  });
+                }}
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  background: 'rgba(107, 70, 193, 0.1)',
+                  border: '1px solid rgba(107, 70, 193, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    background: 'rgba(107, 70, 193, 0.2)',
+                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
+                  },
+                }}
+              >
+                Features
+              </Button>
+              <Button
+                onClick={() => {
+                  document.getElementById('about')?.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                  });
+                }}
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  background: 'rgba(107, 70, 193, 0.1)',
+                  border: '1px solid rgba(107, 70, 193, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    background: 'rgba(107, 70, 193, 0.2)',
+                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
+                  },
+                }}
+              >
+                Who We Are
+              </Button>
               <Button
                 component={RouterLink}
                 to="/login"
-                variant="outlined"
                 sx={{
-                  borderColor: 'rgba(107, 70, 193, 0.5)',
-                  color: '#6B46C1',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  background: 'rgba(107, 70, 193, 0.1)',
+                  border: '1px solid rgba(107, 70, 193, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    borderColor: '#6B46C1',
-                    backgroundColor: 'rgba(107, 70, 193, 0.1)',
+                    background: 'rgba(107, 70, 193, 0.2)',
+                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
                   },
                 }}
               >
@@ -182,11 +261,23 @@ const LandingPage: React.FC = () => {
               <Button
                 component={RouterLink}
                 to="/register"
-                variant="contained"
                 sx={{
-                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: '12px',
+                  background: 'rgba(107, 70, 193, 0.1)',
+                  border: '1px solid rgba(107, 70, 193, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #553C9A 0%, #7C3AED 50%, #8B5CF6 100%)',
+                    background: 'rgba(107, 70, 193, 0.2)',
+                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
                   },
                 }}
               >
@@ -394,116 +485,119 @@ const LandingPage: React.FC = () => {
         </Container>
       </Box>
 
-      {/* About Section */}
-      <Container maxWidth="lg" sx={{ py: 12 }}>
-        <Fade in={true} timeout={2000}>
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
-            gap: 8, 
-            alignItems: 'center' 
-          }}>
-            <Box>
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 800,
-                  mb: 4,
-                  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                Investment Excellence Through Innovation
-              </Typography>
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 4, lineHeight: 1.8 }}>
-                Esoteric combines cutting-edge technology with proven investment strategies 
-                to deliver exceptional returns. Our platform offers institutional-grade portfolio management 
-                with the accessibility and transparency that individual investors deserve.
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
-                {[
-                  'Real-time portfolio tracking and analytics',
-                  'Transparent fee structure with no hidden costs',
-                  'Professional-grade risk management tools',
-                  'Dedicated account management support'
-                ].map((item, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <CheckCircle sx={{ color: '#22C55E', fontSize: 24 }} />
-                    <Typography variant="body1" color="text.primary">
-                      {item}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-              <Button
-                component={RouterLink}
-                to="/register"
-                variant="contained"
-                size="large"
-                endIcon={<ArrowForward />}
-                sx={{
-                  py: 2,
-                  px: 4,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #553C9A 0%, #7C3AED 50%, #8B5CF6 100%)',
-                    transform: 'translateY(-2px)',
-                  },
-                }}
-              >
-                Open Your Account
-              </Button>
-            </Box>
-            <Box
-              sx={{
-                position: 'relative',
-                borderRadius: 4,
-                overflow: 'hidden',
-                background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                border: '2px solid rgba(107, 70, 193, 0.3)',
-                p: 4,
-              }}
-            >
-              <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'white' }}>
-                Platform Highlights
-              </Typography>
-              <Box sx={{ display: 'grid', gap: 3 }}>
-                {[
-                  { icon: <BarChart />, title: 'Advanced Analytics', value: 'Real-time insights' },
-                  { icon: <Shield />, title: 'Security First', value: 'Bank-grade encryption' },
-                  { icon: <CurrencyExchange />, title: 'Competitive Returns', value: '12.5% avg. annual' },
-                  { icon: <Star />, title: 'Client Satisfaction', value: '4.9/5 rating' },
-                ].map((highlight, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <Box
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        background: 'rgba(107, 70, 193, 0.2)',
-                        color: '#A855F7',
-                      }}
-                    >
-                      {highlight.icon}
-                    </Box>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
-                        {highlight.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {highlight.value}
+      {/* Who We Are Section */}
+      <Box id="about" sx={{ pt: 16, pb: 8, background: 'rgba(0, 0, 0, 0.2)' }}>
+        <Container maxWidth="lg">
+          <Fade in={true} timeout={2000}>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+              gap: 8, 
+              alignItems: 'center' 
+            }}>
+              <Box>
+                <Typography
+                  variant="h2"
+                  sx={{
+                    fontWeight: 800,
+                    mb: 4,
+                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Who We Are
+                </Typography>
+                <Typography variant="h6" color="text.secondary" sx={{ mb: 4, lineHeight: 1.8 }}>
+                  Esoteric is a next-generation investment platform founded by industry veterans 
+                  with decades of experience in private equity, venture capital, and quantitative finance. 
+                  We bridge the gap between traditional investment management and modern technology.
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+                  {[
+                    'Founded by former Goldman Sachs and Blackstone executives',
+                    'Proprietary algorithms developed over 15+ years',
+                    'Regulatory compliance with SEC and FINRA standards',
+                    'Trusted by high-net-worth individuals and institutions'
+                  ].map((item, index) => (
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <CheckCircle sx={{ color: '#22C55E', fontSize: 24 }} />
+                      <Typography variant="body1" color="text.primary">
+                        {item}
                       </Typography>
                     </Box>
-                  </Box>
-                ))}
+                  ))}
+                </Box>
+                <Button
+                  component={RouterLink}
+                  to="/register"
+                  variant="contained"
+                  size="large"
+                  endIcon={<ArrowForward />}
+                  sx={{
+                    py: 2,
+                    px: 4,
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #553C9A 0%, #7C3AED 50%, #8B5CF6 100%)',
+                      transform: 'translateY(-2px)',
+                    },
+                  }}
+                >
+                  Join Our Platform
+                </Button>
+              </Box>
+              <Box
+                sx={{
+                  position: 'relative',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                  border: '2px solid rgba(107, 70, 193, 0.3)',
+                  p: 4,
+                }}
+              >
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 3, color: 'white' }}>
+                  Our Leadership
+                </Typography>
+                <Box sx={{ display: 'grid', gap: 3 }}>
+                  {[
+                    { title: 'Investment Expertise', value: '25+ years combined experience', icon: <BarChart /> },
+                    { title: 'Technology Innovation', value: 'AI-powered portfolio optimization', icon: <Analytics /> },
+                    { title: 'Risk Management', value: 'Institutional-grade controls', icon: <Shield /> },
+                    { title: 'Client Focus', value: 'Personalized investment strategies', icon: <Star /> },
+                  ].map((highlight, index) => (
+                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          background: 'rgba(107, 70, 193, 0.2)',
+                          color: '#A855F7',
+                        }}
+                      >
+                        {highlight.icon}
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'white' }}>
+                          {highlight.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {highlight.value}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
               </Box>
             </Box>
-          </Box>
-        </Fade>
-      </Container>
+          </Fade>
+        </Container>
+      </Box>
 
       {/* CTA Section */}
       <Box
