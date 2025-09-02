@@ -583,10 +583,10 @@ app.post('/api/admin/withdrawal-requests/:requestId/complete', authenticateAdmin
                 WHERE id = $2
             `, [newBalance, withdrawal.loan_account_id]);
 
-            // Update withdrawal request to completed
+            // Update withdrawal request to processed
             await pool.query(`
                 UPDATE withdrawal_requests 
-                SET status = 'completed', completed_at = NOW(), completed_by = $1
+                SET status = 'processed', reviewed_by = $1, reviewed_at = NOW()
                 WHERE id = $2
             `, [adminUserId, requestId]);
 

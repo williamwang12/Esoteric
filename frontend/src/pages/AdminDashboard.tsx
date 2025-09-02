@@ -760,7 +760,7 @@ const AdminDashboard: React.FC = () => {
       await fetchWithdrawalRequests();
       setSnackbar({
         open: true,
-        message: 'Withdrawal completed successfully',
+        message: 'Withdrawal processed successfully',
         severity: 'success'
       });
     } catch (error) {
@@ -1906,11 +1906,11 @@ const AdminDashboard: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                       <CheckCircle sx={{ color: 'info.main', fontSize: 28 }} />
                       <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                        Completed Withdrawals ({withdrawalRequests.filter(req => req.status === 'completed').length})
+                        Processed Withdrawals ({withdrawalRequests.filter(req => req.status === 'processed').length})
                       </Typography>
                     </Box>
                     
-                    {withdrawalRequests.filter(req => req.status === 'completed').length === 0 ? (
+                    {withdrawalRequests.filter(req => req.status === 'processed').length === 0 ? (
                       <Box sx={{ 
                         textAlign: 'center', 
                         py: 4,
@@ -1941,7 +1941,7 @@ const AdminDashboard: React.FC = () => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {withdrawalRequests.filter(req => req.status === 'completed').map((request) => (
+                            {withdrawalRequests.filter(req => req.status === 'processed').map((request) => (
                               <TableRow key={request.id}>
                                 <TableCell>
                                   <Box>

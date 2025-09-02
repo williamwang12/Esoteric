@@ -122,6 +122,7 @@ const Dashboard: React.FC = () => {
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
   const [meetingDetailsOpen, setMeetingDetailsOpen] = useState(false);
   const [meetingRequest, setMeetingRequest] = useState<any>(null);
+  const [withdrawalRequest, setWithdrawalRequest] = useState<any>(null);
 
   const handleLogout = () => {
     logout();
@@ -289,6 +290,26 @@ const Dashboard: React.FC = () => {
         }
       } catch (meetingError) {
         console.error('Meeting requests fetch error:', meetingError);
+      }
+
+      // Fetch withdrawal requests
+      try {
+        const withdrawalResponse = await fetch(`${process.env.REACT_APP_API_URL}/withdrawal-requests`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (withdrawalResponse.ok) {
+          const withdrawalRequests = await withdrawalResponse.json();
+          // Get the most recent withdrawal request
+          if (withdrawalRequests.length > 0) {
+            const latestRequest = withdrawalRequests.sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0];
+            setWithdrawalRequest(latestRequest);
+          }
+        }
+      } catch (withdrawalError) {
+        console.error('Withdrawal requests fetch error:', withdrawalError);
       }
 
     } catch (err) {
@@ -987,31 +1008,61 @@ const Dashboard: React.FC = () => {
                       Manage your account with quick actions for withdrawals and consultations
                     </Typography>
                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 3 }}>
-                      <Button
-                        variant="contained"
-                        size="large"
-                        startIcon={<AccountBalanceWallet />}
-                        onClick={() => setWithdrawalDialogOpen(true)}
-                        sx={{
-                          py: 2,
-                          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                          color: 'white',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          borderRadius: 3,
-                          fontWeight: 600,
-                          fontSize: '1rem',
-                          '&:hover': {
+                      {!withdrawalRequest || withdrawalRequest.status === 'processed' || withdrawalRequest.status === 'cancelled' ? (
+                        <Button
+                          variant="contained"
+                          size="large"
+                          startIcon={<AccountBalanceWallet />}
+                          onClick={() => setWithdrawalDialogOpen(true)}
+                          sx={{
+                            py: 2,
                             background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                            boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
-                            border: '1px solid rgba(255, 255, 255, 0.5)',
-                            transform: 'translateY(-2px)',
-                          },
+                            color: 'white',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            borderRadius: 3,
+                            fontWeight: 600,
+                            fontSize: '1rem',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                              boxShadow: '0 8px 16px rgba(255, 255, 255, 0.2)',
+                              border: '1px solid rgba(255, 255, 255, 0.5)',
+                              transform: 'translateY(-2px)',
+                            },
+                            boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          Request Withdrawal
+                        </Button>
+                      ) : (
+                        <Card sx={{
+                          py: 2,
+                          px: 3,
+                          background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                          color: 'white',
+                          textAlign: 'center',
+                          border: '1px solid rgba(245, 158, 11, 0.3)',
+                          borderRadius: 3,
+                          minHeight: '64px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)',
                           transition: 'all 0.2s ease-in-out',
-                        }}
-                      >
-                        Request Withdrawal
-                      </Button>
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                            <Pending sx={{ fontSize: 24, color: '#F59E0B' }} />
+                            <Box>
+                              <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#F59E0B' }}>
+                                Withdrawal Request Pending
+                              </Typography>
+                              <Typography variant="body2" sx={{ opacity: 0.9, color: 'white' }}>
+                                ${parseFloat(withdrawalRequest.amount).toLocaleString()} requested
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Card>
+                      )}
                       {!meetingRequest ? (
                         <Button
                           variant="contained"
@@ -1460,7 +1511,8 @@ const Dashboard: React.FC = () => {
             onClose={() => setWithdrawalDialogOpen(false)}
             currentBalance={parseFloat(loanData.current_balance)}
             onRequestSubmitted={() => {
-              // Optionally refresh data or show success message
+              // Refresh data to update withdrawal request status
+              fetchLoanData();
               console.log('Withdrawal request submitted successfully');
             }}
           />
