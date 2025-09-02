@@ -78,7 +78,7 @@ const MeetingRequestDialog: React.FC<MeetingRequestDialogProps> = ({
       console.log('Sending request:', requestBody);
       console.log('Form data:', formData);
       
-      const response = await fetch('http://localhost:5002/api/meeting-requests', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/meeting-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

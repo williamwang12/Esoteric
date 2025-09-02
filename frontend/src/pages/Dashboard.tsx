@@ -62,7 +62,7 @@ import TransactionHistory from '../components/TransactionHistory';
 import AppNavigation from '../components/AppNavigation';
 import WithdrawalRequestDialog from '../components/WithdrawalRequestDialog';
 import MeetingRequestDialog from '../components/MeetingRequestDialog';
-import { documentsApi, adminApi } from '../services/api';
+import { documentsApi, adminApi, loansApi } from '../services/api';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -163,7 +163,7 @@ const Dashboard: React.FC = () => {
   const handleCancelMeeting = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5002/api/admin/meeting-requests/${meetingRequest.id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/meeting-requests/${meetingRequest.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -238,42 +238,18 @@ const Dashboard: React.FC = () => {
       }
 
       // Fetch loans
-      const loansResponse = await fetch('http://localhost:5002/api/loans', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (!loansResponse.ok) {
-        if (loansResponse.status === 403 || loansResponse.status === 401) {
-          // Invalid or expired token - redirect to login
-          logout();
-          navigate('/login');
-          return;
-        }
-        throw new Error(`HTTP ${loansResponse.status}: ${loansResponse.statusText}`);
-      }
-      
-      const loans = await loansResponse.json();
+      const loans = await loansApi.getLoans();
       
       if (loans.length > 0) {
         setLoanData(loans[0]);
         
         // Fetch analytics for the first loan
-        const analyticsResponse = await fetch(`http://localhost:5002/api/loans/${loans[0].id}/analytics`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!analyticsResponse.ok) {
-          if (analyticsResponse.status === 403 || analyticsResponse.status === 401) {
-            // Invalid or expired token - redirect to login
-            logout();
-            navigate('/login');
-            return;
-          }
-          throw new Error(`Analytics HTTP ${analyticsResponse.status}: ${analyticsResponse.statusText}`);
+        try {
+          const analytics = await loansApi.getLoanPerformance(loans[0].id.toString());
+          setAnalyticsData(analytics);
+        } catch (error) {
+          console.error('Failed to fetch analytics:', error);
         }
-        
-        const analytics = await analyticsResponse.json();
-        setAnalyticsData(analytics);
       } else {
         setError('No loan accounts found');
       }
@@ -297,7 +273,7 @@ const Dashboard: React.FC = () => {
 
       // Fetch meeting requests
       try {
-        const meetingResponse = await fetch('http://localhost:5002/api/meeting-requests', {
+        const meetingResponse = await fetch(`${process.env.REACT_APP_API_URL}/meeting-requests`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         

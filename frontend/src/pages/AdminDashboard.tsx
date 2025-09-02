@@ -327,7 +327,7 @@ const AdminDashboard: React.FC = () => {
   const fetchWithdrawalRequests = async () => {
     try {
       setLoadingWithdrawalRequests(true);
-      const response = await fetch('http://localhost:5002/api/admin/withdrawal-requests', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/withdrawal-requests`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
@@ -348,7 +348,7 @@ const AdminDashboard: React.FC = () => {
   const fetchMeetingRequests = async () => {
     try {
       setLoadingMeetingRequests(true);
-      const response = await fetch('http://localhost:5002/api/admin/meeting-requests', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/meeting-requests`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
@@ -721,7 +721,7 @@ const AdminDashboard: React.FC = () => {
 
   const updateWithdrawalRequestStatus = async (requestId: string, status: string) => {
     try {
-      const response = await fetch(`http://localhost:5002/api/admin/withdrawal-requests/${requestId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/withdrawal-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -744,7 +744,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleCompleteWithdrawal = async (requestId: string) => {
     try {
-      const response = await fetch(`http://localhost:5002/api/admin/withdrawal-requests/${requestId}/complete`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/withdrawal-requests/${requestId}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -813,7 +813,7 @@ const AdminDashboard: React.FC = () => {
         body.admin_notes = schedulingData.admin_notes || '';
       }
 
-      const response = await fetch(`http://localhost:5002/api/admin/meeting-requests/${requestId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/meeting-requests/${requestId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
