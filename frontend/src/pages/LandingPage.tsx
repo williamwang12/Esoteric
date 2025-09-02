@@ -174,36 +174,7 @@ const LandingPage: React.FC = () => {
             </HeroGradientText>
             
             {/* All buttons on the right */}
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Button
-                onClick={() => {
-                  document.getElementById('features')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  });
-                }}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  px: 3,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  background: 'rgba(107, 70, 193, 0.1)',
-                  border: '1px solid rgba(107, 70, 193, 0.2)',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    background: 'rgba(107, 70, 193, 0.2)',
-                    border: '1px solid rgba(107, 70, 193, 0.4)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
-                  },
-                }}
-              >
-                Features
-              </Button>
+            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
               <Button
                 onClick={() => {
                   document.getElementById('about')?.scrollIntoView({ 
@@ -211,77 +182,116 @@ const LandingPage: React.FC = () => {
                     block: 'start'
                   });
                 }}
+                variant="outlined"
                 sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
+                  background: 'rgba(55, 65, 81, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'transparent',
                   textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  px: 3,
+                  fontWeight: 800,
+                  fontSize: '1.1rem',
+                  letterSpacing: '-0.02em',
+                  px: 4,
                   py: 1.5,
                   borderRadius: '12px',
-                  background: 'rgba(107, 70, 193, 0.1)',
-                  border: '1px solid rgba(107, 70, 193, 0.2)',
-                  backdropFilter: 'blur(10px)',
+                  borderColor: 'rgba(107, 70, 193, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '& .MuiButton-root': {
+                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  },
                   '&:hover': {
-                    background: 'rgba(107, 70, 193, 0.2)',
-                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    background: 'rgba(75, 85, 99, 0.8)',
+                    borderColor: 'rgba(107, 70, 193, 0.6)',
                     transform: 'translateY(-2px)',
                     boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
                   },
                 }}
               >
-                Who We Are
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Who We Are
+                </Box>
               </Button>
               <Button
                 component={RouterLink}
                 to="/login"
+                variant="outlined"
                 sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
+                  background: 'rgba(55, 65, 81, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'transparent',
                   textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  px: 3,
+                  fontWeight: 800,
+                  fontSize: '1.1rem',
+                  letterSpacing: '-0.02em',
+                  px: 4,
                   py: 1.5,
                   borderRadius: '12px',
-                  background: 'rgba(107, 70, 193, 0.1)',
-                  border: '1px solid rgba(107, 70, 193, 0.2)',
-                  backdropFilter: 'blur(10px)',
+                  borderColor: 'rgba(107, 70, 193, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    background: 'rgba(107, 70, 193, 0.2)',
-                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    background: 'rgba(75, 85, 99, 0.8)',
+                    borderColor: 'rgba(107, 70, 193, 0.6)',
                     transform: 'translateY(-2px)',
                     boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
                   },
                 }}
               >
-                Sign In
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Sign In
+                </Box>
               </Button>
               <Button
                 component={RouterLink}
                 to="/register"
+                variant="outlined"
                 sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
+                  background: 'rgba(55, 65, 81, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'transparent',
                   textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '1rem',
-                  px: 3,
+                  fontWeight: 800,
+                  fontSize: '1.1rem',
+                  letterSpacing: '-0.02em',
+                  px: 4,
                   py: 1.5,
                   borderRadius: '12px',
-                  background: 'rgba(107, 70, 193, 0.1)',
-                  border: '1px solid rgba(107, 70, 193, 0.2)',
-                  backdropFilter: 'blur(10px)',
+                  borderColor: 'rgba(107, 70, 193, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
-                    background: 'rgba(107, 70, 193, 0.2)',
-                    border: '1px solid rgba(107, 70, 193, 0.4)',
+                    background: 'rgba(75, 85, 99, 0.8)',
+                    borderColor: 'rgba(107, 70, 193, 0.6)',
                     transform: 'translateY(-2px)',
                     boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
                   },
                 }}
               >
-                Get Started
+                <Box
+                  sx={{
+                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  Get Started
+                </Box>
               </Button>
             </Box>
           </Box>
