@@ -36,9 +36,13 @@ describe('Enhanced Comprehensive Backend API Tests', () => {
         password: 'demo123456'
       });
 
+    console.log('Demo login response:', demoLoginResponse.status, demoLoginResponse.body);
+
     if (demoLoginResponse.status === 200) {
       regularUserToken = demoLoginResponse.body.token;
       testUserId = demoLoginResponse.body.user.id;
+    } else {
+      throw new Error(`Demo login failed: ${JSON.stringify(demoLoginResponse.body)}`);
     }
 
     // Login with admin user or use demo user as admin
@@ -49,11 +53,14 @@ describe('Enhanced Comprehensive Backend API Tests', () => {
         password: 'admin123456'
       });
 
+    console.log('Admin login response:', adminLoginResponse.status, adminLoginResponse.body);
+
     if (adminLoginResponse.status === 200) {
       adminUserToken = adminLoginResponse.body.token;
       adminUserId = adminLoginResponse.body.user.id;
     } else {
       // Use demo user as admin (since demo@esoteric.com is set as admin in the code)
+      console.log('Using demo user as admin');
       adminUserToken = regularUserToken;
       adminUserId = testUserId;
     }
