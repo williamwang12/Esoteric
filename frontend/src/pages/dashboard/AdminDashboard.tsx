@@ -56,8 +56,8 @@ import {
   RequestPage,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { adminApi } from '../services/api';
-import AppNavigation from '../components/AppNavigation';
+import { adminApi } from '../../services/api';
+import AppNavigation from '../../components/common/AppNavigation';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',

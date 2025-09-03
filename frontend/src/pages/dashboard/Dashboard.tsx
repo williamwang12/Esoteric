@@ -50,16 +50,16 @@ import {
   VideoCall,
   Phone
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
-import LoanGrowthChart from '../components/charts/LoanGrowthChart';
-import PortfolioDashboard from '../components/charts/PortfolioDashboard';
-import AdvancedMetrics from '../components/charts/AdvancedMetrics';
-import TransactionHistory from '../components/TransactionHistory';
-import AppNavigation from '../components/AppNavigation';
-import WithdrawalRequestDialog from '../components/WithdrawalRequestDialog';
-import MeetingRequestDialog from '../components/MeetingRequestDialog';
-import { documentsApi, adminApi, loansApi } from '../services/api';
+import LoanGrowthChart from '../../components/charts/LoanGrowthChart';
+import PortfolioDashboard from '../../components/charts/PortfolioDashboard';
+import AdvancedMetrics from '../../components/charts/AdvancedMetrics';
+import TransactionHistory from '../../components/transactions/TransactionHistory';
+import AppNavigation from '../../components/common/AppNavigation';
+import WithdrawalRequestDialog from '../../components/dialogs/WithdrawalRequestDialog';
+import MeetingRequestDialog from '../../components/dialogs/MeetingRequestDialog';
+import { documentsApi, adminApi, loansApi } from '../../services/api';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',

@@ -37,8 +37,8 @@ import {
   AccountBalanceWallet,
   ArrowBack,
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
-import { userApi, loansApi, twoFAApi } from '../services/api';
+import { useAuth } from '../../hooks/useAuth';
+import { userApi, loansApi, twoFAApi } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({

@@ -25,7 +25,7 @@ import {
   History,
   Description,
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const GradientText = styled(Typography)(({ theme }) => ({

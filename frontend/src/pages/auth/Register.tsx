@@ -18,7 +18,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth';
 import {
   PersonOutlined,
   EmailOutlined,
