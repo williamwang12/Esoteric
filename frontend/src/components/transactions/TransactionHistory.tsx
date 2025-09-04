@@ -354,20 +354,20 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
               InputLabelProps={{ shrink: true }}
             />
 
-            {(filters.type || startDateInput || endDateInput || searchInput) && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleClearFilters}
-                sx={{
-                  height: '40px',
-                  minHeight: '40px',
-                  px: 2,
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!filters.type && !startDateInput && !endDateInput && !searchInput}
+              onClick={handleClearFilters}
+              sx={{
+                height: '40px',
+                minHeight: '40px',
+                px: 2,
+                minWidth: 'fit-content',
+              }}
+            >
+              Clear Filters
+            </Button>
           </Box>
         </CardContent>
       </Card>
