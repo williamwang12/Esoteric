@@ -43,7 +43,7 @@ interface Transaction {
   description: string;
   transaction_date: string;
   created_at: string;
-  account_number: string;
+  account_number?: string;
 }
 
 interface TransactionResponse {
@@ -85,11 +85,23 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     }).format(num);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', dateString);
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
     });
   };
 
@@ -229,13 +241,20 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     setPage(1);
   };
 
-  // Client-side filtering for search
+  // Client-side filtering and sorting
   const filteredTransactions = useMemo(() => {
     if (!data?.transactions) return [];
-    if (!filters.search.trim()) return data.transactions;
+
+    const sortedTransactions = [...data.transactions].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    if (!filters.search.trim()) {
+      return sortedTransactions;
+    }
     
     const searchTerm = filters.search.toLowerCase();
-    return data.transactions.filter(transaction =>
+    return sortedTransactions.filter(transaction =>
       transaction.description.toLowerCase().includes(searchTerm) ||
       transaction.transaction_type.toLowerCase().includes(searchTerm) ||
       getTransactionTypeLabel(transaction.transaction_type).toLowerCase().includes(searchTerm) ||
@@ -396,7 +415,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
                             variant="outlined"
                           />
                           <Typography variant="caption" color="text.secondary">
-                            {formatDate(transaction.transaction_date)}
+                            {formatDateTime(transaction.created_at)}
                           </Typography>
                         </Box>
                         <Typography 

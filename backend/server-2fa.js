@@ -372,15 +372,18 @@ app.get('/api/loans/:loanId/transactions', authenticateToken, async (req, res) =
 
         // Get transactions with pagination
         const transactionsQuery = `
-            SELECT id, transaction_type, amount, transaction_date, description, bonus_percentage
+            SELECT id, transaction_type, amount, transaction_date, description, bonus_percentage, created_at
             FROM loan_transactions 
             WHERE ${whereClause}
-            ORDER BY transaction_date DESC 
+            ORDER BY created_at DESC, transaction_date DESC 
             LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
         `;
 
         queryParams.push(limit, offset);
         const transactionsResult = await pool.query(transactionsQuery, queryParams);
+        
+        // Debug: Log the actual data being returned
+        console.log('Transaction query result:', JSON.stringify(transactionsResult.rows[0], null, 2));
 
         // Get total count for pagination
         const countQuery = `
@@ -593,7 +596,7 @@ app.post('/api/admin/withdrawal-requests/:requestId/complete', authenticateAdmin
             // Create transaction record
             await pool.query(`
                 INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
-                VALUES ($1, $2, 'withdrawal', $3, CURRENT_DATE, NOW())
+                VALUES ($1, $2, 'withdrawal', $3, NOW(), NOW())
             `, [withdrawal.loan_account_id, -withdrawalAmount, `Withdrawal: ${withdrawal.reason}`]);
 
             // Commit transaction
@@ -667,8 +670,8 @@ app.post('/api/admin/create-loan', authenticateAdmin, [
 
         // Create initial loan transaction
         await pool.query(
-            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date)
-             VALUES ($1, $2, 'loan', 'Initial loan amount', CURRENT_DATE)`,
+            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
+             VALUES ($1, $2, 'loan', 'Initial loan amount', NOW(), NOW())`,
             [loanAccount.id, principalAmount]
         );
 
@@ -824,14 +827,14 @@ app.post('/api/admin/loans/:loanId/transactions', authenticateAdmin, [
 
         // Create transaction
         const transactionResult = await pool.query(
-            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, bonus_percentage)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at, bonus_percentage)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6) RETURNING *`,
             [
                 loanId,
                 amount,
                 transactionType,
                 description || `${transactionType} transaction`,
-                transactionDate || new Date().toISOString().split('T')[0],
+                transactionDate || new Date().toISOString(),
                 bonusPercentage
             ]
         );
