@@ -37,15 +37,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [logoutTimer, setLogoutTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const setupAutoLogout = () => {
+    // Clear existing timer
+    if (logoutTimer) {
+      clearTimeout(logoutTimer);
+    }
+
+    // Set up new timer for 1 hour (3600000 ms)
+    const timer = setTimeout(() => {
+      console.log('Auto-logout: Token expired after 1 hour');
+      logout();
+    }, 3600000); // 1 hour
+
+    setLogoutTimer(timer);
+  };
+
+  const clearAutoLogout = () => {
+    if (logoutTimer) {
+      clearTimeout(logoutTimer);
+      setLogoutTimer(null);
+    }
+  };
 
   useEffect(() => {
     // Check for existing auth data on app start
     const storedToken = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('user');
+    const loginTimestamp = localStorage.getItem('loginTimestamp');
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+    if (storedToken && storedUser && loginTimestamp) {
+      const loginTime = parseInt(loginTimestamp);
+      const currentTime = Date.now();
+      const timeDiff = currentTime - loginTime;
+
+      // Check if token is still valid (less than 1 hour old)
+      if (timeDiff < 3600000) { // 1 hour in milliseconds
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        
+        // Set up auto-logout for remaining time
+        const remainingTime = 3600000 - timeDiff;
+        const timer = setTimeout(() => {
+          console.log('Auto-logout: Token expired after 1 hour');
+          logout();
+        }, remainingTime);
+        setLogoutTimer(timer);
+      } else {
+        // Token has expired, clear storage
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('loginTimestamp');
+      }
     }
     setIsLoading(false);
   }, []);
@@ -68,13 +112,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Direct login (no 2FA)
       const { user: userData, token: authToken } = response;
       
-      // Store in localStorage
+      // Store in localStorage with timestamp
       localStorage.setItem('authToken', authToken);
       localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('loginTimestamp', Date.now().toString());
       
       // Update state
       setToken(authToken);
       setUser(userData);
+      
+      // Setup auto-logout timer
+      setupAutoLogout();
       
       return { requires2FA: false };
     } catch (error) {
@@ -94,13 +142,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const { user: userData, token: authToken } = response;
       
-      // Store in localStorage
+      // Store in localStorage with timestamp
       localStorage.setItem('authToken', authToken);
       localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('loginTimestamp', Date.now().toString());
       
       // Update state
       setToken(authToken);
       setUser(userData);
+      
+      // Setup auto-logout timer
+      setupAutoLogout();
       
       return response;
     } catch (error) {
@@ -123,13 +175,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const { user: newUser, token: authToken } = response;
       
-      // Store in localStorage
+      // Store in localStorage with timestamp
       localStorage.setItem('authToken', authToken);
       localStorage.setItem('user', JSON.stringify(newUser));
+      localStorage.setItem('loginTimestamp', Date.now().toString());
       
       // Update state
       setToken(authToken);
       setUser(newUser);
+      
+      // Setup auto-logout timer
+      setupAutoLogout();
     } catch (error) {
       throw error;
     } finally {
@@ -138,18 +194,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear auto-logout timer
+    clearAutoLogout();
+    
     // Clear localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('loginTimestamp');
     
     // Clear state
     setToken(null);
     setUser(null);
     
     // Optional: Call API to invalidate token on server
-    authApi.logout().catch(() => {
+    try {
+      if (authApi.logout) {
+        authApi.logout().catch(() => {
+          // Ignore logout API errors
+        });
+      }
+    } catch (error) {
       // Ignore logout API errors
-    });
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {

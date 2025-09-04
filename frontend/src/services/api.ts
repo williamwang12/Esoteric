@@ -28,10 +28,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Token expired, invalid, or insufficient permissions
+      console.log('Auto-logout: Received 401/403 response from server');
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('loginTimestamp');
       window.location.href = '/login';
     }
     return Promise.reject(error);

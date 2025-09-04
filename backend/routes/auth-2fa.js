@@ -86,7 +86,7 @@ router.post('/login', [
         const token = jwt.sign(
             { userId: user.id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '1h' }
         );
 
         // Create full session
@@ -200,7 +200,7 @@ router.post('/complete-2fa-login', [
         const fullToken = jwt.sign(
             { userId: decoded.userId, email: decoded.email },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '1h' }
         );
 
         // Update session to complete and extend expiry
@@ -296,7 +296,7 @@ router.post('/register', [
         const token = jwt.sign(
             { userId: user.id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '1h' }
         );
 
         // Create session
