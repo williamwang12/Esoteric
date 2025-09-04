@@ -1428,6 +1428,8 @@ const Dashboard: React.FC = () => {
                           setDocumentCategoryFilter('');
                         }}
                         sx={{
+                          height: '40px',
+                          minHeight: '40px',
                           minWidth: 'fit-content',
                           px: 2,
                         }}
