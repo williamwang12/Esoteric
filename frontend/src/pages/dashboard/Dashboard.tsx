@@ -1040,8 +1040,9 @@ const Dashboard: React.FC = () => {
                                     onClick={() => setWithdrawalDialogOpen(true)}
                                     sx={{
                                       py: 2.5,
+                                      px: 3,
                                       mb: 3,
-                                      background: 'linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)',
+                                      background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
                                       color: 'white',
                                       border: '1px solid rgba(255, 255, 255, 0.2)',
                                       borderRadius: '16px',
@@ -1050,12 +1051,12 @@ const Dashboard: React.FC = () => {
                                       textTransform: 'none',
                                       letterSpacing: '0.025em',
                                       '&:hover': {
-                                        background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 100%)',
-                                        boxShadow: '0 12px 24px rgba(245, 158, 11, 0.4)',
+                                        background: 'linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)',
+                                        boxShadow: '0 12px 24px rgba(59, 130, 246, 0.4)',
                                         transform: 'translateY(-3px)',
                                         border: '1px solid rgba(255, 255, 255, 0.4)',
                                       },
-                                      boxShadow: '0 8px 16px rgba(245, 158, 11, 0.2)',
+                                      boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)',
                                       transition: 'all 0.3s ease-in-out',
                                     }}
                                   >
@@ -1166,6 +1167,7 @@ const Dashboard: React.FC = () => {
                                     onClick={() => setMeetingDialogOpen(true)}
                                     sx={{
                                       py: 2.5,
+                                      px: 3,
                                       mb: 3,
                                       background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
                                       color: 'white',
@@ -1609,76 +1611,210 @@ const Dashboard: React.FC = () => {
               fullWidth
               PaperProps={{
                 sx: {
-                  backgroundColor: '#1f2937',
-                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '20px',
+                  boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
                 }
               }}
             >
-              <DialogTitle sx={{ pb: 2 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                  Meeting Details
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Your scheduled consultation information
-                </Typography>
+              <DialogTitle sx={{ pb: 2, position: 'relative', overflow: 'hidden' }}>
+                <Box sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.8), rgba(96, 165, 250, 0.8))'
+                }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mt: 2 }}>
+                  <Box sx={{
+                    background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
+                    borderRadius: '16px',
+                    p: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 16px rgba(59, 130, 246, 0.3)'
+                  }}>
+                    <CalendarMonth sx={{ fontSize: 28, color: 'white' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+                      Meeting Details
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      Your scheduled consultation information
+                    </Typography>
+                  </Box>
+                </Box>
               </DialogTitle>
 
-              <DialogContent sx={{ pt: 2 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {/* Date and Time */}
-                  <Paper variant="outlined" sx={{ p: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
-                      Meeting Schedule
+              <DialogContent sx={{ pt: 2, px: 3 }}>
+                <Box sx={{ display: 'grid', gap: 3 }}>
+                  {/* Hero Meeting Card */}
+                  <Card sx={{
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '16px',
+                    p: 4,
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8))'
+                    }
+                  }}>
+                    <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 600, mb: 2 }}>
+                      Scheduled Meeting
                     </Typography>
-                    <Typography variant="body1" sx={{ mb: 1, color: 'text.primary' }}>
-                      <strong>Date:</strong> {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
+                    <Typography variant="h3" sx={{ 
+                      fontWeight: 900, 
+                      color: '#10B981', 
+                      mb: 1,
+                      textShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                    }}>
+                      {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
                     </Typography>
-                    <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                      <strong>Time:</strong> {meetingRequest.scheduled_time ? formatTime(meetingRequest.scheduled_time) : 'Time TBD'}
-                    </Typography>
-                  </Paper>
+                    {meetingRequest.scheduled_time && (
+                      <Typography variant="h5" sx={{ color: '#10B981', fontWeight: 600, mb: 2 }}>
+                        {formatTime(meetingRequest.scheduled_time)}
+                      </Typography>
+                    )}
+                    <Box sx={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 3,
+                      py: 1,
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      borderRadius: '25px',
+                      border: '1px solid rgba(16, 185, 129, 0.4)'
+                    }}>
+                      <Box sx={{ 
+                        width: 8, 
+                        height: 8, 
+                        borderRadius: '50%', 
+                        background: '#10B981',
+                        boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)'
+                      }} />
+                      <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 600 }}>
+                        CONFIRMED
+                      </Typography>
+                    </Box>
+                  </Card>
 
-                  {/* Meeting Purpose */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                    {/* Meeting Type */}
+                    <Card sx={{
+                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%)',
+                      border: '1px solid rgba(245, 158, 11, 0.2)',
+                      borderRadius: '12px',
+                      p: 3
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
+                        {meetingRequest.meeting_type === 'video' ? 'Video Call' : 'Phone Call'}
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        {meetingRequest.meeting_type === 'video' ? 'Google Meet' : 'Phone Conference'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {meetingRequest.meeting_type === 'video' ? 'Join via link below' : 'We\'ll call you'}
+                      </Typography>
+                    </Card>
+
+                    {/* Request Info */}
+                    <Card sx={{
+                      background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.08) 0%, rgba(156, 163, 175, 0.05) 100%)',
+                      border: '1px solid rgba(107, 114, 128, 0.2)',
+                      borderRadius: '12px',
+                      p: 3
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
+                        Requested
+                      </Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                        {new Date(meetingRequest.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(meetingRequest.created_at).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Typography>
+                    </Card>
+                  </Box>
+
+                  {/* Purpose */}
                   {meetingRequest.purpose && (
-                    <Paper variant="outlined" sx={{ p: 3 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                    <Card sx={{
+                      background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.08) 0%, rgba(156, 163, 175, 0.05) 100%)',
+                      border: '1px solid rgba(107, 114, 128, 0.2)',
+                      borderRadius: '12px',
+                      p: 3
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
                         Meeting Purpose
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                        {meetingRequest.purpose}
+                      <Typography variant="body1" sx={{ 
+                        color: 'text.primary',
+                        lineHeight: 1.6,
+                        fontSize: '1.1rem'
+                      }}>
+                        "{meetingRequest.purpose}"
                       </Typography>
-                    </Paper>
+                    </Card>
                   )}
 
-                  {/* Meeting Link for Video Calls */}
+                  {/* Join Meeting Button for Video Calls */}
                   {meetingRequest.meeting_type === 'video' && meetingRequest.meeting_link && (
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      size="large"
-                      href={meetingRequest.meeting_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        py: 1.5,
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Join Meeting
-                    </Button>
-                  )}
-
-                  {/* Phone Call Information */}
-                  {meetingRequest.meeting_type === 'phone' && (
-                    <Paper variant="outlined" sx={{ p: 3 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
-                        Phone Call Details
+                    <Card sx={{
+                      background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderRadius: '12px',
+                      p: 3,
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 700, mb: 2 }}>
+                        Ready to Join?
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                        We will call you at your registered phone number at the scheduled time.
-                      </Typography>
-                    </Paper>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        fullWidth
+                        startIcon={<VideoCall />}
+                        href={meetingRequest.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          py: 2,
+                          background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+                          color: 'white',
+                          fontWeight: 700,
+                          borderRadius: '12px',
+                          textTransform: 'none',
+                          fontSize: '1.1rem',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
+                            boxShadow: '0 8px 16px rgba(34, 197, 94, 0.4)',
+                            transform: 'translateY(-2px)',
+                          },
+                          boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
+                          transition: 'all 0.3s ease-in-out'
+                        }}
+                      >
+                        Join Video Call
+                      </Button>
+                    </Card>
                   )}
                 </Box>
               </DialogContent>
@@ -1687,16 +1823,22 @@ const Dashboard: React.FC = () => {
                 <Button 
                   onClick={() => setMeetingDetailsOpen(false)} 
                   variant="contained"
+                  size="large"
                   sx={{ 
                     minWidth: 100,
+                    py: 1.5,
                     background: 'linear-gradient(135deg, #6B7280, #4B5563)',
                     color: 'white',
-                    fontWeight: 'bold',
+                    fontWeight: 700,
+                    borderRadius: '12px',
+                    textTransform: 'none',
                     '&:hover': {
                       background: 'linear-gradient(135deg, #4B5563, #374151)',
                       boxShadow: '0 6px 12px rgba(107, 114, 128, 0.4)',
+                      transform: 'translateY(-1px)',
                     },
                     boxShadow: '0 3px 8px rgba(107, 114, 128, 0.3)',
+                    transition: 'all 0.3s ease-in-out'
                   }}
                 >
                   Close
@@ -1705,16 +1847,22 @@ const Dashboard: React.FC = () => {
                   onClick={handleCancelMeeting}
                   variant="contained"
                   startIcon={<Cancel />}
+                  size="large"
                   sx={{ 
                     minWidth: 150,
+                    py: 1.5,
                     background: 'linear-gradient(135deg, #EF4444, #DC2626)',
                     color: 'white',
-                    fontWeight: 'bold',
+                    fontWeight: 700,
+                    borderRadius: '12px',
+                    textTransform: 'none',
                     '&:hover': {
                       background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
                       boxShadow: '0 8px 16px rgba(239, 68, 68, 0.4)',
+                      transform: 'translateY(-1px)',
                     },
                     boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                    transition: 'all 0.3s ease-in-out'
                   }}
                 >
                   Cancel Meeting
@@ -1737,78 +1885,195 @@ const Dashboard: React.FC = () => {
                   fullWidth
                   PaperProps={{
                     sx: {
-                      backgroundColor: '#1f2937',
-                      borderRadius: 3,
+                      background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                      borderRadius: '20px',
+                      boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
                     }
                   }}
                 >
-                  <DialogTitle sx={{ pb: 2 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                      Withdrawal Details
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Your approved withdrawal information
-                    </Typography>
+                  <DialogTitle sx={{ pb: 2, position: 'relative', overflow: 'hidden' }}>
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.8), rgba(251, 191, 36, 0.8))'
+                    }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mt: 2 }}>
+                      <Box sx={{
+                        background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
+                        borderRadius: '16px',
+                        p: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 8px 16px rgba(245, 158, 11, 0.3)'
+                      }}>
+                        <AccountBalanceWallet sx={{ fontSize: 28, color: 'white' }} />
+                      </Box>
+                      <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+                          Withdrawal Details
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                          Your approved withdrawal information
+                        </Typography>
+                      </Box>
+                    </Box>
                   </DialogTitle>
 
-                  <DialogContent sx={{ pt: 2 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {/* Amount and Status */}
-                      <Paper variant="outlined" sx={{ p: 3 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
-                          Withdrawal Summary
+                  <DialogContent sx={{ pt: 2, px: 3 }}>
+                    <Box sx={{ display: 'grid', gap: 3 }}>
+                      {/* Hero Amount Card */}
+                      <Card sx={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        borderRadius: '16px',
+                        p: 4,
+                        textAlign: 'center',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: '3px',
+                          background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8))'
+                        }
+                      }}>
+                        <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 600, mb: 2 }}>
+                          Withdrawal Amount
                         </Typography>
-                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#10B981' }}>
+                        <Typography variant="h2" sx={{ 
+                          fontWeight: 900, 
+                          color: '#10B981', 
+                          mb: 2,
+                          textShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                        }}>
                           ${parseFloat(latestWithdrawal.amount).toLocaleString()}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          <strong>Status:</strong> Approved & Processing
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>Requested:</strong> {new Date(latestWithdrawal.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </Typography>
-                      </Paper>
+                        <Box sx={{ 
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          px: 3,
+                          py: 1,
+                          background: 'rgba(16, 185, 129, 0.2)',
+                          borderRadius: '25px',
+                          border: '1px solid rgba(16, 185, 129, 0.4)'
+                        }}>
+                          <Box sx={{ 
+                            width: 8, 
+                            height: 8, 
+                            borderRadius: '50%', 
+                            background: '#10B981',
+                            boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)'
+                          }} />
+                          <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 600 }}>
+                            APPROVED & PROCESSING
+                          </Typography>
+                        </Box>
+                      </Card>
+
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                        {/* Request Info */}
+                        <Card sx={{
+                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%)',
+                          border: '1px solid rgba(245, 158, 11, 0.2)',
+                          borderRadius: '12px',
+                          p: 3
+                        }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
+                            Request Info
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            <strong>Submitted:</strong>
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                            {new Date(latestWithdrawal.created_at).toLocaleDateString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(latestWithdrawal.created_at).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </Typography>
+                        </Card>
+
+                        {/* Priority */}
+                        {latestWithdrawal.urgency && (
+                          <Card sx={{
+                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(96, 165, 250, 0.05) 100%)',
+                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                            borderRadius: '12px',
+                            p: 3
+                          }}>
+                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
+                              Priority Level
+                            </Typography>
+                            <Typography variant="h5" sx={{ 
+                              fontWeight: 700, 
+                              textTransform: 'capitalize',
+                              color: '#3B82F6'
+                            }}>
+                              {latestWithdrawal.urgency}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Processing Priority
+                            </Typography>
+                          </Card>
+                        )}
+                      </Box>
 
                       {/* Reason */}
                       {latestWithdrawal.reason && (
-                        <Paper variant="outlined" sx={{ p: 3 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                        <Card sx={{
+                          background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.08) 0%, rgba(156, 163, 175, 0.05) 100%)',
+                          border: '1px solid rgba(107, 114, 128, 0.2)',
+                          borderRadius: '12px',
+                          p: 3
+                        }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
                             Reason for Withdrawal
                           </Typography>
-                          <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                            {latestWithdrawal.reason}
+                          <Typography variant="body1" sx={{ 
+                            color: 'text.primary',
+                            lineHeight: 1.6,
+                            fontSize: '1.1rem'
+                          }}>
+                            "{latestWithdrawal.reason}"
                           </Typography>
-                        </Paper>
+                        </Card>
                       )}
 
                       {/* Additional Notes */}
                       {latestWithdrawal.notes && (
-                        <Paper variant="outlined" sx={{ p: 3 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+                        <Card sx={{
+                          background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                          border: '1px solid rgba(147, 51, 234, 0.2)',
+                          borderRadius: '12px',
+                          p: 3
+                        }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
                             Additional Notes
                           </Typography>
-                          <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                            {latestWithdrawal.notes}
+                          <Typography variant="body1" sx={{ 
+                            color: 'text.primary',
+                            lineHeight: 1.6,
+                            fontSize: '1.1rem'
+                          }}>
+                            "{latestWithdrawal.notes}"
                           </Typography>
-                        </Paper>
-                      )}
-
-                      {/* Priority */}
-                      {latestWithdrawal.urgency && (
-                        <Paper variant="outlined" sx={{ p: 3 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
-                            Processing Priority
-                          </Typography>
-                          <Typography variant="body1" sx={{ color: 'text.primary', textTransform: 'capitalize' }}>
-                            {latestWithdrawal.urgency} Priority
-                          </Typography>
-                        </Paper>
+                        </Card>
                       )}
                     </Box>
                   </DialogContent>
@@ -1817,19 +2082,26 @@ const Dashboard: React.FC = () => {
                     <Button 
                       onClick={() => setWithdrawalDetailsOpen(false)} 
                       variant="contained"
+                      size="large"
                       sx={{ 
-                        minWidth: 100,
-                        background: 'linear-gradient(135deg, #6B7280, #4B5563)',
+                        minWidth: 120,
+                        py: 1.5,
+                        background: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
                         color: 'white',
-                        fontWeight: 'bold',
+                        fontWeight: 700,
+                        borderRadius: '12px',
+                        textTransform: 'none',
+                        fontSize: '1rem',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #4B5563, #374151)',
-                          boxShadow: '0 6px 12px rgba(107, 114, 128, 0.4)',
+                          background: 'linear-gradient(135deg, #D97706, #F59E0B)',
+                          boxShadow: '0 8px 16px rgba(245, 158, 11, 0.4)',
+                          transform: 'translateY(-2px)',
                         },
-                        boxShadow: '0 3px 8px rgba(107, 114, 128, 0.3)',
+                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                        transition: 'all 0.3s ease-in-out'
                       }}
                     >
-                      Close
+                      Got it
                     </Button>
                   </DialogActions>
                 </Dialog>
