@@ -1419,18 +1419,21 @@ const Dashboard: React.FC = () => {
                           ))}
                         </Select>
                       </FormControl>
-                      {(documentSearch || documentCategoryFilter) && (
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => {
-                            setDocumentSearch('');
-                            setDocumentCategoryFilter('');
-                          }}
-                        >
-                          Clear Filters
-                        </Button>
-                      )}
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={!documentSearch && !documentCategoryFilter}
+                        onClick={() => {
+                          setDocumentSearch('');
+                          setDocumentCategoryFilter('');
+                        }}
+                        sx={{
+                          minWidth: 'fit-content',
+                          px: 2,
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
                     </Box>
                   </CardContent>
                 </Card>
