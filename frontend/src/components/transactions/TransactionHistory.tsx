@@ -22,6 +22,7 @@ import {
   Alert,
   InputAdornment,
   useTheme,
+  useMediaQuery,
   alpha,
   Fade,
 } from '@mui/material';
@@ -62,6 +63,7 @@ interface TransactionHistoryProps {
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [data, setData] = useState<TransactionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -336,28 +338,36 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
               </Select>
             </FormControl>
 
-            <TextField
-              size="small"
-              label="Start Date"
-              type="date"
-              value={startDateInput}
-              onChange={(e) => setStartDateInput(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
+            {!isMobile && (
+              <TextField
+                size="small"
+                label="Start Date"
+                type="date"
+                value={startDateInput}
+                onChange={(e) => setStartDateInput(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            )}
 
-            <TextField
-              size="small"
-              label="End Date"
-              type="date"
-              value={endDateInput}
-              onChange={(e) => setEndDateInput(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
+            {!isMobile && (
+              <TextField
+                size="small"
+                label="End Date"
+                type="date"
+                value={endDateInput}
+                onChange={(e) => setEndDateInput(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            )}
 
             <Button
               variant="outlined"
               size="small"
-              disabled={!filters.type && !startDateInput && !endDateInput && !searchInput}
+              disabled={
+                !filters.type && 
+                !searchInput && 
+                (isMobile || (!startDateInput && !endDateInput))
+              }
               onClick={handleClearFilters}
               sx={{
                 height: '40px',

@@ -32,6 +32,8 @@ import {
   Badge,
   keyframes,
   styled,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Upload,
@@ -54,6 +56,7 @@ import {
   AccountBalanceWallet,
   CalendarMonth,
   RequestPage,
+  Computer,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
@@ -148,6 +151,8 @@ const UserCard = memo(({ user, isSelected, onClick }: {
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [tabValue, setTabValue] = useState(0);
   const [userDetailsTabValue, setUserDetailsTabValue] = useState(0);
   const [users, setUsers] = useState<any[]>([]);
@@ -870,21 +875,67 @@ const AdminDashboard: React.FC = () => {
       />
 
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4, position: 'relative', zIndex: 1 }}>
-        {/* Error State */}
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
+        {/* Mobile Restriction */}
+        {isMobile && (
+          <Card 
+            sx={{ 
+              mb: 4, 
+              background: 'rgba(31, 41, 55, 0.8)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '16px',
+            }}
+          >
+            <CardContent sx={{ textAlign: 'center', py: 6 }}>
+              <Computer sx={{ 
+                fontSize: 80, 
+                color: 'rgba(239, 68, 68, 0.8)', 
+                mb: 3 
+              }} />
+              <Typography variant="h4" sx={{ 
+                color: 'white', 
+                fontWeight: 700, 
+                mb: 2 
+              }}>
+                Desktop Required
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: 'rgba(255, 255, 255, 0.7)', 
+                mb: 3,
+                maxWidth: 500,
+                mx: 'auto'
+              }}>
+                Admin Portal can only be accessed on Desktop
+              </Typography>
+              <Typography variant="body1" sx={{ 
+                color: 'rgba(255, 255, 255, 0.6)',
+                maxWidth: 400,
+                mx: 'auto'
+              }}>
+                Please switch to a desktop or laptop computer to access the full admin dashboard experience.
+              </Typography>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress />
-          </Box>
-        )}
+        {/* Desktop Content */}
+        {!isMobile && (
+          <>
+            {/* Error State */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
 
-        {!loading && !error && (
+            {/* Loading State */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            )}
+
+            {!loading && !error && (
           <>
             {/* Tab Navigation */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -2285,6 +2336,8 @@ const AdminDashboard: React.FC = () => {
               )}
             </TabPanel>
 
+            </>
+            )}
           </>
         )}
       </Container>
