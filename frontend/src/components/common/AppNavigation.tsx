@@ -14,14 +14,12 @@ import {
   useTheme,
   alpha,
   styled,
-  keyframes,
   Drawer,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   ListItemButton,
-  Divider,
   useMediaQuery,
 } from '@mui/material';
 import {
@@ -155,9 +153,9 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
         {/* Main Navigation Row */}
         <Toolbar sx={{ 
           py: 1, 
-          minHeight: '64px !important', 
-          px: { xs: 2, sm: 3 },
-          pl: { xs: 2, md: 80 } // Restore original desktop left padding
+          minHeight: { xs: '56px', sm: '64px' },
+          px: { xs: 1, sm: 2, md: 3 },
+          pl: { xs: 1, sm: 2, md: 3 }
         }}>
           {/* Mobile Menu Button */}
           {isMobile && (
@@ -165,9 +163,12 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
               edge="start"
               color="inherit"
               onClick={handleMobileMenuToggle}
-              sx={{ mr: 2 }}
+              sx={{ 
+                mr: { xs: 1, sm: 2 },
+                p: { xs: 1, sm: 1.5 }
+              }}
             >
-              <MenuIcon />
+              <MenuIcon sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
             </IconButton>
           )}
 
@@ -175,10 +176,11 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           <GradientText 
             variant="h5" 
             sx={{ 
-              fontSize: { xs: '1.5rem', sm: '1.75rem' },
+              fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
               mr: { xs: 'auto', md: 4 },
               flexGrow: { xs: 1, md: 0 },
-              pl: { md: 44 } // Restore original desktop logo padding
+              pl: { xs: 0, sm: 0, md: 49 },
+              textAlign: { xs: 'center', md: 'left' }
             }}
           >
             ESOTERIC
@@ -195,8 +197,9 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                     color: alpha(theme.palette.common.white, 0.7),
                     fontWeight: 600,
                     textTransform: 'none',
-                    fontSize: '1rem',
-                    minWidth: 120, // Restore original desktop tab width
+                    fontSize: { sm: '0.9rem', md: '1rem' },
+                    minWidth: { sm: 100, md: 120 },
+                    px: { sm: 1, md: 2 },
                     '&.Mui-selected': {
                       color: theme.palette.common.white,
                     },
@@ -216,8 +219,11 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                     iconPosition="start"
                     sx={{ 
                       '& .MuiTab-iconWrapper': { 
-                        marginRight: '8px', 
-                        marginBottom: '0px !important' 
+                        marginRight: { sm: '6px', md: '8px' }, 
+                        marginBottom: '0px !important',
+                        '& svg': {
+                          fontSize: { sm: '1.1rem', md: '1.25rem' }
+                        }
                       } 
                     }}
                   />
@@ -227,24 +233,26 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           )}
 
           {/* User Profile Section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1, md: 2 } }}>
             {/* User Info - Hidden on mobile */}
             <Box sx={{ 
               display: { xs: 'none', sm: 'flex' }, 
               flexDirection: 'column',
               alignItems: 'flex-end',
-              mr: 1
+              mr: { sm: 0.5, md: 1 }
             }}>
               <Typography variant="body2" sx={{ 
                 color: theme.palette.common.white,
                 fontWeight: 600,
-                lineHeight: 1.2
+                lineHeight: 1.2,
+                fontSize: { sm: '0.8rem', md: '0.875rem' }
               }}>
                 {user?.firstName} {user?.lastName}
               </Typography>
               <Typography variant="caption" sx={{ 
                 color: alpha(theme.palette.common.white, 0.7),
-                lineHeight: 1.2
+                lineHeight: 1.2,
+                fontSize: { sm: '0.7rem', md: '0.75rem' }
               }}>
                 {user?.role === 'admin' ? 'Administrator' : 'Client'}
               </Typography>
@@ -263,10 +271,10 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             >
               <Avatar
                 sx={{
-                  width: 40, // Keep original desktop size
-                  height: 40,
+                  width: { xs: 32, sm: 36, md: 40 },
+                  height: { xs: 32, sm: 36, md: 40 },
                   background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                  fontSize: '1rem', // Keep original desktop size
+                  fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
                   fontWeight: 600,
                 }}
               >
@@ -322,7 +330,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           sx={{
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': {
-              width: 280,
+              width: { xs: 260, sm: 280 },
               background: 'rgba(31, 41, 55, 0.98)',
               backdropFilter: 'blur(20px)',
               border: 'none',
@@ -336,14 +344,20 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            p: 2,
+            p: { xs: 1.5, sm: 2 },
             borderBottom: '1px solid rgba(107, 70, 193, 0.3)'
           }}>
-            <GradientText variant="h6" sx={{ fontSize: '1.5rem' }}>
+            <GradientText variant="h6" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               ESOTERIC
             </GradientText>
-            <IconButton onClick={handleMobileMenuClose} sx={{ color: 'white' }}>
-              <Close />
+            <IconButton 
+              onClick={handleMobileMenuClose} 
+              sx={{ 
+                color: 'white',
+                p: { xs: 0.5, sm: 1 }
+              }}
+            >
+              <Close sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
             </IconButton>
           </Box>
 
@@ -351,25 +365,30 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: 2,
-            p: 2,
+            gap: { xs: 1.5, sm: 2 },
+            p: { xs: 1.5, sm: 2 },
             borderBottom: '1px solid rgba(107, 70, 193, 0.3)'
           }}>
             <Avatar
               sx={{
-                width: 48,
-                height: 48,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 },
                 background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                fontSize: { xs: '0.9rem', sm: '1rem' }
               }}
             >
               {user?.firstName?.[0]}{user?.lastName?.[0]}
             </Avatar>
             <Box>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              <Typography variant="body1" sx={{ 
+                fontWeight: 600,
+                fontSize: { xs: '0.9rem', sm: '1rem' }
+              }}>
                 {user?.firstName} {user?.lastName}
               </Typography>
               <Typography variant="body2" sx={{ 
-                color: alpha(theme.palette.common.white, 0.7)
+                color: alpha(theme.palette.common.white, 0.7),
+                fontSize: { xs: '0.8rem', sm: '0.875rem' }
               }}>
                 {user?.role === 'admin' ? 'Administrator' : 'Client'}
               </Typography>
@@ -384,9 +403,9 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                   selected={isAdminPage ? (item.index === 4) : (currentTab === item.index)}
                   onClick={() => handleMobileTabChange(item.index)}
                   sx={{
-                    py: 1.5,
-                    px: 2,
-                    mx: 1,
+                    py: { xs: 1, sm: 1.5 },
+                    px: { xs: 1.5, sm: 2 },
+                    mx: { xs: 0.5, sm: 1 },
                     borderRadius: '8px',
                     '&.Mui-selected': {
                       background: 'rgba(107, 70, 193, 0.3)',
@@ -399,14 +418,20 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                     },
                   }}
                 >
-                  <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                  <ListItemIcon sx={{ 
+                    color: 'white', 
+                    minWidth: { xs: 36, sm: 40 },
+                    '& svg': {
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }
+                  }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText 
                     primary={item.label}
                     primaryTypographyProps={{
                       fontWeight: 600,
-                      fontSize: '1rem'
+                      fontSize: { xs: '0.9rem', sm: '1rem' }
                     }}
                   />
                 </ListItemButton>
@@ -417,19 +442,47 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           {/* Mobile Menu Footer Actions */}
           <Box sx={{ borderTop: '1px solid rgba(107, 70, 193, 0.3)' }}>
             <ListItem disablePadding>
-              <ListItemButton onClick={handleProfileClick} sx={{ py: 1.5, px: 2 }}>
-                <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+              <ListItemButton onClick={handleProfileClick} sx={{ 
+                py: { xs: 1, sm: 1.5 }, 
+                px: { xs: 1.5, sm: 2 } 
+              }}>
+                <ListItemIcon sx={{ 
+                  color: 'white', 
+                  minWidth: { xs: 36, sm: 40 },
+                  '& svg': {
+                    fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                  }
+                }}>
                   <Person />
                 </ListItemIcon>
-                <ListItemText primary="View Profile" />
+                <ListItemText 
+                  primary="View Profile"
+                  primaryTypographyProps={{
+                    fontSize: { xs: '0.9rem', sm: '1rem' }
+                  }}
+                />
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
-              <ListItemButton onClick={handleLogout} sx={{ py: 1.5, px: 2 }}>
-                <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+              <ListItemButton onClick={handleLogout} sx={{ 
+                py: { xs: 1, sm: 1.5 }, 
+                px: { xs: 1.5, sm: 2 } 
+              }}>
+                <ListItemIcon sx={{ 
+                  color: 'white', 
+                  minWidth: { xs: 36, sm: 40 },
+                  '& svg': {
+                    fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                  }
+                }}>
                   <ExitToApp />
                 </ListItemIcon>
-                <ListItemText primary="Sign Out" />
+                <ListItemText 
+                  primary="Sign Out"
+                  primaryTypographyProps={{
+                    fontSize: { xs: '0.9rem', sm: '1rem' }
+                  }}
+                />
               </ListItemButton>
             </ListItem>
           </Box>

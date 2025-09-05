@@ -23,7 +23,6 @@ import {
   CheckCircle,
   Star,
   BarChart,
-  CurrencyExchange,
   Shield,
   Speed,
   Support,
@@ -155,7 +154,7 @@ const LandingPage: React.FC = () => {
           backdropFilter: 'blur(30px)',
           borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
           zIndex: 1000,
-          py: 2.5,
+          py: { xs: 1.5, sm: 2, md: 2.5 },
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -169,12 +168,24 @@ const LandingPage: React.FC = () => {
       >
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <HeroGradientText variant="h4" sx={{ fontWeight: 800 }}>
+            <HeroGradientText 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 800,
+                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+              }}
+            >
               ESOTERIC
             </HeroGradientText>
             
             {/* All buttons on the right */}
-            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: { xs: 1, sm: 2, md: 3 }, 
+              alignItems: 'center',
+              flexWrap: { xs: 'wrap', sm: 'nowrap' },
+              justifyContent: { xs: 'flex-end', sm: 'flex-end' }
+            }}>
               <Button
                 onClick={() => {
                   document.getElementById('about')?.scrollIntoView({ 
@@ -184,16 +195,17 @@ const LandingPage: React.FC = () => {
                 }}
                 variant="outlined"
                 sx={{
+                  display: { xs: 'none', sm: 'inline-flex' },
                   background: 'rgba(55, 65, 81, 0.6)',
                   backdropFilter: 'blur(10px)',
                   color: 'transparent',
                   textTransform: 'none',
                   fontWeight: 800,
-                  fontSize: '1.1rem',
+                  fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.1rem' },
                   letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
+                  px: { xs: 2, sm: 3, md: 4 },
+                  py: { xs: 1, sm: 1.25, md: 1.5 },
+                  borderRadius: { xs: '8px', md: '12px' },
                   borderColor: 'rgba(107, 70, 193, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '& .MuiButton-root': {
@@ -231,11 +243,11 @@ const LandingPage: React.FC = () => {
                   color: 'transparent',
                   textTransform: 'none',
                   fontWeight: 800,
-                  fontSize: '1.1rem',
+                  fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.1rem' },
                   letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
+                  px: { xs: 2, sm: 3, md: 4 },
+                  py: { xs: 1, sm: 1.25, md: 1.5 },
+                  borderRadius: { xs: '8px', md: '12px' },
                   borderColor: 'rgba(107, 70, 193, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
@@ -267,11 +279,11 @@ const LandingPage: React.FC = () => {
                   color: 'transparent',
                   textTransform: 'none',
                   fontWeight: 800,
-                  fontSize: '1.1rem',
+                  fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1.1rem' },
                   letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
+                  px: { xs: 2, sm: 3, md: 4 },
+                  py: { xs: 1, sm: 1.25, md: 1.5 },
+                  borderRadius: { xs: '8px', md: '12px' },
                   borderColor: 'rgba(107, 70, 193, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
