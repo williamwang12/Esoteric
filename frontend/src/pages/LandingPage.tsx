@@ -526,8 +526,8 @@ const LandingPage: React.FC = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
                   {[
-                    'Founded by former Goldman Sachs and Blackstone executives',
-                    'Proprietary algorithms developed over 15+ years',
+                    'Founded by professional day traders',
+                    'Proprietary trading strategies developed over 2+ years',
                     'Regulatory compliance with SEC and FINRA standards',
                     'Trusted by high-net-worth individuals and institutions'
                   ].map((item, index) => (

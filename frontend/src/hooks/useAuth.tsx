@@ -171,14 +171,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }) => {
     try {
       setIsLoading(true);
+      console.log('Registration attempt:', userData.email);
       const response = await authApi.register(userData);
       
+      console.log('Registration response:', response);
       const { user: newUser, token: authToken } = response;
+      
+      if (!newUser || !authToken) {
+        console.error('Registration response missing user or token:', { user: newUser, token: authToken });
+        throw new Error('Registration response incomplete');
+      }
       
       // Store in localStorage with timestamp
       localStorage.setItem('authToken', authToken);
       localStorage.setItem('user', JSON.stringify(newUser));
       localStorage.setItem('loginTimestamp', Date.now().toString());
+      
+      console.log('Registration successful, user stored:', newUser);
       
       // Update state
       setToken(authToken);
@@ -186,7 +195,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Setup auto-logout timer
       setupAutoLogout();
+      
+      console.log('Registration complete, user authenticated:', !!authToken);
     } catch (error) {
+      console.error('Registration error:', error);
       throw error;
     } finally {
       setIsLoading(false);
