@@ -92,7 +92,22 @@ const Login: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      
+      // Handle different error scenarios
+      if (err.response?.status === 401) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (err.response?.status === 429) {
+        setError('Too many login attempts. Please wait a few minutes before trying again.');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Login failed. Please check your internet connection and try again.');
+      }
     }
   };
 
@@ -108,7 +123,18 @@ const Login: React.FC = () => {
       await complete2FALogin(sessionToken, totpCode);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid 2FA code. Please try again.');
+      console.error('2FA error:', err);
+      
+      // Handle different 2FA error scenarios
+      if (err.response?.status === 401) {
+        setError('Invalid 2FA code. Please check your authenticator app and try again.');
+      } else if (err.response?.status === 429) {
+        setError('Too many 2FA attempts. Please wait a few minutes before trying again.');
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError('2FA verification failed. Please try again.');
+      }
     }
   };
 
