@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import PublicNavigation from '../../components/common/PublicNavigation';
 import { 
   LockOutlined, 
   EmailOutlined, 
@@ -39,13 +40,13 @@ const FloatingOrb = styled(Box)(({ theme }) => ({
   `} 8s ease-in-out infinite`,
 }));
 
-const GradientText = styled(Typography)(({ theme }) => ({
+const HeroGradientText = styled(Typography)(({ theme }) => ({
   background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  fontWeight: 800,
-  letterSpacing: '-0.02em',
+  fontWeight: 900,
+  letterSpacing: '-0.03em',
 }));
 
 const Login: React.FC = () => {
@@ -123,87 +124,7 @@ const Login: React.FC = () => {
       <FloatingOrb sx={{ width: 150, height: 150, top: '60%', left: '80%', animationDelay: '-2s' }} />
 
       {/* Navigation */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          background: 'rgba(31, 41, 55, 0.95)',
-          backdropFilter: 'blur(30px)',
-          borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
-          zIndex: 1000,
-          py: 2.5,
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
-          }
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <GradientText variant="h4" sx={{ fontWeight: 800 }}>
-              ESOTERIC
-            </GradientText>
-            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-              <IconButton
-                component={RouterLink}
-                to="/"
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.7)', 
-                  '&:hover': { 
-                    color: '#A855F7',
-                    transform: 'scale(1.1)'
-                  } 
-                }}
-              >
-                <ArrowBack />
-              </IconButton>
-              <Button
-                component={RouterLink}
-                to="/register"
-                variant="outlined"
-                sx={{
-                  background: 'rgba(55, 65, 81, 0.6)',
-                  backdropFilter: 'blur(10px)',
-                  color: 'transparent',
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  borderColor: 'rgba(107, 70, 193, 0.3)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    background: 'rgba(75, 85, 99, 0.8)',
-                    borderColor: 'rgba(107, 70, 193, 0.6)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  Sign Up
-                </Box>
-              </Button>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
+      <PublicNavigation />
 
       {/* Main Content */}
       <Box
@@ -212,7 +133,7 @@ const Login: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          pt: 12,
+          pt: { xs: 14, sm: 16, md: 18 },
           pb: 4,
           px: 2,
         }}
@@ -265,9 +186,9 @@ const Login: React.FC = () => {
                     >
                       <LockOutlined sx={{ fontSize: 40, color: 'white' }} />
                     </Box>
-                    <GradientText variant="h3" sx={{ mb: 1 }}>
+                    <HeroGradientText variant="h3" sx={{ mb: 1 }}>
                       Welcome Back
-                    </GradientText>
+                    </HeroGradientText>
                     <Typography 
                       variant="h6" 
                       color="text.secondary"
