@@ -15,6 +15,14 @@ import {
   alpha,
   styled,
   keyframes,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  ListItemButton,
+  Divider,
+  useMediaQuery,
 } from '@mui/material';
 import {
   ExitToApp,
@@ -24,6 +32,8 @@ import {
   TrendingUp,
   History,
   Description,
+  Menu as MenuIcon,
+  Close,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -52,7 +62,9 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   // Handle main tab changes
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -92,7 +104,32 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
     navigate('/profile');
   };
 
+  const handleMobileMenuToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleMobileMenuClose = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const handleMobileTabChange = (tabIndex: number) => {
+    handleMobileMenuClose();
+    if (tabIndex === 4 && user?.role === 'admin') {
+      navigate('/admin');
+    } else if (onTabChange) {
+      onTabChange(tabIndex);
+    }
+  };
+
   const isAdminPage = location.pathname.includes('/admin');
+  
+  const navigationItems = [
+    { icon: <AccountBalance />, label: 'Overview', index: 0 },
+    { icon: <TrendingUp />, label: 'Analytics', index: 1 },
+    { icon: <History />, label: 'Transactions', index: 2 },
+    { icon: <Description />, label: 'Documents', index: 3 },
+    ...(user?.role === 'admin' ? [{ icon: <AdminPanelSettings />, label: 'Admin', index: 4 }] : [])
+  ];
   
   return (
     <Slide direction="down" in={true} mountOnEnter unmountOnExit>
@@ -116,105 +153,82 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
         }}
       >
         {/* Main Navigation Row */}
-        <Toolbar sx={{ py: 1, minHeight: '64px !important', pl: 80 }}>
+        <Toolbar sx={{ 
+          py: 1, 
+          minHeight: '64px !important', 
+          px: { xs: 2, sm: 3 },
+          pl: { xs: 2, md: 80 } // Restore original desktop left padding
+        }}>
+          {/* Mobile Menu Button */}
+          {isMobile && (
+            <IconButton
+              edge="start"
+              color="inherit"
+              onClick={handleMobileMenuToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
           {/* Company Logo/Name */}
           <GradientText 
             variant="h5" 
             sx={{ 
-              fontSize: '1.75rem',
-              mr: 4
+              fontSize: { xs: '1.5rem', sm: '1.75rem' },
+              mr: { xs: 'auto', md: 4 },
+              flexGrow: { xs: 1, md: 0 },
+              pl: { md: 44 } // Restore original desktop logo padding
             }}
-            pl={44}
           >
             ESOTERIC
           </GradientText>
 
-          {/* Main Navigation Tabs - Dashboard Tabs as Main Navigation */}
-          <Box sx={{ flexGrow: 1 }}>
-            <Tabs
-              value={isAdminPage ? (user?.role === 'admin' ? 4 : 0) : currentTab}
-              onChange={handleTabChange}
-              sx={{
-                '& .MuiTab-root': {
-                  color: alpha(theme.palette.common.white, 0.7),
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  minWidth: 120,
-                  '&.Mui-selected': {
-                    color: theme.palette.common.white,
+          {/* Desktop Navigation Tabs */}
+          {!isMobile && (
+            <Box sx={{ flexGrow: 1 }}>
+              <Tabs
+                value={isAdminPage ? (user?.role === 'admin' ? 4 : 0) : currentTab}
+                onChange={handleTabChange}
+                sx={{
+                  '& .MuiTab-root': {
+                    color: alpha(theme.palette.common.white, 0.7),
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    minWidth: 120, // Restore original desktop tab width
+                    '&.Mui-selected': {
+                      color: theme.palette.common.white,
+                    },
                   },
-                },
-                '& .MuiTabs-indicator': {
-                  backgroundColor: theme.palette.common.white,
-                  height: 3,
-                  borderRadius: '3px 3px 0 0',
-                },
-              }}
-            >
-              <Tab 
-                icon={<AccountBalance />} 
-                label="Overview" 
-                iconPosition="start"
-                sx={{ 
-                  '& .MuiTab-iconWrapper': { 
-                    marginRight: '8px', 
-                    marginBottom: '0px !important' 
-                  } 
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: theme.palette.common.white,
+                    height: 3,
+                    borderRadius: '3px 3px 0 0',
+                  },
                 }}
-              />
-              <Tab 
-                icon={<TrendingUp />} 
-                label="Analytics" 
-                iconPosition="start"
-                sx={{ 
-                  '& .MuiTab-iconWrapper': { 
-                    marginRight: '8px', 
-                    marginBottom: '0px !important' 
-                  } 
-                }}
-              />
-              <Tab 
-                icon={<History />} 
-                label="Transactions" 
-                iconPosition="start"
-                sx={{ 
-                  '& .MuiTab-iconWrapper': { 
-                    marginRight: '8px', 
-                    marginBottom: '0px !important' 
-                  } 
-                }}
-              />
-              <Tab 
-                icon={<Description />} 
-                label="Documents" 
-                iconPosition="start"
-                sx={{ 
-                  '& .MuiTab-iconWrapper': { 
-                    marginRight: '8px', 
-                    marginBottom: '0px !important' 
-                  } 
-                }}
-              />
-              {user?.role === 'admin' && (
-                <Tab 
-                  icon={<AdminPanelSettings />} 
-                  label="Admin" 
-                  iconPosition="start"
-                  sx={{ 
-                    '& .MuiTab-iconWrapper': { 
-                      marginRight: '8px', 
-                      marginBottom: '0px !important' 
-                    } 
-                  }}
-                />
-              )}
-            </Tabs>
-          </Box>
+              >
+                {navigationItems.map((item) => (
+                  <Tab 
+                    key={item.index}
+                    icon={item.icon} 
+                    label={item.label} 
+                    iconPosition="start"
+                    sx={{ 
+                      '& .MuiTab-iconWrapper': { 
+                        marginRight: '8px', 
+                        marginBottom: '0px !important' 
+                      } 
+                    }}
+                  />
+                ))}
+              </Tabs>
+            </Box>
+          )}
 
           {/* User Profile Section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* User Info */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+            {/* User Info - Hidden on mobile */}
             <Box sx={{ 
               display: { xs: 'none', sm: 'flex' }, 
               flexDirection: 'column',
@@ -249,10 +263,10 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             >
               <Avatar
                 sx={{
-                  width: 40,
+                  width: 40, // Keep original desktop size
                   height: 40,
                   background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                  fontSize: '1rem',
+                  fontSize: '1rem', // Keep original desktop size
                   fontWeight: 600,
                 }}
               >
@@ -299,6 +313,127 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             </Menu>
           </Box>
         </Toolbar>
+
+        {/* Mobile Navigation Drawer */}
+        <Drawer
+          anchor="left"
+          open={mobileMenuOpen}
+          onClose={handleMobileMenuClose}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': {
+              width: 280,
+              background: 'rgba(31, 41, 55, 0.98)',
+              backdropFilter: 'blur(20px)',
+              border: 'none',
+              borderRight: '1px solid rgba(107, 70, 193, 0.3)',
+              color: 'white',
+            },
+          }}
+        >
+          {/* Mobile Menu Header */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 2,
+            borderBottom: '1px solid rgba(107, 70, 193, 0.3)'
+          }}>
+            <GradientText variant="h6" sx={{ fontSize: '1.5rem' }}>
+              ESOTERIC
+            </GradientText>
+            <IconButton onClick={handleMobileMenuClose} sx={{ color: 'white' }}>
+              <Close />
+            </IconButton>
+          </Box>
+
+          {/* User Info in Mobile Menu */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2,
+            p: 2,
+            borderBottom: '1px solid rgba(107, 70, 193, 0.3)'
+          }}>
+            <Avatar
+              sx={{
+                width: 48,
+                height: 48,
+                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+              }}
+            >
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </Avatar>
+            <Box>
+              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                {user?.firstName} {user?.lastName}
+              </Typography>
+              <Typography variant="body2" sx={{ 
+                color: alpha(theme.palette.common.white, 0.7)
+              }}>
+                {user?.role === 'admin' ? 'Administrator' : 'Client'}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Navigation Items */}
+          <List sx={{ flexGrow: 1 }}>
+            {navigationItems.map((item) => (
+              <ListItem key={item.index} disablePadding>
+                <ListItemButton
+                  selected={isAdminPage ? (item.index === 4) : (currentTab === item.index)}
+                  onClick={() => handleMobileTabChange(item.index)}
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    mx: 1,
+                    borderRadius: '8px',
+                    '&.Mui-selected': {
+                      background: 'rgba(107, 70, 193, 0.3)',
+                      '&:hover': {
+                        background: 'rgba(107, 70, 193, 0.4)',
+                      },
+                    },
+                    '&:hover': {
+                      background: 'rgba(107, 70, 193, 0.1)',
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: 600,
+                      fontSize: '1rem'
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+
+          {/* Mobile Menu Footer Actions */}
+          <Box sx={{ borderTop: '1px solid rgba(107, 70, 193, 0.3)' }}>
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleProfileClick} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                  <Person />
+                </ListItemIcon>
+                <ListItemText primary="View Profile" />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleLogout} sx={{ py: 1.5, px: 2 }}>
+                <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+                  <ExitToApp />
+                </ListItemIcon>
+                <ListItemText primary="Sign Out" />
+              </ListItemButton>
+            </ListItem>
+          </Box>
+        </Drawer>
 
       </AppBar>
     </Slide>
