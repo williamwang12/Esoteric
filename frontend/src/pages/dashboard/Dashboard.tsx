@@ -59,7 +59,7 @@ import TransactionHistory from '../../components/transactions/TransactionHistory
 import AppNavigation from '../../components/common/AppNavigation';
 import WithdrawalRequestDialog from '../../components/dialogs/WithdrawalRequestDialog';
 import MeetingRequestDialog from '../../components/dialogs/MeetingRequestDialog';
-import { documentsApi, adminApi, loansApi } from '../../services/api';
+import { documentsApi, loansApi } from '../../services/api';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -262,13 +262,8 @@ const Dashboard: React.FC = () => {
         // Don't set error state for documents, just log it
       }
 
-      // Check if user is admin
-      try {
-        await adminApi.getUsers();
-        setIsAdmin(true);
-      } catch (adminError) {
-        setIsAdmin(false);
-      }
+      // Check if user is admin based on their role
+      setIsAdmin(user?.role === 'admin');
 
       // Fetch meeting requests
       try {
