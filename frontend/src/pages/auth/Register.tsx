@@ -53,7 +53,7 @@ const HeroGradientText = styled(Typography)(({ theme }) => ({
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { register, isLoading } = useAuth();
+  const { register, isLoading, isAuthenticated } = useAuth();
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -67,10 +67,19 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Handle navigation after successful registration
+  useEffect(() => {
+    if (registrationSuccess && isAuthenticated) {
+      console.log('[REGISTER] Authentication confirmed, navigating to dashboard');
+      navigate('/dashboard');
+    }
+  }, [registrationSuccess, isAuthenticated, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -112,6 +121,7 @@ const Register: React.FC = () => {
     if (!validateForm()) return;
 
     try {
+      console.log('[REGISTER] Starting registration process');
       await register({
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -119,8 +129,12 @@ const Register: React.FC = () => {
         password: formData.password,
         phone: formData.phone || undefined,
       });
-      navigate('/dashboard');
+      console.log('[REGISTER] Registration completed successfully');
+      console.log('[REGISTER] Setting registration success flag');
+      setRegistrationSuccess(true);
+      // Navigation will be handled by useEffect when authentication state is confirmed
     } catch (err: any) {
+      console.error('[REGISTER] Registration failed:', err);
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
     }
   };

@@ -12,6 +12,22 @@ import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Profile from './pages/dashboard/Profile';
 
 function App() {
+  // Add global debug log viewer - accessible in console
+  React.useEffect(() => {
+    (window as any).viewDebugLog = () => {
+      const logs = JSON.parse(localStorage.getItem('debugLog') || '[]');
+      console.log('=== DEBUG LOG ===');
+      logs.forEach((log: string) => console.log(log));
+      console.log('=== END DEBUG LOG ===');
+      return logs;
+    };
+    
+    (window as any).clearDebugLog = () => {
+      localStorage.removeItem('debugLog');
+      console.log('Debug log cleared');
+    };
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
