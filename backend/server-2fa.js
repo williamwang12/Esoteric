@@ -98,7 +98,7 @@ app.use('/api/2fa', authenticateBasicToken, twoFARoutes);
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, email, first_name, last_name, phone, role, requires_2fa, last_login, created_at, email_verified FROM users WHERE id = $1',
+            'SELECT id, email, first_name, last_name, phone, role, requires_2fa, last_login, created_at, email_verified, account_verified FROM users WHERE id = $1',
             [req.user.userId]
         );
 
