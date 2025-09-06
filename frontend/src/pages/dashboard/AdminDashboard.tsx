@@ -439,11 +439,18 @@ const AdminDashboard: React.FC = () => {
 
       await adminApi.uploadDocument(formData);
       
-      // Refresh data
-      await fetchUsers();
+      // Refresh data with forced refresh
+      await fetchUsers(true); // Force refresh of users
       if (selectedUser && selectedUser.id === uploadForm.userId) {
-        await fetchUserDetails(uploadForm.userId);
+        await fetchUserDetails(uploadForm.userId, true); // Force refresh of user details
       }
+
+      // Show success notification
+      setSnackbar({
+        open: true,
+        message: 'Document uploaded successfully',
+        severity: 'success'
+      });
 
       // Reset form
       setUploadForm({
@@ -455,6 +462,11 @@ const AdminDashboard: React.FC = () => {
       setUploadDialogOpen(false);
     } catch (err) {
       console.error('Upload error:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to upload document. Please try again.',
+        severity: 'error'
+      });
     } finally {
       setUploading(false);
     }

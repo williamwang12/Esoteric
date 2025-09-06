@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
 const fs = require('fs');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +36,34 @@ const meetingService = require('./services/meetingService');
 
 // Apply session cleanup
 app.use(cleanupExpiredSessions);
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        // Accept all file types for now, you can add restrictions here
+        cb(null, true);
+    }
+});
 
 // Import routes
 const auth2faRoutes = require('./routes/auth-2fa');
@@ -694,6 +724,50 @@ app.post('/api/admin/create-loan', authenticateAdmin, [
 
     } catch (error) {
         console.error('Loan creation error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Upload document for user
+app.post('/api/admin/documents/upload', authenticateAdmin, upload.single('document'), async (req, res) => {
+    try {
+        const { title, category, userId } = req.body;
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        if (!title || !category || !userId) {
+            return res.status(400).json({ error: 'Title, category, and userId are required' });
+        }
+
+        // Verify user exists
+        const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length === 0) {
+            // Delete the uploaded file if user doesn't exist
+            if (req.file) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Insert document
+        const result = await pool.query(
+            'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [userId, title, req.file.path, req.file.size, category]
+        );
+
+        res.status(201).json({
+            message: 'Document uploaded successfully',
+            document: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Document upload error:', error);
+        // Delete the uploaded file if database insertion fails
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -1830,6 +1904,17 @@ app.use((error, req, res, next) => {
 });
 
 
+
+// Multer error handling middleware
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
+        }
+        return res.status(400).json({ error: 'File upload error: ' + error.message });
+    }
+    next(error);
+});
 
 // 404 handler
 app.use((req, res) => {
