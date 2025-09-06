@@ -244,16 +244,34 @@ app.post('/api/user/send-email-verification', authenticateToken, async (req, res
             [verificationToken, expiresAt, userId]
         );
 
-        // In a real application, you would send an email here
-        // For this demo, we'll just return the token
-        console.log(`Email verification token for ${email}: ${verificationToken}`);
-        
-        res.json({ 
-            message: 'Verification email sent successfully',
-            // In production, don't include the token in the response
-            // This is only for testing purposes
-            token: verificationToken
-        });
+        // Send verification email
+        const emailService = require('./services/emailService');
+        try {
+            const emailResult = await emailService.sendVerificationEmail(email, verificationToken);
+            console.log('✅ Verification email sent successfully to:', email);
+            
+            // For development, include preview URL
+            const response = { 
+                message: 'Verification email sent successfully',
+                email: email
+            };
+            
+            if (process.env.NODE_ENV === 'development' && emailResult.previewUrl) {
+                response.previewUrl = emailResult.previewUrl;
+                console.log('📧 Preview email at:', emailResult.previewUrl);
+            }
+            
+            res.json(response);
+            
+        } catch (emailError) {
+            console.error('❌ Failed to send verification email:', emailError);
+            // Still return success since the token was created, but log the email error
+            res.json({ 
+                message: 'Verification token created, but email sending failed. Please try again or contact support.',
+                email: email,
+                emailError: true
+            });
+        }
 
     } catch (error) {
         console.error('Send email verification error:', error);
