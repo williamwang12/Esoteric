@@ -236,10 +236,6 @@ const Profile: React.FC = () => {
       setEmailVerificationSent(true);
       setEmailVerificationDialogOpen(true);
       setError(null);
-      // For demo purposes, auto-fill the token from the response
-      if (response.token) {
-        setEmailVerificationToken(response.token);
-      }
     } catch (error) {
       console.error('Send email verification error:', error);
       setError('Failed to send verification email. Please try again.');
