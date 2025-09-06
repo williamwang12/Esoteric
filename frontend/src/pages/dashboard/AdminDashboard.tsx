@@ -539,16 +539,44 @@ const AdminDashboard: React.FC = () => {
       if (Object.keys(updateData).length > 0) {
         await adminApi.updateLoan(editingLoan.id, updateData);
         
-        // Refresh loan data
+        // Refresh loan data with forced refresh
         if (selectedUser) {
-          await fetchUserDetails(selectedUser.id);
+          await fetchUserDetails(selectedUser.id, true); // Force refresh of user details
         }
+        
+        // Show success notification
+        setSnackbar({
+          open: true,
+          message: 'Loan updated successfully',
+          severity: 'success'
+        });
+      } else {
+        // Show info notification if no changes
+        setSnackbar({
+          open: true,
+          message: 'No changes to save',
+          severity: 'info'
+        });
       }
 
       setLoanEditDialogOpen(false);
       setEditingLoan(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Loan update error:', error);
+      
+      // Show error notification with specific details
+      let errorMessage = 'Failed to update loan';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
     } finally {
       setSavingLoan(false);
     }
@@ -603,15 +631,27 @@ const AdminDashboard: React.FC = () => {
 
       await adminApi.addTransaction(selectedLoanForTransaction.id, transactionData);
       
-      // Refresh loan data
+      // Refresh loan data with forced refresh
       if (selectedUser) {
-        await fetchUserDetails(selectedUser.id);
+        await fetchUserDetails(selectedUser.id, true); // Force refresh of user details
       }
+
+      // Show success notification
+      setSnackbar({
+        open: true,
+        message: 'Transaction added successfully',
+        severity: 'success'
+      });
 
       setTransactionDialogOpen(false);
       setSelectedLoanForTransaction(null);
     } catch (error) {
       console.error('Transaction creation error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to add transaction. Please try again.',
+        severity: 'error'
+      });
     } finally {
       setAddingTransaction(false);
     }
