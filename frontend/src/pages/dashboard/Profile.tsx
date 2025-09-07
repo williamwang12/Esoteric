@@ -318,16 +318,18 @@ const Profile: React.FC = () => {
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
             <Button
-              startIcon={<ArrowBack />}
               onClick={() => navigate('/dashboard')}
               sx={{ 
                 color: 'white',
+                minWidth: 'auto',
+                padding: '8px',
+                borderRadius: '8px',
                 '&:hover': { 
                   backgroundColor: 'rgba(255,255,255,0.1)' 
                 }
               }}
             >
-              Back to Dashboard
+              <ArrowBack />
             </Button>
             
             {/* Centered ESOTERIC Logo */}
