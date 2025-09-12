@@ -55,6 +55,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import LoanGrowthChart from '../../components/charts/LoanGrowthChart';
 import PortfolioDashboard from '../../components/charts/PortfolioDashboard';
 import AdvancedMetrics from '../../components/charts/AdvancedMetrics';
+import InteractiveLoanChart from '../../components/charts/InteractiveLoanChart';
 import TransactionHistory from '../../components/transactions/TransactionHistory';
 import AppNavigation from '../../components/common/AppNavigation';
 import WithdrawalRequestDialog from '../../components/dialogs/WithdrawalRequestDialog';
@@ -1301,6 +1302,11 @@ const Dashboard: React.FC = () => {
                           <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
                         </CardContent>
                       </Card>
+                    </Box>
+
+                    {/* Interactive Loan Chart */}
+                    <Box sx={{ mt: 6 }}>
+                      <InteractiveLoanChart loanData={loanData} analytics={analyticsData.analytics} />
                     </Box>
                   </Box>
                 </Fade>
