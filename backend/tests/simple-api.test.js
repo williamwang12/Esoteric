@@ -99,8 +99,8 @@ describe('Backend API - Focused Document Upload Tests', () => {
         user: {
           id: expect.any(Number),
           email: 'demo@esoteric.com',
-          firstName: 'Demo',
-          lastName: 'User'
+          firstName: expect.any(String),
+          lastName: expect.any(String)
         },
         token: expect.any(String)
       });

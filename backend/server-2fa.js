@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
 const fs = require('fs');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,7 +23,7 @@ app.locals.pool = pool;
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     credentials: true
 }));
 app.use(express.json());
@@ -34,6 +36,34 @@ const meetingService = require('./services/meetingService');
 
 // Apply session cleanup
 app.use(cleanupExpiredSessions);
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        // Accept all file types for now, you can add restrictions here
+        cb(null, true);
+    }
+});
 
 // Import routes
 const auth2faRoutes = require('./routes/auth-2fa');
@@ -68,7 +98,7 @@ app.use('/api/2fa', authenticateBasicToken, twoFARoutes);
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, email, first_name, last_name, phone, role, requires_2fa, last_login, created_at, email_verified FROM users WHERE id = $1',
+            'SELECT id, email, first_name, last_name, phone, role, requires_2fa, last_login, created_at, email_verified, account_verified FROM users WHERE id = $1',
             [req.user.userId]
         );
 
@@ -214,16 +244,34 @@ app.post('/api/user/send-email-verification', authenticateToken, async (req, res
             [verificationToken, expiresAt, userId]
         );
 
-        // In a real application, you would send an email here
-        // For this demo, we'll just return the token
-        console.log(`Email verification token for ${email}: ${verificationToken}`);
-        
-        res.json({ 
-            message: 'Verification email sent successfully',
-            // In production, don't include the token in the response
-            // This is only for testing purposes
-            token: verificationToken
-        });
+        // Send verification email
+        const emailService = require('./services/emailService');
+        try {
+            const emailResult = await emailService.sendVerificationEmail(email, verificationToken);
+            console.log('✅ Verification email sent successfully to:', email);
+            
+            // For development, include preview URL
+            const response = { 
+                message: 'Verification email sent successfully',
+                email: email
+            };
+            
+            if (process.env.NODE_ENV === 'development' && emailResult.previewUrl) {
+                response.previewUrl = emailResult.previewUrl;
+                console.log('📧 Preview email at:', emailResult.previewUrl);
+            }
+            
+            res.json(response);
+            
+        } catch (emailError) {
+            console.error('❌ Failed to send verification email:', emailError);
+            // Still return success since the token was created, but log the email error
+            res.json({ 
+                message: 'Verification token created, but email sending failed. Please try again or contact support.',
+                email: email,
+                emailError: true
+            });
+        }
 
     } catch (error) {
         console.error('Send email verification error:', error);
@@ -372,15 +420,18 @@ app.get('/api/loans/:loanId/transactions', authenticateToken, async (req, res) =
 
         // Get transactions with pagination
         const transactionsQuery = `
-            SELECT id, transaction_type, amount, transaction_date, description, bonus_percentage
+            SELECT id, transaction_type, amount, transaction_date, description, bonus_percentage, created_at
             FROM loan_transactions 
             WHERE ${whereClause}
-            ORDER BY transaction_date DESC 
+            ORDER BY created_at DESC, transaction_date DESC 
             LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
         `;
 
         queryParams.push(limit, offset);
         const transactionsResult = await pool.query(transactionsQuery, queryParams);
+        
+        // Debug: Log the actual data being returned
+        console.log('Transaction query result:', JSON.stringify(transactionsResult.rows[0], null, 2));
 
         // Get total count for pagination
         const countQuery = `
@@ -593,7 +644,7 @@ app.post('/api/admin/withdrawal-requests/:requestId/complete', authenticateAdmin
             // Create transaction record
             await pool.query(`
                 INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
-                VALUES ($1, $2, 'withdrawal', $3, CURRENT_DATE, NOW())
+                VALUES ($1, $2, 'withdrawal', $3, NOW(), NOW())
             `, [withdrawal.loan_account_id, -withdrawalAmount, `Withdrawal: ${withdrawal.reason}`]);
 
             // Commit transaction
@@ -667,8 +718,8 @@ app.post('/api/admin/create-loan', authenticateAdmin, [
 
         // Create initial loan transaction
         await pool.query(
-            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date)
-             VALUES ($1, $2, 'loan', 'Initial loan amount', CURRENT_DATE)`,
+            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
+             VALUES ($1, $2, 'loan', 'Initial loan amount', NOW(), NOW())`,
             [loanAccount.id, principalAmount]
         );
 
@@ -691,6 +742,50 @@ app.post('/api/admin/create-loan', authenticateAdmin, [
 
     } catch (error) {
         console.error('Loan creation error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Upload document for user
+app.post('/api/admin/documents/upload', authenticateAdmin, upload.single('document'), async (req, res) => {
+    try {
+        const { title, category, userId } = req.body;
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        if (!title || !category || !userId) {
+            return res.status(400).json({ error: 'Title, category, and userId are required' });
+        }
+
+        // Verify user exists
+        const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length === 0) {
+            // Delete the uploaded file if user doesn't exist
+            if (req.file) {
+                fs.unlinkSync(req.file.path);
+            }
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Insert document
+        const result = await pool.query(
+            'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [userId, title, req.file.path, req.file.size, category]
+        );
+
+        res.status(201).json({
+            message: 'Document uploaded successfully',
+            document: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Document upload error:', error);
+        // Delete the uploaded file if database insertion fails
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -824,14 +919,14 @@ app.post('/api/admin/loans/:loanId/transactions', authenticateAdmin, [
 
         // Create transaction
         const transactionResult = await pool.query(
-            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, bonus_percentage)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at, bonus_percentage)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6) RETURNING *`,
             [
                 loanId,
                 amount,
                 transactionType,
                 description || `${transactionType} transaction`,
-                transactionDate || new Date().toISOString().split('T')[0],
+                transactionDate || new Date().toISOString(),
                 bonusPercentage
             ]
         );
@@ -1827,6 +1922,17 @@ app.use((error, req, res, next) => {
 });
 
 
+
+// Multer error handling middleware
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
+        }
+        return res.status(400).json({ error: 'File upload error: ' + error.message });
+    }
+    next(error);
+});
 
 // 404 handler
 app.use((req, res) => {

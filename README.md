@@ -72,7 +72,7 @@ npm run dev
 
 ## 📄 Documentation
 
-- [Design Document](./DESIGN_DOCUMENT.md) - Complete technical specifications
+- [Design Document](./docs/design/DESIGN_DOCUMENT.md) - Complete technical specifications
 - [API Documentation](./docs/api.md) - REST API endpoints
 - [Database Schema](./docs/database.md) - Data model specifications
 

@@ -3,15 +3,31 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from './theme/theme';
 import { AuthProvider } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import Profile from './pages/Profile';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Dashboard from './pages/dashboard/Dashboard';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
+import Profile from './pages/dashboard/Profile';
 
 function App() {
+  // Add global debug log viewer - accessible in console
+  React.useEffect(() => {
+    (window as any).viewDebugLog = () => {
+      const logs = JSON.parse(localStorage.getItem('debugLog') || '[]');
+      console.log('=== DEBUG LOG ===');
+      logs.forEach((log: string) => console.log(log));
+      console.log('=== END DEBUG LOG ===');
+      return logs;
+    };
+    
+    (window as any).clearDebugLog = () => {
+      localStorage.removeItem('debugLog');
+      console.log('Debug log cleared');
+    };
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

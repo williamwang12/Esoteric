@@ -23,12 +23,12 @@ import {
   CheckCircle,
   Star,
   BarChart,
-  CurrencyExchange,
   Shield,
   Speed,
   Support,
 } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
+import PublicNavigation from '../components/common/PublicNavigation';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -145,161 +145,10 @@ const LandingPage: React.FC = () => {
       <FloatingOrb sx={{ width: 200, height: 200, bottom: '20%', left: '15%', animationDelay: '-2s' }} />
 
       {/* Navigation */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          background: 'rgba(31, 41, 55, 0.95)',
-          backdropFilter: 'blur(30px)',
-          borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
-          zIndex: 1000,
-          py: 2.5,
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
-          }
-        }}
-      >
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <HeroGradientText variant="h4" sx={{ fontWeight: 800 }}>
-              ESOTERIC
-            </HeroGradientText>
-            
-            {/* All buttons on the right */}
-            <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-              <Button
-                onClick={() => {
-                  document.getElementById('about')?.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start'
-                  });
-                }}
-                variant="outlined"
-                sx={{
-                  background: 'rgba(55, 65, 81, 0.6)',
-                  backdropFilter: 'blur(10px)',
-                  color: 'transparent',
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  borderColor: 'rgba(107, 70, 193, 0.3)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '& .MuiButton-root': {
-                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  },
-                  '&:hover': {
-                    background: 'rgba(75, 85, 99, 0.8)',
-                    borderColor: 'rgba(107, 70, 193, 0.6)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  Who We Are
-                </Box>
-              </Button>
-              <Button
-                component={RouterLink}
-                to="/login"
-                variant="outlined"
-                sx={{
-                  background: 'rgba(55, 65, 81, 0.6)',
-                  backdropFilter: 'blur(10px)',
-                  color: 'transparent',
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  borderColor: 'rgba(107, 70, 193, 0.3)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    background: 'rgba(75, 85, 99, 0.8)',
-                    borderColor: 'rgba(107, 70, 193, 0.6)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  Sign In
-                </Box>
-              </Button>
-              <Button
-                component={RouterLink}
-                to="/register"
-                variant="outlined"
-                sx={{
-                  background: 'rgba(55, 65, 81, 0.6)',
-                  backdropFilter: 'blur(10px)',
-                  color: 'transparent',
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  letterSpacing: '-0.02em',
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: '12px',
-                  borderColor: 'rgba(107, 70, 193, 0.3)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    background: 'rgba(75, 85, 99, 0.8)',
-                    borderColor: 'rgba(107, 70, 193, 0.6)',
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }}
-                >
-                  Get Started
-                </Box>
-              </Button>
-            </Box>
-          </Box>
-        </Container>
-      </Box>
+      <PublicNavigation />
 
       {/* Hero Section */}
-      <Container maxWidth="lg" sx={{ pt: 20, pb: 8 }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 12, sm: 14, md: 16 }, pb: 8 }}>
         <Fade in={isVisible} timeout={1000}>
           <Box sx={{ textAlign: 'center', mb: 8 }}>
             <Slide direction="down" in={isVisible} timeout={1200}>
@@ -526,8 +375,8 @@ const LandingPage: React.FC = () => {
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
                   {[
-                    'Founded by former Goldman Sachs and Blackstone executives',
-                    'Proprietary algorithms developed over 15+ years',
+                    'Founded by professional day traders',
+                    'Proprietary trading strategies developed over 2+ years',
                     'Regulatory compliance with SEC and FINRA standards',
                     'Trusted by high-net-worth individuals and institutions'
                   ].map((item, index) => (

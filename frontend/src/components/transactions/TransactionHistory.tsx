@@ -22,6 +22,7 @@ import {
   Alert,
   InputAdornment,
   useTheme,
+  useMediaQuery,
   alpha,
   Fade,
 } from '@mui/material';
@@ -43,7 +44,7 @@ interface Transaction {
   description: string;
   transaction_date: string;
   created_at: string;
-  account_number: string;
+  account_number?: string;
 }
 
 interface TransactionResponse {
@@ -62,6 +63,7 @@ interface TransactionHistoryProps {
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [data, setData] = useState<TransactionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,11 +87,23 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     }).format(num);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string:', dateString);
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
     });
   };
 
@@ -229,13 +243,20 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     setPage(1);
   };
 
-  // Client-side filtering for search
+  // Client-side filtering and sorting
   const filteredTransactions = useMemo(() => {
     if (!data?.transactions) return [];
-    if (!filters.search.trim()) return data.transactions;
+
+    const sortedTransactions = [...data.transactions].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    if (!filters.search.trim()) {
+      return sortedTransactions;
+    }
     
     const searchTerm = filters.search.toLowerCase();
-    return data.transactions.filter(transaction =>
+    return sortedTransactions.filter(transaction =>
       transaction.description.toLowerCase().includes(searchTerm) ||
       transaction.transaction_type.toLowerCase().includes(searchTerm) ||
       getTransactionTypeLabel(transaction.transaction_type).toLowerCase().includes(searchTerm) ||
@@ -317,38 +338,46 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
               </Select>
             </FormControl>
 
-            <TextField
-              size="small"
-              label="Start Date"
-              type="date"
-              value={startDateInput}
-              onChange={(e) => setStartDateInput(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-
-            <TextField
-              size="small"
-              label="End Date"
-              type="date"
-              value={endDateInput}
-              onChange={(e) => setEndDateInput(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-
-            {(filters.type || startDateInput || endDateInput || searchInput) && (
-              <Button
-                variant="outlined"
+            {!isMobile && (
+              <TextField
                 size="small"
-                onClick={handleClearFilters}
-                sx={{
-                  height: '40px',
-                  minHeight: '40px',
-                  px: 2,
-                }}
-              >
-                Clear Filters
-              </Button>
+                label="Start Date"
+                type="date"
+                value={startDateInput}
+                onChange={(e) => setStartDateInput(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
             )}
+
+            {!isMobile && (
+              <TextField
+                size="small"
+                label="End Date"
+                type="date"
+                value={endDateInput}
+                onChange={(e) => setEndDateInput(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            )}
+
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={
+                !filters.type && 
+                !searchInput && 
+                (isMobile || (!startDateInput && !endDateInput))
+              }
+              onClick={handleClearFilters}
+              sx={{
+                height: '40px',
+                minHeight: '40px',
+                px: 2,
+                minWidth: 'fit-content',
+              }}
+            >
+              Clear Filters
+            </Button>
           </Box>
         </CardContent>
       </Card>
@@ -396,7 +425,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
                             variant="outlined"
                           />
                           <Typography variant="caption" color="text.secondary">
-                            {formatDate(transaction.transaction_date)}
+                            {formatDateTime(transaction.created_at)}
                           </Typography>
                         </Box>
                         <Typography 

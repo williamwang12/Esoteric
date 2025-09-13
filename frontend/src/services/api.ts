@@ -29,10 +29,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
+      // Token expired or invalid - logout required
+      console.log('Auto-logout: Received 401 response from server - invalid/expired token');
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('loginTimestamp');
       window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      // Forbidden - valid token but insufficient permissions, don't logout
+      console.log('403 Forbidden: Valid token but insufficient permissions');
     }
     return Promise.reject(error);
   }

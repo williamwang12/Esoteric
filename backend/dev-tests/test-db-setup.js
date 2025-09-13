@@ -50,7 +50,7 @@ db.serialize(async () => {
     transaction_type TEXT NOT NULL,
     bonus_percentage DECIMAL(5,4),
     description TEXT,
-    transaction_date DATE NOT NULL,
+    transaction_date TIMESTAMP NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (loan_account_id) REFERENCES loan_accounts(id)
   )`);
