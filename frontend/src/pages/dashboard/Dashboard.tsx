@@ -1295,6 +1295,11 @@ const Dashboard: React.FC = () => {
                       <AdvancedMetrics analytics={analyticsData.analytics} loanData={loanData} />
                     </Box>
 
+                    {/* Interactive Loan Chart */}
+                    <Box sx={{ mt: 6 }}>
+                      <InteractiveLoanChart loanData={loanData} analytics={analyticsData.analytics} />
+                    </Box>
+
                     {/* Original Chart - Now as Historical Overview */}
                     <Box sx={{ mt: 6 }}>
                       <Card>
@@ -1302,11 +1307,6 @@ const Dashboard: React.FC = () => {
                           <LoanGrowthChart analytics={analyticsData.analytics} height={500} />
                         </CardContent>
                       </Card>
-                    </Box>
-
-                    {/* Interactive Loan Chart */}
-                    <Box sx={{ mt: 6 }}>
-                      <InteractiveLoanChart loanData={loanData} analytics={analyticsData.analytics} />
                     </Box>
                   </Box>
                 </Fade>

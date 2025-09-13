@@ -14,7 +14,14 @@ import {
   DialogContent,
   IconButton,
   useTheme,
-  alpha
+  alpha,
+  Slider,
+  Paper,
+  Switch,
+  FormControlLabel,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -27,7 +34,10 @@ import {
   AccountBalance,
   ZoomIn,
   ZoomOut,
-  CenterFocusStrong
+  CenterFocusStrong,
+  ExpandMore,
+  Tune,
+  Speed
 } from '@mui/icons-material';
 import {
   Chart as ChartJS,
@@ -89,16 +99,62 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
   const theme = useTheme();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'line' | 'bar' | 'area'>('line');
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y' | 'all'>('30d');
   const [dataView, setDataView] = useState<'balance' | 'growth' | 'returns'>('balance');
   const [selectedDataPoint, setSelectedDataPoint] = useState<any>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const chartRef = useRef<any>(null);
 
+  // Interactive slider states
+  const [projectionMonths, setProjectionMonths] = useState<number>(12);
+  const [growthRateMultiplier, setGrowthRateMultiplier] = useState<number>(1);
+  const [volatility, setVolatility] = useState<number>(0.002);
+  const [showProjections, setShowProjections] = useState<boolean>(false);
+  const [slidersExpanded, setSlidersExpanded] = useState<boolean>(false);
+  const [daysToShow, setDaysToShow] = useState<number>(30);
+
   // Debug: Log the data structure
   console.log('InteractiveLoanChart - loanData:', loanData);
   console.log('InteractiveLoanChart - analytics:', analytics);
+  console.log('InteractiveLoanChart - transactions:', transactions, 'length:', transactions?.length);
+  
+  // Force recompilation
+  
+  // Calculate portfolio composition based on real data
+  const getPortfolioComposition = () => {
+    if (!loanData || !Array.isArray(transactions) || transactions.length === 0) {
+      // Default composition if no real data available
+      return {
+        principal: 0.6,
+        monthlyPayments: 0.25,
+        bonuses: 0.15
+      };
+    }
+
+    const principalAmount = parseFloat(loanData.principal_amount || '0');
+    const totalBonuses = parseFloat(loanData.total_bonuses || '0');
+    
+    // Calculate total monthly payments from transactions
+    const monthlyPayments = transactions
+      .filter(t => t && t.transaction_type === 'monthly_payment')
+      .reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0);
+
+    const total = principalAmount + monthlyPayments + totalBonuses;
+    
+    if (total === 0) {
+      return { principal: 1, monthlyPayments: 0, bonuses: 0 };
+    }
+
+    return {
+      principal: principalAmount / total,
+      monthlyPayments: monthlyPayments / total,
+      bonuses: totalBonuses / total
+    };
+  };
+
+  const portfolioComposition = getPortfolioComposition();
+  console.log('Portfolio Composition:', portfolioComposition);
+  console.log('Transactions:', transactions, 'Type:', typeof transactions, 'IsArray:', Array.isArray(transactions));
 
   // Fetch transaction history for more accurate data
   React.useEffect(() => {
@@ -168,14 +224,21 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
   // Generate time series data based on real transaction history
   const generateChartData = () => {
     const now = new Date();
-    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : timeRange === '1y' ? 365 : 730;
+    const days = daysToShow;
     
     const labels: string[] = [];
-    const balances: number[] = [];
-    const growthRates: number[] = [];
-    const totalReturns: number[] = [];
+    const balances: (number | null)[] = [];
+    const projectedBalances: (number | null)[] = [];
+    const growthRates: (number | null)[] = [];
+    const projectedGrowthRates: (number | null)[] = [];
+    const totalReturns: (number | null)[] = [];
+    const projectedTotalReturns: (number | null)[] = [];
+    
+    // Separate historical and projected data
+    const historicalLabels: string[] = [];
+    const projectedLabels: string[] = [];
 
-    if (transactions.length > 0) {
+    if (Array.isArray(transactions) && transactions.length > 0) {
       // Use real transaction data to build historical balance
       
       // Sort transactions by date
@@ -231,36 +294,91 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
         totalReturns.push(Math.max(0, returnsValue));
       }
     } else {
-      // Fallback to simulated data if no transactions available
+      // Fallback to realistic monotonic growth if no transactions available
+      console.log('No transaction data available, using calculated growth model');
       const initialValue = userAccount.initialLoanAmount;
       const currentValue = userAccount.currentBalance;
-      const monthlyGrowthRate = userAccount.monthlyGrowth / 100;
-      const dailyGrowthRate = monthlyGrowthRate / 30;
       
+      // Calculate realistic compound growth without random volatility
+      const totalGrowthRatio = currentValue / initialValue;
+      const dailyCompoundRate = Math.pow(totalGrowthRatio, 1 / days) - 1;
+      
+      // Generate historical data with smooth compound growth
       for (let i = days; i >= 0; i--) {
         const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const isToday = i === 0;
         
-        labels.push(i === 0 ? 'Today' : i === 1 ? 'Yesterday' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        const label = isToday ? 'Today' : i === 1 ? 'Yesterday' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        labels.push(label);
+        historicalLabels.push(label);
         
-        // Simulate realistic account balance growth over time
-        const progressRatio = (days - i) / days; // 0 to 1 as time progresses
-        const growthFactor = 1 + (currentValue / initialValue - 1) * progressRatio;
-        const dailyVariation = Math.sin((days - i) / 7) * 0.01 + (Math.random() * 0.005 - 0.0025); // Small daily variations
+        // Calculate balance using compound growth (loans grow steadily, not randomly)
+        const daysElapsed = days - i;
+        const balanceValue = initialValue * Math.pow(1 + dailyCompoundRate, daysElapsed);
+        balances.push(Math.round(balanceValue));
         
-        const balanceValue = initialValue * growthFactor * (1 + dailyVariation);
-        balances.push(Math.max(initialValue, balanceValue));
-        
-        // Calculate daily growth rate with small variations
-        const growthVariation = Math.random() * 0.2 - 0.1; // ±0.1% variation
-        growthRates.push(Number((dailyGrowthRate + dailyGrowthRate * growthVariation).toFixed(4)));
+        // Calculate actual daily growth rate (will be consistent for loans)
+        const prevBalance = daysElapsed === 0 ? initialValue : (balances[balances.length - 2] || initialValue);
+        const actualGrowthRate = prevBalance > 0 ? ((balanceValue - prevBalance) / prevBalance) * 100 : 0;
+        growthRates.push(Number(actualGrowthRate.toFixed(4)));
         
         // Calculate cumulative returns
         const returnsValue = balanceValue - initialValue;
         totalReturns.push(Math.max(0, returnsValue));
+
+        // Initialize projected arrays with null for historical periods
+        projectedBalances.push(null);
+        projectedGrowthRates.push(null);
+        projectedTotalReturns.push(null);
+      }
+
+      // Generate projected data if enabled
+      if (showProjections) {
+        const projectionDays = projectionMonths * 30;
+        const lastHistoricalValue = balances[balances.length - 1] || initialValue;
+        
+        for (let i = 1; i <= projectionDays; i++) {
+          const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+          const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          labels.push(label);
+          projectedLabels.push(label);
+          
+          // Project future growth using consistent compound rate with optional volatility
+          const baseProjectedRate = dailyCompoundRate * growthRateMultiplier;
+          
+          // Only add volatility if user has set it, and keep it small for loan projections
+          const projectedVariation = volatility > 0.01 ? 
+            (Math.random() * volatility * 0.5 - volatility * 0.25) * (1 + i / projectionDays * 0.2) : 0;
+          
+          const projectedGrowthRate = baseProjectedRate + projectedVariation;
+          const previousValue = i === 1 ? lastHistoricalValue : (projectedBalances[projectedBalances.length - 1] || lastHistoricalValue);
+          const projectedValue = previousValue * (1 + projectedGrowthRate);
+          
+          // Add to projected arrays
+          projectedBalances.push(Math.round(Math.max(lastHistoricalValue, projectedValue)));
+          projectedGrowthRates.push(Number((projectedGrowthRate * 100).toFixed(4)));
+          projectedTotalReturns.push(Math.max(0, projectedValue - initialValue));
+          
+          // Add null to historical arrays for projected periods
+          balances.push(null);
+          growthRates.push(null);
+          totalReturns.push(null);
+        }
       }
     }
 
-    return { labels, balances, growthRates, totalReturns };
+    return { 
+      labels, 
+      balances, 
+      projectedBalances, 
+      growthRates, 
+      projectedGrowthRates, 
+      totalReturns, 
+      projectedTotalReturns,
+      historicalLabels,
+      projectedLabels
+    };
   };
 
   const chartData = generateChartData();
@@ -319,6 +437,13 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
           title: (context) => `${context[0].label}`,
           label: (context) => {
             const value = context.parsed.y;
+            
+            // Special handling for stacked bar chart portfolio composition
+            if (viewMode === 'bar' && dataView === 'balance' && context.dataset.stack) {
+              const datasetLabel = context.dataset.label;
+              return `${datasetLabel}: $${value.toLocaleString()}`;
+            }
+            
             if (dataView === 'balance') {
               return `Portfolio Balance: $${value.toLocaleString()}`;
             } else if (dataView === 'growth') {
@@ -326,6 +451,14 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
             } else {
               return `Total Returns: $${value.toLocaleString()}`;
             }
+          },
+          footer: (context) => {
+            // Add portfolio composition info for stacked bars
+            if (viewMode === 'bar' && dataView === 'balance' && context[0]?.dataset?.stack) {
+              const totalValue = context.reduce((sum, item) => sum + item.parsed.y, 0);
+              return `Total: $${totalValue.toLocaleString()}`;
+            }
+            return '';
           }
         }
       },
@@ -359,7 +492,8 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
         },
         ticks: {
           color: theme.palette.text.secondary,
-        }
+        },
+        ...(viewMode === 'bar' && dataView === 'balance' ? { stacked: true } : {})
       },
       y: {
         grid: {
@@ -376,7 +510,8 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
               return `$${Number(value).toLocaleString()}`;
             }
           }
-        }
+        },
+        ...(viewMode === 'bar' && dataView === 'balance' ? { stacked: true } : {})
       }
     },
     elements: {
@@ -399,9 +534,13 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
   };
 
   const getChartData = () => {
-    const data = dataView === 'balance' ? chartData.balances : 
-                 dataView === 'growth' ? chartData.growthRates : 
-                 chartData.totalReturns;
+    const historicalData = dataView === 'balance' ? chartData.balances : 
+                          dataView === 'growth' ? chartData.growthRates : 
+                          chartData.totalReturns;
+    
+    const projectedData = dataView === 'balance' ? chartData.projectedBalances : 
+                         dataView === 'growth' ? chartData.projectedGrowthRates : 
+                         chartData.projectedTotalReturns;
     
     const gradient = chartRef.current?.canvas.getContext('2d').createLinearGradient(0, 0, 0, 400);
     if (gradient) {
@@ -409,19 +548,88 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
       gradient.addColorStop(1, alpha(theme.palette.primary.main, 0.05));
     }
 
+    const projectedGradient = chartRef.current?.canvas.getContext('2d').createLinearGradient(0, 0, 0, 400);
+    if (projectedGradient) {
+      projectedGradient.addColorStop(0, alpha(theme.palette.warning.main, 0.3));
+      projectedGradient.addColorStop(1, alpha(theme.palette.warning.main, 0.05));
+    }
+
+    // For bar chart, create portfolio composition colors
+    if (viewMode === 'bar' && dataView === 'balance') {
+      // Create stacked bar datasets for portfolio composition
+      const combinedData = historicalData.map((hist, index) => hist || projectedData[index] || 0);
+      const principalData = combinedData.map(value => value * portfolioComposition.principal);
+      const paymentsData = combinedData.map(value => value * portfolioComposition.monthlyPayments);
+      const bonusesData = combinedData.map(value => value * portfolioComposition.bonuses);
+
+      return {
+        labels: chartData.labels,
+        datasets: [
+          {
+            label: 'Principal Investment',
+            data: principalData,
+            backgroundColor: alpha(theme.palette.primary.main, 0.8),
+            borderColor: theme.palette.primary.main,
+            borderWidth: 1,
+            stack: 'balance',
+          },
+          {
+            label: 'Monthly Payments',
+            data: paymentsData,
+            backgroundColor: alpha(theme.palette.secondary.main, 0.8),
+            borderColor: theme.palette.secondary.main,
+            borderWidth: 1,
+            stack: 'balance',
+          },
+          {
+            label: 'Bonuses & Returns',
+            data: bonusesData,
+            backgroundColor: alpha(theme.palette.success.main, 0.8),
+            borderColor: theme.palette.success.main,
+            borderWidth: 1,
+            stack: 'balance',
+          }
+        ]
+      };
+    }
+
+    const datasets = [
+      {
+        label: dataView === 'balance' ? 'Account Balance (Historical)' : 
+               dataView === 'growth' ? 'Growth Rate % (Historical)' : 'Total Returns (Historical)',
+        data: historicalData,
+        borderColor: theme.palette.primary.main,
+        backgroundColor: viewMode === 'area' ? gradient : alpha(theme.palette.primary.main, 0.8),
+        fill: viewMode === 'area',
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 8,
+        spanGaps: false,
+      }
+    ];
+
+    // Add projected dataset if projections are enabled and data exists
+    if (showProjections && projectedData && projectedData.some(d => d !== null)) {
+      datasets.push({
+        label: dataView === 'balance' ? 'Account Balance (Projected)' : 
+               dataView === 'growth' ? 'Growth Rate % (Projected)' : 'Total Returns (Projected)',
+        data: projectedData,
+        borderColor: theme.palette.warning.main,
+        backgroundColor: viewMode === 'area' ? projectedGradient : alpha(theme.palette.warning.main, 0.6),
+        fill: viewMode === 'area',
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        spanGaps: false,
+        // @ts-ignore - Chart.js extended properties for dashed lines and point styles
+        borderDash: [5, 5],
+        pointStyle: 'triangle',
+      } as any);
+    }
+
     return {
       labels: chartData.labels,
-      datasets: [
-        {
-          label: dataView === 'balance' ? 'Account Balance' : 
-                 dataView === 'growth' ? 'Growth Rate %' : 'Total Returns',
-          data,
-          borderColor: theme.palette.primary.main,
-          backgroundColor: viewMode === 'area' ? gradient : alpha(theme.palette.primary.main, 0.8),
-          fill: viewMode === 'area',
-          tension: 0.4,
-        }
-      ]
+      datasets
     };
   };
 
@@ -441,7 +649,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                📈 My Account Balance Growth
+                My Account Balance Growth
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Track your personal loan account balance and growth over time
@@ -537,20 +745,6 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 150, flex: 1 }}>
-              <InputLabel>Time Range</InputLabel>
-              <Select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as any)}
-                label="Time Range"
-              >
-                <MenuItem value="7d">Last 7 Days</MenuItem>
-                <MenuItem value="30d">Last 30 Days</MenuItem>
-                <MenuItem value="90d">Last 90 Days</MenuItem>
-                <MenuItem value="1y">Last Year</MenuItem>
-                <MenuItem value="all">All Time</MenuItem>
-              </Select>
-            </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 150, flex: 1 }}>
               <InputLabel>Data View</InputLabel>
@@ -582,6 +776,108 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
           </Box>
         </Box>
 
+
+        {/* Portfolio Composition Info for Bar Chart */}
+        {viewMode === 'bar' && dataView === 'balance' && (
+          <Box sx={{ 
+            mb: 3, 
+            p: 2, 
+            background: alpha(theme.palette.primary.main, 0.05),
+            borderRadius: '12px',
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+          }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              Portfolio Composition
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 12, 
+                  height: 12, 
+                  backgroundColor: theme.palette.primary.main, 
+                  borderRadius: '2px' 
+                }} />
+                <Typography variant="body2">
+                  Principal ({(portfolioComposition.principal * 100).toFixed(1)}%)
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 12, 
+                  height: 12, 
+                  backgroundColor: theme.palette.secondary.main, 
+                  borderRadius: '2px' 
+                }} />
+                <Typography variant="body2">
+                  Monthly Payments ({(portfolioComposition.monthlyPayments * 100).toFixed(1)}%)
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 12, 
+                  height: 12, 
+                  backgroundColor: theme.palette.success.main, 
+                  borderRadius: '2px' 
+                }} />
+                <Typography variant="body2">
+                  Bonuses & Returns ({(portfolioComposition.bonuses * 100).toFixed(1)}%)
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Projection Legend */}
+        {showProjections && (
+          <Box sx={{ 
+            mb: 2, 
+            p: 2, 
+            background: alpha(theme.palette.warning.main, 0.05),
+            borderRadius: '12px',
+            border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`
+          }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+              Data Types Legend
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 20, 
+                  height: 3, 
+                  backgroundColor: theme.palette.primary.main, 
+                  borderRadius: '2px' 
+                }} />
+                <Typography variant="body2">
+                  Historical Data (Solid)
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 20, 
+                  height: 3, 
+                  backgroundColor: theme.palette.warning.main, 
+                  borderRadius: '2px',
+                  backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(255,255,255,0.3) 3px, rgba(255,255,255,0.3) 6px)'
+                }} />
+                <Typography variant="body2">
+                  Projected Data (Dashed)
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 8, 
+                  height: 8, 
+                  backgroundColor: theme.palette.warning.main,
+                  clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+                }} />
+                <Typography variant="body2" color="text.secondary">
+                  Triangle points indicate projections
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
         {/* Interactive Chart */}
         <Box sx={{ height: 400, position: 'relative' }}>
           <ChartComponent
@@ -589,7 +885,227 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
             data={getChartData()}
             options={chartOptions}
           />
+          
+          {/* Today marker for projection boundary */}
+          {showProjections && (
+            <Box sx={{ 
+              position: 'absolute',
+              right: `${(chartData.projectedLabels.length / chartData.labels.length) * 100}%`,
+              top: 0,
+              bottom: 0,
+              width: '2px',
+              backgroundColor: theme.palette.info.main,
+              opacity: 0.7,
+              pointerEvents: 'none',
+              '&::before': {
+                content: '"Today"',
+                position: 'absolute',
+                top: '10px',
+                left: '5px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: theme.palette.info.main,
+                background: theme.palette.background.paper,
+                padding: '2px 6px',
+                borderRadius: '4px',
+                whiteSpace: 'nowrap'
+              }
+            }} />
+          )}
         </Box>
+
+        {/* Time Period Control */}
+        <Box sx={{ 
+          mt: 3, 
+          p: 3, 
+          background: alpha(theme.palette.primary.main, 0.05),
+          borderRadius: '12px',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Timeline sx={{ color: 'primary.main' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Time Period
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Adjust how many days of history to display
+            </Typography>
+          </Box>
+          
+          <Box sx={{ px: 2 }}>
+            <Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
+              Historical Period: {daysToShow} days
+            </Typography>
+            <Slider
+              value={daysToShow}
+              onChange={(e, value) => setDaysToShow(value as number)}
+              min={7}
+              max={365}
+              step={1}
+              marks={[
+                { value: 7, label: '1w' },
+                { value: 30, label: '1m' },
+                { value: 90, label: '3m' },
+                { value: 180, label: '6m' },
+                { value: 365, label: '1y' }
+              ]}
+              sx={{ 
+                mt: 2,
+                '& .MuiSlider-mark': {
+                  backgroundColor: theme.palette.primary.main,
+                  height: 8,
+                  width: 2,
+                },
+                '& .MuiSlider-markLabel': {
+                  color: theme.palette.text.secondary,
+                  fontWeight: 500,
+                  fontSize: '0.75rem'
+                },
+                '& .MuiSlider-thumb': {
+                  width: 20,
+                  height: 20,
+                  backgroundColor: theme.palette.primary.main,
+                  '&:hover': {
+                    boxShadow: `0 0 0 8px ${alpha(theme.palette.primary.main, 0.16)}`,
+                  },
+                },
+                '& .MuiSlider-track': {
+                  backgroundColor: theme.palette.primary.main,
+                  height: 4,
+                },
+                '& .MuiSlider-rail': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                  height: 4,
+                }
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Interactive Controls */}
+        <Accordion 
+          expanded={slidersExpanded} 
+          onChange={(e, isExpanded) => setSlidersExpanded(isExpanded)}
+          sx={{ 
+            mt: 3,
+            mb: 3,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(107, 70, 193, 0.3)',
+            borderRadius: '12px !important',
+            '&:before': { display: 'none' }
+          }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMore sx={{ color: 'primary.main' }} />}
+            sx={{
+              '& .MuiAccordionSummary-content': {
+                alignItems: 'center',
+                gap: 2
+              }
+            }}
+          >
+            <Tune sx={{ color: 'primary.main' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Projection Controls
+            </Typography>
+            <Chip 
+              label={slidersExpanded ? "Hide" : "Customize Projections"} 
+              size="small" 
+              color="primary" 
+              variant="outlined"
+            />
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Box>
+              <Paper sx={{ 
+                p: 3, 
+                background: alpha(theme.palette.primary.main, 0.05),
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <Speed sx={{ color: 'primary.main' }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Projection Settings
+                  </Typography>
+                </Box>
+                
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={showProjections} 
+                      onChange={(e) => setShowProjections(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Show Future Projections"
+                  sx={{ mb: 2 }}
+                />
+
+                {showProjections && (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Projection Period: {projectionMonths} months
+                    </Typography>
+                    <Slider
+                      value={projectionMonths}
+                      onChange={(e, value) => setProjectionMonths(value as number)}
+                      min={1}
+                      max={60}
+                      step={1}
+                      marks={[
+                        { value: 6, label: '6m' },
+                        { value: 12, label: '1y' },
+                        { value: 24, label: '2y' },
+                        { value: 36, label: '3y' }
+                      ]}
+                      sx={{ mt: 2 }}
+                    />
+                  </Box>
+                )}
+
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Growth Rate Multiplier: {growthRateMultiplier.toFixed(2)}x
+                  </Typography>
+                  <Slider
+                    value={growthRateMultiplier}
+                    onChange={(e, value) => setGrowthRateMultiplier(value as number)}
+                    min={0.1}
+                    max={3}
+                    step={0.1}
+                    marks={[
+                      { value: 0.5, label: '0.5x' },
+                      { value: 1, label: '1x' },
+                      { value: 2, label: '2x' }
+                    ]}
+                    sx={{ mt: 2 }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Volatility: {(volatility * 100).toFixed(2)}%
+                  </Typography>
+                  <Slider
+                    value={volatility}
+                    onChange={(e, value) => setVolatility(value as number)}
+                    min={0.0001}
+                    max={0.02}
+                    step={0.0001}
+                    marks={[
+                      { value: 0.001, label: '0.1%' },
+                      { value: 0.005, label: '0.5%' },
+                      { value: 0.01, label: '1%' },
+                      { value: 0.02, label: '2%' }
+                    ]}
+                    sx={{ mt: 2 }}
+                  />
+                </Box>
+              </Paper>
+            </Box>
+          </AccordionDetails>
+        </Accordion>
 
         {/* My Account Stats */}
         <Box sx={{ 
@@ -656,7 +1172,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
           pb: 2
         }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            📈 My Account Details - {selectedDataPoint?.date}
+            My Account Details - {selectedDataPoint?.date}
           </Typography>
           <IconButton 
             onClick={() => setDetailDialogOpen(false)}
