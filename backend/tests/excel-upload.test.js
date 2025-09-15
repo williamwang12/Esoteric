@@ -11,6 +11,7 @@ describe('Excel Upload Test Suite', () => {
   let testDatabase;
   let adminToken;
   let userId;
+  let userEmail;
   let loanAccountNumber;
 
   beforeAll(async () => {
@@ -24,6 +25,8 @@ describe('Excel Upload Test Suite', () => {
       firstName: 'Excel',
       lastName: 'Test'
     };
+    
+    userEmail = testUser.email;
 
     await request(app)
       .post('/api/auth/register')
@@ -60,7 +63,7 @@ describe('Excel Upload Test Suite', () => {
     await testDatabase.cleanDatabase();
   });
 
-  describe('📊 Excel Template Download', () => {
+  describe('Excel Template Download', () => {
     it('should download Excel template', async () => {
       const response = await request(app)
         .get('/api/admin/loans/excel-template')
@@ -78,13 +81,14 @@ describe('Excel Upload Test Suite', () => {
     });
   });
 
-  describe('📤 Excel File Upload', () => {
+  describe('Excel File Upload', () => {
     let excelPath;
 
     beforeEach(() => {
-      // Create test Excel file
+      // Create test Excel file with email-based format
       const testData = [
         {
+          email: userEmail,
           account_number: loanAccountNumber,
           current_balance: 10000.00,
           new_balance: 12000.00,
@@ -118,6 +122,7 @@ describe('Excel Upload Test Suite', () => {
       expect(response.body.summary.totalRows).toBe(1);
       expect(response.body.summary.successfulUpdates).toBe(1);
       expect(response.body.updates.length).toBe(1);
+      expect(response.body.updates[0].email).toBe(userEmail);
       expect(response.body.updates[0].accountNumber).toBe(loanAccountNumber);
       expect(response.body.updates[0].newBalance).toBe(12000);
     });
@@ -187,10 +192,11 @@ describe('Excel Upload Test Suite', () => {
       expect(response.body.error).toBe('No Excel file uploaded');
     });
 
-    it('should handle invalid account numbers', async () => {
-      // Create Excel with invalid account
+    it('should handle invalid email addresses', async () => {
+      // Create Excel with invalid email
       const invalidData = [
         {
+          email: 'nonexistent@example.com',
           account_number: 'INVALID-ACCOUNT-123',
           new_balance: 5000.00
         }
@@ -200,7 +206,7 @@ describe('Excel Upload Test Suite', () => {
       const ws = XLSX.utils.json_to_sheet(invalidData);
       XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
 
-      const invalidPath = path.join(__dirname, 'invalid_accounts.xlsx');
+      const invalidPath = path.join(__dirname, 'invalid_emails.xlsx');
       XLSX.writeFile(wb, invalidPath);
 
       const response = await request(app)
@@ -210,7 +216,7 @@ describe('Excel Upload Test Suite', () => {
         .expect(400);
 
       expect(response.body.error).toContain('No successful updates');
-      expect(response.body.errors[0]).toContain('not found');
+      expect(response.body.errors[0]).toContain('No loan account found for email');
 
       fs.unlinkSync(invalidPath);
     });
@@ -219,7 +225,7 @@ describe('Excel Upload Test Suite', () => {
       // Create Excel without required columns
       const invalidData = [
         {
-          wrong_column: 'LOAN-123',
+          wrong_column: 'user@example.com',
           another_wrong: 5000.00
         }
       ];
@@ -247,6 +253,7 @@ describe('Excel Upload Test Suite', () => {
       // Create Excel with invalid balance
       const invalidData = [
         {
+          email: userEmail,
           account_number: loanAccountNumber,
           new_balance: 'not_a_number'
         }
@@ -269,27 +276,215 @@ describe('Excel Upload Test Suite', () => {
 
       fs.unlinkSync(invalidPath);
     });
-  });
 
-  describe('📊 Excel Upload Summary', () => {
-    it('should complete comprehensive Excel upload testing', async () => {
-      const excelFeatures = {
-        template_download: 'Excel template generation ✅',
-        file_upload: 'Excel file processing ✅',
-        data_validation: 'Input validation and error handling ✅',
-        balance_updates: 'Loan balance updates ✅',
-        transaction_records: 'Automatic transaction logging ✅',
-        security: 'Admin authentication and rate limiting ✅',
-        error_handling: 'Comprehensive error reporting ✅'
+    it('should handle negative balance values', async () => {
+      // Create Excel with negative balance
+      const invalidData = [
+        {
+          email: userEmail,
+          new_balance: -5000.00
+        }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(invalidData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
+
+      const invalidPath = path.join(__dirname, 'negative_balance.xlsx');
+      XLSX.writeFile(wb, invalidPath);
+
+      const response = await request(app)
+        .post('/api/admin/loans/excel-upload')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('excel', invalidPath)
+        .expect(400);
+
+      expect(response.body.errors[0]).toContain('must be a positive number');
+
+      fs.unlinkSync(invalidPath);
+    });
+
+    it('should handle multiple users in one upload', async () => {
+      // Create second test user
+      const testUser2 = {
+        email: `excel-test-2-${Date.now()}@example.com`,
+        password: 'ExcelTest123!',
+        firstName: 'Excel',
+        lastName: 'Test2'
       };
 
-      console.log('\n📊 EXCEL UPLOAD TEST RESULTS:');
+      await request(app)
+        .post('/api/auth/register')
+        .send(testUser2);
+
+      // Create loan for second user
+      const pool = testDatabase.getPool();
+      const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [testUser2.email]);
+      const user2Id = userResult.rows[0].id;
+
+      const loanResponse2 = await request(app)
+        .post('/api/admin/create-loan')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          userId: user2Id,
+          principalAmount: 15000.00,
+          monthlyRate: 0.015
+        });
+
+      const loanAccountNumber2 = loanResponse2.body.loanAccount.accountNumber;
+
+      // Create Excel with multiple users
+      const multiUserData = [
+        {
+          email: userEmail,
+          new_balance: 11000.00,
+          notes: 'First user update'
+        },
+        {
+          email: testUser2.email,
+          new_balance: 16000.00,
+          notes: 'Second user update'
+        }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(multiUserData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
+
+      const multiUserPath = path.join(__dirname, 'multi_user_updates.xlsx');
+      XLSX.writeFile(wb, multiUserPath);
+
+      const response = await request(app)
+        .post('/api/admin/loans/excel-upload')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('excel', multiUserPath)
+        .expect(200);
+
+      expect(response.body.summary.totalRows).toBe(2);
+      expect(response.body.summary.successfulUpdates).toBe(2);
+      expect(response.body.updates.length).toBe(2);
+
+      fs.unlinkSync(multiUserPath);
+    });
+
+    it('should handle mixed valid and invalid data', async () => {
+      // Create Excel with mix of valid and invalid data
+      const mixedData = [
+        {
+          email: userEmail,
+          new_balance: 13000.00,
+          notes: 'Valid update'
+        },
+        {
+          email: 'nonexistent@example.com',
+          new_balance: 5000.00,
+          notes: 'Invalid user'
+        },
+        {
+          email: userEmail,
+          new_balance: 'invalid_balance',
+          notes: 'Invalid balance'
+        }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(mixedData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
+
+      const mixedPath = path.join(__dirname, 'mixed_data.xlsx');
+      XLSX.writeFile(wb, mixedPath);
+
+      const response = await request(app)
+        .post('/api/admin/loans/excel-upload')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('excel', mixedPath)
+        .expect(200);
+
+      expect(response.body.summary.totalRows).toBe(3);
+      expect(response.body.summary.successfulUpdates).toBe(1);
+      expect(response.body.summary.errors).toBe(2);
+      expect(response.body.updates.length).toBe(1);
+      expect(response.body.errors.length).toBe(2);
+
+      fs.unlinkSync(mixedPath);
+    });
+
+    it('should handle empty Excel file', async () => {
+      // Create empty Excel file
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet([]);
+      XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
+
+      const emptyPath = path.join(__dirname, 'empty_file.xlsx');
+      XLSX.writeFile(wb, emptyPath);
+
+      const response = await request(app)
+        .post('/api/admin/loans/excel-upload')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('excel', emptyPath)
+        .expect(400);
+
+      expect(response.body.error).toBe('No successful updates');
+
+      fs.unlinkSync(emptyPath);
+    });
+
+    it('should respect rate limiting', async () => {
+      // Create test Excel file
+      const testData = [
+        {
+          email: userEmail,
+          new_balance: 14000.00
+        }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(testData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
+
+      const rateLimitPath = path.join(__dirname, 'rate_limit_test.xlsx');
+      XLSX.writeFile(wb, rateLimitPath);
+
+      // Make multiple rapid requests to test rate limiting
+      const requests = [];
+      for (let i = 0; i < 12; i++) {
+        requests.push(
+          request(app)
+            .post('/api/admin/loans/excel-upload')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .attach('excel', rateLimitPath)
+        );
+      }
+
+      const responses = await Promise.all(requests);
+      
+      // Should have some rate limited responses (429)
+      const rateLimitedResponses = responses.filter(res => res.status === 429);
+      expect(rateLimitedResponses.length).toBeGreaterThan(0);
+
+      fs.unlinkSync(rateLimitPath);
+    }, 10000); // Increase timeout for rate limiting test
+  });
+
+  describe('Excel Upload Summary', () => {
+    it('should complete comprehensive Excel upload testing', async () => {
+      const excelFeatures = {
+        template_download: 'Excel template generation ✓',
+        file_upload: 'Excel file processing ✓',
+        data_validation: 'Input validation and error handling ✓',
+        balance_updates: 'Loan balance updates ✓',
+        transaction_records: 'Automatic transaction logging ✓',
+        security: 'Admin authentication and rate limiting ✓',
+        error_handling: 'Comprehensive error reporting ✓'
+      };
+
+      console.log('\nEXCEL UPLOAD TEST RESULTS:');
       console.log('===============================');
       Object.values(excelFeatures).forEach(feature => {
         console.log(`   ${feature}`);
       });
 
-      console.log('\n📋 Excel Upload Features:');
+      console.log('\nExcel Upload Features:');
       console.log('   ✓ Excel template download with instructions');
       console.log('   ✓ Support for .xlsx and .xls file formats');
       console.log('   ✓ Bulk loan balance updates');
@@ -300,7 +495,7 @@ describe('Excel Upload Test Suite', () => {
       console.log('   ✓ Rate limiting protection');
       console.log('   ✓ File cleanup and security');
 
-      console.log('\n🎉 Excel upload functionality complete!');
+      console.log('\nExcel upload functionality complete!');
       expect(Object.keys(excelFeatures).length).toBeGreaterThanOrEqual(7);
     });
   });

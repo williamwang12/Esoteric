@@ -127,10 +127,8 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
       console.log('Updates length:', response?.updates?.length);
       console.log('Show results state:', true);
       
-      // Show immediate feedback
+      // Process successful updates
       if (response?.summary?.successfulUpdates > 0) {
-        alert(`Successfully updated ${response.summary.successfulUpdates} loan account(s)!`);
-        
         // Add successful updates to recent updates list
         console.log('Checking for updates to add to recent list...');
         if (response.updates && response.updates.length > 0) {
@@ -140,23 +138,20 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
             updatedAt: new Date().toISOString()
           }));
           
-          // Save to localStorage immediately before component might re-mount
+          // Replace previous updates with new ones (don't append)
           try {
-            const saved = localStorage.getItem('excelUploadRecentUpdates');
-            const existing = saved ? JSON.parse(saved) : [];
-            const updatedList = [...newUpdates, ...existing].slice(0, 20);
-            localStorage.setItem('excelUploadRecentUpdates', JSON.stringify(updatedList));
-            console.log('Saved recent updates to localStorage immediately:', updatedList.length, 'items');
+            // Only keep the latest upload's updates, don't append to previous ones
+            localStorage.setItem('excelUploadRecentUpdates', JSON.stringify(newUpdates));
+            console.log('Replaced recent updates in localStorage with new upload:', newUpdates.length, 'items');
           } catch (error) {
             console.log('Failed to save to localStorage:', error);
           }
           
-          // Also update state (though this might be reset by re-mount)
-          setRecentUpdates(prev => {
-            const updatedList = [...newUpdates, ...prev].slice(0, 20);
-            console.log('Recent updates state should be updated');
-            console.log('New recent updates state:', updatedList);
-            return updatedList;
+          // Also update state (replace, don't append)
+          setRecentUpdates(() => {
+            console.log('Replacing recent updates state with new upload');
+            console.log('New recent updates state:', newUpdates);
+            return newUpdates;
           });
         } else {
           console.log('No updates array found in response or array is empty');
@@ -173,7 +168,16 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
               change: 0,
               updatedAt: new Date().toISOString()
             }));
-            setRecentUpdates(prev => [...placeholderUpdates, ...prev].slice(0, 20));
+            
+            // Save placeholder updates to localStorage
+            try {
+              localStorage.setItem('excelUploadRecentUpdates', JSON.stringify(placeholderUpdates));
+              console.log('Saved placeholder updates to localStorage:', placeholderUpdates.length, 'items');
+            } catch (error) {
+              console.log('Failed to save placeholder updates to localStorage:', error);
+            }
+            
+            setRecentUpdates(() => placeholderUpdates);
           }
         }
       }
@@ -375,7 +379,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
           {recentUpdates.length > 0 && (
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="caption" color="text.secondary">
-                Showing last {recentUpdates.length} updates (maximum 20)
+                Showing {recentUpdates.length} updates from most recent upload
               </Typography>
               <Button
                 variant="outlined"
