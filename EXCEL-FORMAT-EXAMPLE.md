@@ -1,4 +1,4 @@
-# 📊 Excel Spreadsheet Format for Loan Updates
+# Excel Spreadsheet Format for Loan Updates
 
 ## Required Excel File Format
 
@@ -25,11 +25,11 @@ The Excel file for bulk loan updates must have the following structure:
 
 ## File Requirements:
 
-✅ **File Format**: .xlsx or .xls files only
-✅ **Headers**: Must be in the first row exactly as shown
-✅ **Email Addresses**: Must match existing user email addresses exactly
-✅ **New Balance**: Must be positive numbers
-✅ **Decimal Places**: Use standard decimal notation (e.g., 12000.00)
+**File Format**: .xlsx or .xls files only
+**Headers**: Must be in the first row exactly as shown
+**Email Addresses**: Must match existing user email addresses exactly
+**New Balance**: Must be positive numbers
+**Decimal Places**: Use standard decimal notation (e.g., 12000.00)
 
 ## Example Values:
 
@@ -60,10 +60,10 @@ The Excel file for bulk loan updates must have the following structure:
 
 ## Important Notes:
 
-⚠️ **Backup Recommended**: Always backup data before bulk updates
-⚠️ **Cannot Be Undone**: Balance changes are permanent
-⚠️ **Admin Only**: Requires admin privileges
-⚠️ **Exact Match**: Account numbers must match exactly
+**Backup Recommended**: Always backup data before bulk updates
+**Cannot Be Undone**: Balance changes are permanent
+**Admin Only**: Requires admin privileges
+**Exact Match**: Account numbers must match exactly
 
 ## Download Template:
 

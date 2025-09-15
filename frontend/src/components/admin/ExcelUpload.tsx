@@ -129,7 +129,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
       
       // Show immediate feedback
       if (response?.summary?.successfulUpdates > 0) {
-        alert(`✅ Successfully updated ${response.summary.successfulUpdates} loan account(s)!`);
+        alert(`Successfully updated ${response.summary.successfulUpdates} loan account(s)!`);
         
         // Add successful updates to recent updates list
         console.log('Checking for updates to add to recent list...');
@@ -229,7 +229,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          📊 Excel Loan Updates
+          Excel Loan Updates
         </Typography>
         <Button
           variant="outlined"
@@ -449,7 +449,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
                 <Box sx={{ mb: 2 }}>
                   <Alert severity="info" sx={{ mb: 2 }}>
                     <Typography variant="body2">
-                      📊 Upload Results: {uploadResult.summary?.successfulUpdates || 0} successful updates, {uploadResult.summary?.errors || 0} errors
+                      Upload Results: {uploadResult.summary?.successfulUpdates || 0} successful updates, {uploadResult.summary?.errors || 0} errors
                     </Typography>
                   </Alert>
                 </Box>
@@ -465,13 +465,13 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
                   {uploadResult.updates.length > 0 && (
                     <Alert severity="success" sx={{ mb: 2 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        ✅ Successfully updated {uploadResult.updates.length} loan account{uploadResult.updates.length !== 1 ? 's' : ''}
+                        Successfully updated {uploadResult.updates.length} loan account{uploadResult.updates.length !== 1 ? 's' : ''}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 1 }}>
-                        📋 Transaction records have been automatically created for all balance changes
+                        Transaction records have been automatically created for all balance changes
                       </Typography>
                       <Typography variant="body2">
-                        💰 Total amount changed: {formatCurrency(
+                        Total amount changed: {formatCurrency(
                           uploadResult.updates.reduce((sum, update) => sum + Math.abs(update.change), 0)
                         )}
                       </Typography>
@@ -524,7 +524,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
                   
                   <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary">
-                      💡 All changes have been saved to the database and transaction records created
+                      All changes have been saved to the database and transaction records created
                     </Typography>
                     <Button
                       variant="outlined"
@@ -586,14 +586,32 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
       )}
 
       {/* Instructions Dialog */}
-      <Dialog open={showInstructions} onClose={() => setShowInstructions(false)} maxWidth="md" fullWidth>
+      <Dialog 
+        open={showInstructions} 
+        onClose={() => setShowInstructions(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: 'background.paper',
+            opacity: 1,
+            backdropFilter: 'none'
+          }
+        }}
+        BackdropProps={{
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'none'
+          }
+        }}
+      >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Description />
           Excel Upload Instructions
         </DialogTitle>
         <DialogContent>
           <Typography variant="h6" gutterBottom>
-            📋 How to Use Excel Upload
+            How to Use Excel Upload
           </Typography>
           
           <Typography variant="body2" paragraph>
@@ -603,7 +621,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
           <Divider sx={{ my: 2 }} />
 
           <Typography variant="h6" gutterBottom>
-            📊 Required Excel Format
+            Required Excel Format
           </Typography>
           
           <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
@@ -637,7 +655,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
           </TableContainer>
 
           <Typography variant="h6" gutterBottom>
-            📝 Column Requirements
+            Column Requirements
           </Typography>
           
           <List dense>
@@ -679,7 +697,7 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ onUploadComplete }) => {
           </List>
 
           <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-            ⚠️ Important Notes
+            Important Notes
           </Typography>
           
           <List dense>
