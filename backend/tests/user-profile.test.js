@@ -118,7 +118,6 @@ describe('User Profile Management Test Suite', () => {
         expect(profile).toHaveProperty('last_name');
         expect(profile).toHaveProperty('phone');
         expect(profile).toHaveProperty('role');
-        expect(profile).toHaveProperty('email_verified');
         expect(profile).toHaveProperty('account_verified');
         expect(profile).toHaveProperty('created_at');
         expect(profile).toHaveProperty('last_login');
@@ -131,7 +130,6 @@ describe('User Profile Management Test Suite', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.role).toBe('user');
-        expect(response.body.email_verified).toBe(false);
         expect(response.body.account_verified).toBe(false);
       });
     });
@@ -219,7 +217,6 @@ describe('User Profile Management Test Suite', () => {
           // Attempt to update sensitive fields
           password: 'hackattempt',
           role: 'admin',
-          email_verified: true,
           account_verified: true
         };
 

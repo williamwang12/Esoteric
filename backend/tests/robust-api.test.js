@@ -400,17 +400,7 @@ describe('Robust Backend API Tests', () => {
     });
   });
 
-  describe('📧 Email & Account Verification', () => {
-    test('Email verification works', async () => {
-      const response = await request(app)
-        .post('/api/user/send-email-verification')
-        .set('Authorization', `Bearer ${userToken}`)
-        .expect(200);
-
-      expect(response.body).toMatchObject({
-        message: expect.stringContaining('sent successfully')
-      });
-    });
+  describe('📧 Account Verification', () => {
 
     test('Account verification works', async () => {
       const response = await request(app)
@@ -487,7 +477,6 @@ describe('Robust Backend API Tests', () => {
         meeting_get: 'GET /api/meeting-requests ✅',
         twofa_setup: 'POST /api/2fa/setup ✅',
         twofa_status: 'GET /api/2fa/status ✅',
-        email_verification: 'POST /api/user/send-email-verification ✅',
         account_verification: 'POST /api/user/request-account-verification ✅',
         documents: 'GET /api/documents ✅',
         admin_users: 'GET /api/admin/users ✅',

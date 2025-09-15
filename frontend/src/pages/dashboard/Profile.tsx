@@ -75,11 +75,6 @@ const Profile: React.FC = () => {
   const [twoFAToken, setTwoFAToken] = useState('');
   const [twoFALoading, setTwoFALoading] = useState(false);
   const [twoFAError, setTwoFAError] = useState<string | null>(null);
-  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false);
-  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
-  const [emailVerificationDialogOpen, setEmailVerificationDialogOpen] = useState(false);
-  const [emailVerificationToken, setEmailVerificationToken] = useState('');
-  const [emailVerificationError, setEmailVerificationError] = useState<string | null>(null);
   const [verificationRequestLoading, setVerificationRequestLoading] = useState(false);
   const [verificationRequestSent, setVerificationRequestSent] = useState(false);
 
@@ -229,37 +224,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleSendEmailVerification = async () => {
-    try {
-      setEmailVerificationLoading(true);
-      const response = await userApi.sendEmailVerification();
-      setEmailVerificationSent(true);
-      setEmailVerificationDialogOpen(true);
-      setError(null);
-    } catch (error) {
-      console.error('Send email verification error:', error);
-      setError('Failed to send verification email. Please try again.');
-    } finally {
-      setEmailVerificationLoading(false);
-    }
-  };
-
-  const handleVerifyEmail = async () => {
-    try {
-      setEmailVerificationLoading(true);
-      setEmailVerificationError(null);
-      await userApi.verifyEmail(emailVerificationToken);
-      setEmailVerificationDialogOpen(false);
-      setEmailVerificationToken('');
-      await fetchProfileData(); // Refresh profile data to show verified status
-      setError(null);
-    } catch (error: any) {
-      console.error('Email verification error:', error);
-      setEmailVerificationError(error.response?.data?.error || 'Failed to verify email. Please try again.');
-    } finally {
-      setEmailVerificationLoading(false);
-    }
-  };
 
   const handleRequestAccountVerification = async () => {
     try {
@@ -667,7 +631,7 @@ const Profile: React.FC = () => {
                   
                   <Box sx={{ 
                     display: 'grid', 
-                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, 
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
                     gap: 3 
                   }}>
                     <Box sx={{ textAlign: 'center', p: 3 }}>
@@ -736,38 +700,6 @@ const Profile: React.FC = () => {
                       </Button>
                     </Box>
                     
-                    <Box sx={{ textAlign: 'center', p: 3 }}>
-                      <Chip
-                        icon={profileData.email_verified ? <Verified /> : <Email />}
-                        label={profileData.email_verified ? "Email Verified" : "Email Verification"}
-                        color={profileData.email_verified ? "success" : "warning"}
-                        sx={{ mb: 2, fontWeight: 600 }}
-                      />
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        {profileData.email_verified 
-                          ? "Your email address has been verified"
-                          : "Verify your email address for security"
-                        }
-                      </Typography>
-                      {!profileData.email_verified && (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          size="small"
-                          onClick={handleSendEmailVerification}
-                          disabled={emailVerificationLoading}
-                          startIcon={emailVerificationLoading ? <CircularProgress size={16} /> : <Email />}
-                          sx={{ 
-                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                            }
-                          }}
-                        >
-                          {emailVerificationLoading ? 'Sending...' : 'Send Verification'}
-                        </Button>
-                      )}
-                    </Box>
                   </Box>
                   </CardContent>
                 </Card>
@@ -924,92 +856,6 @@ const Profile: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Email Verification Dialog */}
-        <Dialog 
-          open={emailVerificationDialogOpen} 
-          onClose={() => {
-            setEmailVerificationDialogOpen(false);
-            setEmailVerificationToken('');
-            setEmailVerificationError(null);
-          }}
-          maxWidth="sm" 
-          fullWidth
-          PaperProps={{
-            sx: {
-              background: 'rgba(31, 41, 55, 0.95)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(107, 70, 193, 0.3)',
-              borderRadius: '20px',
-              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
-            }
-          }}
-        >
-          <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}>
-            <Email />
-            Email Verification
-          </DialogTitle>
-          <DialogContent>
-            {emailVerificationError && (
-              <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
-                {emailVerificationError}
-              </Alert>
-            )}
-            
-            <Box sx={{ textAlign: 'center', mt: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Email Verification
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                A verification token has been sent to your email. Please enter the token below to verify your email address.
-              </Typography>
-              
-              <TextField
-                label="Enter verification token"
-                value={emailVerificationToken}
-                onChange={(e) => setEmailVerificationToken(e.target.value)}
-                fullWidth
-                placeholder="Enter token"
-                inputProps={{ 
-                  style: { textAlign: 'center', fontSize: '1.1rem' }
-                }}
-                sx={{ mb: 2 }}
-                disabled={emailVerificationLoading}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ p: 3, gap: 1 }}>
-            <Button 
-              onClick={() => {
-                setEmailVerificationDialogOpen(false);
-                setEmailVerificationToken('');
-                setEmailVerificationError(null);
-              }}
-              disabled={emailVerificationLoading}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleVerifyEmail}
-              variant="contained"
-              disabled={emailVerificationLoading || !emailVerificationToken.trim()}
-              startIcon={emailVerificationLoading ? <CircularProgress size={16} /> : <Verified />}
-              sx={{
-                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
-                }
-              }}
-            >
-              {emailVerificationLoading ? 'Verifying...' : 'Verify Email'}
-            </Button>
-          </DialogActions>
-        </Dialog>
 
         {/* Edit Profile Dialog */}
         <Dialog 

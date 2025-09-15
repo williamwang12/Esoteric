@@ -112,8 +112,8 @@ class SafeTestDatabase {
 
       for (const user of testUsers) {
         await client.query(`
-          INSERT INTO users (email, password_hash, first_name, last_name, role, email_verified, account_verified)
-          VALUES ($1, $2, $3, $4, $5, true, true)
+          INSERT INTO users (email, password_hash, first_name, last_name, role, account_verified)
+          VALUES ($1, $2, $3, $4, $5, true)
         `, [user.email, user.password_hash, user.first_name, user.last_name, user.role]);
       }
 

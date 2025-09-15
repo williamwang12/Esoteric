@@ -85,13 +85,12 @@ describe('Enhanced Authentication Test Suite', () => {
 
         const pool = testDatabase.getPool();
         const result = await pool.query(`
-          SELECT role, email_verified, account_verified, requires_2fa 
+          SELECT role, account_verified, requires_2fa 
           FROM users WHERE email = $1
         `, [testUser.email]);
         
         const user = result.rows[0];
         expect(user.role).toBe('user');
-        expect(user.email_verified).toBe(false);
         expect(user.account_verified).toBe(false);
         expect(user.requires_2fa).toBe(false);
       });
