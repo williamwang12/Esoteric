@@ -288,6 +288,23 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  // Excel Upload for Loan Updates
+  uploadExcel: async (formData: FormData) => {
+    const response = await api.post('/admin/loans/excel-upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  downloadExcelTemplate: async () => {
+    const response = await api.get('/admin/loans/excel-template', {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
 };
 
 

@@ -57,10 +57,12 @@ import {
   CalendarMonth,
   RequestPage,
   Computer,
+  TableChart,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import AppNavigation from '../../components/common/AppNavigation';
+import ExcelUpload from '../../components/admin/ExcelUpload';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -135,6 +137,23 @@ const UserCard = memo(({ user, isSelected, onClick }: {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         {user.email}
       </Typography>
+      {user.account_numbers && (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            mb: 1,
+            fontFamily: 'monospace',
+            fontSize: '0.75rem',
+            color: 'primary.main',
+            backgroundColor: 'action.hover',
+            padding: '2px 6px',
+            borderRadius: '4px',
+            wordBreak: 'break-all'
+          }}
+        >
+          {user.account_numbers}
+        </Typography>
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Chip 
           label={user.role || 'user'} 
@@ -192,7 +211,8 @@ const AdminDashboard: React.FC = () => {
       user.first_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
       user.last_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      user.role?.toLowerCase().includes(userSearchTerm.toLowerCase())
+      user.role?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.account_numbers?.toLowerCase().includes(userSearchTerm.toLowerCase())
     );
   }, [users, userSearchTerm]);
 
@@ -1069,6 +1089,12 @@ const AdminDashboard: React.FC = () => {
                   label="Meetings" 
                   id="admin-tab-3"
                   aria-controls="admin-tabpanel-3"
+                />
+                <Tab 
+                  icon={<TableChart />} 
+                  label="Excel Upload" 
+                  id="admin-tab-4"
+                  aria-controls="admin-tabpanel-4"
                 />
               </Tabs>
             </Box>
@@ -2386,6 +2412,11 @@ const AdminDashboard: React.FC = () => {
                   </Card>
                 </Box>
               )}
+            </TabPanel>
+
+            {/* Excel Upload Tab */}
+            <TabPanel value={tabValue} index={4}>
+              <ExcelUpload onUploadComplete={() => fetchUsers(true)} />
             </TabPanel>
 
             </>

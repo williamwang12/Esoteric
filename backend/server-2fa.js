@@ -9,6 +9,7 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
+const XLSX = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -615,6 +616,7 @@ app.get('/api/admin/users', adminRateLimit, authenticateAdmin, async (req, res) 
                    u.account_verified, u.verified_at, u.verified_by_admin,
                    u2fa.is_enabled as has_2fa_enabled, u2fa.last_used as last_2fa_use,
                    COUNT(la.id) as loan_accounts_count,
+                   STRING_AGG(la.account_number, ', ' ORDER BY la.created_at) as account_numbers,
                    admin_user.first_name as verified_by_first_name, admin_user.last_name as verified_by_last_name
             FROM users u
             LEFT JOIN user_2fa u2fa ON u.id = u2fa.user_id
@@ -1850,6 +1852,307 @@ app.get('/api/admin/meeting-requests', adminRateLimit, authenticateAdmin, async 
     } catch (error) {
         console.error('Admin get meeting requests error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Excel loan amount upload
+app.post('/api/admin/loans/excel-upload', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('excel'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No Excel file uploaded' });
+        }
+
+        // Validate file extension
+        const fileExtension = path.extname(req.file.originalname).toLowerCase();
+        if (!['.xlsx', '.xls'].includes(fileExtension)) {
+            // Delete the uploaded file
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are allowed' });
+        }
+
+        console.log('📊 Processing Excel file:', req.file.originalname);
+
+        // Read the Excel file
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0]; // Use first sheet
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON
+        const data = XLSX.utils.sheet_to_json(worksheet);
+        
+        console.log('📋 Parsed Excel data:', data.length, 'rows');
+
+        // Validate required columns
+        const requiredColumns = ['email', 'new_balance'];
+        const processedUpdates = [];
+        const errors = [];
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNumber = i + 2; // Excel rows start at 1, header is row 1
+
+            // Check required columns
+            const missingColumns = requiredColumns.filter(col => !row.hasOwnProperty(col));
+            if (missingColumns.length > 0) {
+                errors.push(`Row ${rowNumber}: Missing required columns: ${missingColumns.join(', ')}`);
+                continue;
+            }
+
+            // Validate email
+            if (!row.email || typeof row.email !== 'string') {
+                errors.push(`Row ${rowNumber}: Invalid email`);
+                continue;
+            }
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(row.email.trim())) {
+                errors.push(`Row ${rowNumber}: Invalid email format`);
+                continue;
+            }
+
+            // Validate new_balance
+            const newBalance = parseFloat(row.new_balance);
+            if (isNaN(newBalance) || newBalance < 0) {
+                errors.push(`Row ${rowNumber}: Invalid new_balance (must be a positive number)`);
+                continue;
+            }
+
+            processedUpdates.push({
+                email: row.email.trim().toLowerCase(),
+                newBalance: newBalance,
+                rowNumber: rowNumber
+            });
+        }
+
+        console.log('✅ Valid updates:', processedUpdates.length);
+        console.log('❌ Errors:', errors.length);
+
+        if (errors.length > 0 && processedUpdates.length === 0) {
+            // Delete the uploaded file
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ 
+                error: 'No valid updates found', 
+                errors: errors.slice(0, 10) // Limit to first 10 errors
+            });
+        }
+
+        // Process updates in transaction
+        await pool.query('BEGIN');
+        
+        const updateResults = [];
+        const updateErrors = [];
+
+        try {
+            for (const update of processedUpdates) {
+                try {
+                    // Check if user exists and get their loan account
+                    const loanResult = await pool.query(`
+                        SELECT la.id, la.user_id, la.current_balance, la.account_number, u.email 
+                        FROM loan_accounts la 
+                        JOIN users u ON la.user_id = u.id 
+                        WHERE LOWER(u.email) = $1
+                    `, [update.email]);
+
+                    if (loanResult.rows.length === 0) {
+                        updateErrors.push(`Row ${update.rowNumber}: No loan account found for email ${update.email}`);
+                        continue;
+                    }
+
+                    // If user has multiple loan accounts, update the first one (or we could update all)
+                    const loan = loanResult.rows[0];
+                    const oldBalance = parseFloat(loan.current_balance);
+
+                    // Update the loan balance
+                    await pool.query(
+                        'UPDATE loan_accounts SET current_balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                        [update.newBalance, loan.id]
+                    );
+
+                    // Create transaction record for the balance change
+                    const balanceChange = update.newBalance - oldBalance;
+                    const transactionType = balanceChange >= 0 ? 'adjustment_increase' : 'adjustment_decrease';
+                    
+                    await pool.query(
+                        `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
+                         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+                        [
+                            loan.id,
+                            Math.abs(balanceChange),
+                            transactionType,
+                            `Excel bulk update: Balance adjusted from $${oldBalance} to $${update.newBalance}`
+                        ]
+                    );
+
+                    updateResults.push({
+                        email: update.email,
+                        accountNumber: loan.account_number,
+                        oldBalance: oldBalance,
+                        newBalance: update.newBalance,
+                        change: balanceChange,
+                        userId: loan.user_id
+                    });
+
+                    console.log(`💰 Updated ${loan.account_number} (${update.email}): $${oldBalance} → $${update.newBalance} (${balanceChange >= 0 ? '+' : ''}$${balanceChange})`);
+
+                } catch (error) {
+                    console.error('Update error for', update.email, ':', error);
+                    updateErrors.push(`Row ${update.rowNumber}: Database error for email ${update.email}`);
+                }
+            }
+
+            await pool.query('COMMIT');
+            console.log('✅ Transaction committed successfully');
+
+        } catch (error) {
+            await pool.query('ROLLBACK');
+            console.error('❌ Transaction rolled back:', error);
+            throw error;
+        }
+
+        // Delete the uploaded file
+        fs.unlinkSync(req.file.path);
+
+        // Prepare response
+        const response = {
+            message: 'Excel upload processed successfully',
+            summary: {
+                totalRows: data.length,
+                validUpdates: processedUpdates.length,
+                successfulUpdates: updateResults.length,
+                errors: errors.length + updateErrors.length
+            },
+            updates: updateResults,
+            errors: [...errors, ...updateErrors].slice(0, 20) // Limit errors in response
+        };
+
+        if (updateResults.length === 0) {
+            return res.status(400).json({
+                error: 'No successful updates',
+                ...response
+            });
+        }
+
+        res.json(response);
+
+    } catch (error) {
+        // Delete the uploaded file if it exists
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        
+        console.error('Excel upload error:', error);
+        res.status(500).json({ 
+            error: 'Internal server error while processing Excel file',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Admin route - Download Excel template for loan updates
+app.get('/api/admin/loans/excel-template', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        // Get actual users with loan accounts from database to create realistic template
+        const loanResult = await pool.query(`
+            SELECT u.email, la.account_number, la.current_balance 
+            FROM loan_accounts la 
+            JOIN users u ON la.user_id = u.id 
+            ORDER BY la.created_at DESC 
+            LIMIT 10
+        `);
+
+        let templateData;
+        
+        if (loanResult.rows.length > 0) {
+            // Use real loan data as examples
+            templateData = loanResult.rows.map((loan, index) => ({
+                email: loan.email,
+                account_number: loan.account_number,
+                current_balance: parseFloat(loan.current_balance),
+                new_balance: parseFloat(loan.current_balance) + (index % 2 === 0 ? 500 : -200), // Example adjustments
+                notes: index % 2 === 0 ? 'Monthly interest added' : 'Payment received'
+            }));
+        } else {
+            // Fallback to sample data if no loans exist
+            templateData = [
+                {
+                    email: 'user1@example.com',
+                    account_number: 'LOAN-1234567890-1',
+                    current_balance: 10000.00,
+                    new_balance: 10500.00,
+                    notes: 'Monthly interest added'
+                },
+                {
+                    email: 'user2@example.com',
+                    account_number: 'LOAN-1234567890-2', 
+                    current_balance: 15000.00,
+                    new_balance: 14800.00,
+                    notes: 'Payment received'
+                },
+                {
+                    email: 'user3@example.com',
+                    account_number: 'LOAN-1234567890-3', 
+                    current_balance: 8500.00,
+                    new_balance: 9000.00,
+                    notes: 'Interest adjustment'
+                },
+                {
+                    email: 'user4@example.com',
+                    account_number: 'LOAN-1234567890-4', 
+                    current_balance: 22000.00,
+                    new_balance: 21500.00,
+                    notes: 'Partial payment processed'
+                },
+                {
+                    email: 'user5@example.com',
+                    account_number: 'LOAN-1234567890-5', 
+                    current_balance: 5000.00,
+                    new_balance: 5250.00,
+                    notes: 'Monthly charge'
+                }
+            ];
+        }
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(templateData);
+
+        // Set column widths for better readability
+        ws['!cols'] = [
+            { width: 25 }, // email
+            { width: 25 }, // account_number
+            { width: 15 }, // current_balance  
+            { width: 15 }, // new_balance
+            { width: 30 }  // notes
+        ];
+
+        // Style the header row
+        const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1'];
+        headerCells.forEach(cell => {
+            if (ws[cell]) {
+                ws[cell].s = {
+                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "366092" } },
+                    alignment: { horizontal: "center" }
+                };
+            }
+        });
+
+        // Add the worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Loan Updates');
+
+        // Generate buffer
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+
+        // Set headers
+        res.setHeader('Content-Disposition', 'attachment; filename="loan_update_template.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        res.send(buffer);
+
+    } catch (error) {
+        console.error('Template generation error:', error);
+        res.status(500).json({ error: 'Failed to generate Excel template' });
     }
 });
 
