@@ -2,6 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
@@ -21,18 +22,54 @@ const pool = new Pool({
 // Make pool available to routes
 app.locals.pool = pool;
 
-// Middleware
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+        },
+    },
+    crossOriginEmbedderPolicy: false // Allow file uploads
+}));
+
+// CORS middleware
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     credentials: true
 }));
-app.use(express.json());
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Import middlewares
 const { authenticateToken, authenticateBasicToken, cleanupExpiredSessions } = require('./middleware/auth-2fa');
+const { generalRateLimit, authRateLimit, sensitiveRateLimit, uploadRateLimit, adminRateLimit } = require('./middleware/rateLimiting');
 
 // Import services
 const meetingService = require('./services/meetingService');
+
+// Apply rate limiting
+app.use('/api/', generalRateLimit); // General rate limit for all API endpoints
+
+// HTTPS enforcement middleware (production only)
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        if (req.header('x-forwarded-proto') !== 'https') {
+            res.redirect(`https://${req.header('host')}${req.url}`);
+        } else {
+            next();
+        }
+    });
+}
 
 // Apply session cleanup
 app.use(cleanupExpiredSessions);
@@ -88,11 +125,11 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// Authentication routes (with 2FA support)
-app.use('/api/auth', auth2faRoutes);
+// Authentication routes (with 2FA support) - with strict rate limiting
+app.use('/api/auth', authRateLimit, auth2faRoutes);
 
-// 2FA management routes
-app.use('/api/2fa', authenticateBasicToken, twoFARoutes);
+// 2FA management routes - with sensitive rate limiting
+app.use('/api/2fa', sensitiveRateLimit, authenticateBasicToken, twoFARoutes);
 
 // Example protected route
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
@@ -571,7 +608,7 @@ const authenticateAdmin = async (req, res, next) => {
 };
 
 // Admin route - Get all users
-app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/users', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT u.id, u.email, u.first_name, u.last_name, u.requires_2fa, u.last_login, u.created_at,
@@ -596,7 +633,7 @@ app.get('/api/admin/users', authenticateAdmin, async (req, res) => {
 });
 
 // Complete withdrawal request (subtract from balance and mark as completed)
-app.post('/api/admin/withdrawal-requests/:requestId/complete', authenticateAdmin, async (req, res) => {
+app.post('/api/admin/withdrawal-requests/:requestId/complete', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { requestId } = req.params;
         const adminUserId = req.user.userId;
@@ -669,7 +706,7 @@ app.post('/api/admin/withdrawal-requests/:requestId/complete', authenticateAdmin
 });
 
 // Admin route - Create loan account for user
-app.post('/api/admin/create-loan', authenticateAdmin, [
+app.post('/api/admin/create-loan', adminRateLimit, authenticateAdmin, [
     body('userId').isInt().withMessage('Valid user ID required'),
     body('principalAmount').isFloat({ min: 0 }).withMessage('Valid principal amount required'),
     body('monthlyRate').optional().isFloat({ min: 0, max: 1 }).withMessage('Monthly rate must be between 0 and 1')
@@ -747,7 +784,7 @@ app.post('/api/admin/create-loan', authenticateAdmin, [
 });
 
 // Admin route - Upload document for user
-app.post('/api/admin/documents/upload', authenticateAdmin, upload.single('document'), async (req, res) => {
+app.post('/api/admin/documents/upload', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('document'), async (req, res) => {
     try {
         const { title, category, userId } = req.body;
 
@@ -791,7 +828,7 @@ app.post('/api/admin/documents/upload', authenticateAdmin, upload.single('docume
 });
 
 // Admin route - Update loan account
-app.put('/api/admin/loans/:loanId', authenticateAdmin, [
+app.put('/api/admin/loans/:loanId', adminRateLimit, authenticateAdmin, [
     body('principalAmount').optional().isFloat({ min: 0 }).withMessage('Valid principal amount required'),
     body('currentBalance').optional().isFloat({ min: 0 }).withMessage('Valid current balance required'),
     body('monthlyRate').optional().isFloat({ min: 0, max: 1 }).withMessage('Monthly rate must be between 0 and 1'),
@@ -889,7 +926,7 @@ app.put('/api/admin/loans/:loanId', authenticateAdmin, [
 });
 
 // Admin route - Add transaction to loan account
-app.post('/api/admin/loans/:loanId/transactions', authenticateAdmin, [
+app.post('/api/admin/loans/:loanId/transactions', adminRateLimit, authenticateAdmin, [
     body('amount').isFloat().withMessage('Valid amount required'),
     body('transactionType').isIn(['loan', 'monthly_payment', 'bonus', 'withdrawal']).withMessage('Valid transaction type required'),
     body('description').optional().isString().withMessage('Description must be a string'),
@@ -980,7 +1017,7 @@ app.post('/api/admin/loans/:loanId/transactions', authenticateAdmin, [
 });
 
 // Admin route - Get loan transactions
-app.get('/api/admin/loans/:loanId/transactions', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/loans/:loanId/transactions', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { loanId } = req.params;
         const { limit = 50, offset = 0 } = req.query;
@@ -1027,7 +1064,7 @@ app.get('/api/admin/loans/:loanId/transactions', authenticateAdmin, async (req, 
 });
 
 // Admin route - Delete loan account
-app.delete('/api/admin/loans/:loanId', authenticateAdmin, async (req, res) => {
+app.delete('/api/admin/loans/:loanId', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { loanId } = req.params;
 
@@ -1064,7 +1101,7 @@ app.delete('/api/admin/loans/:loanId', authenticateAdmin, async (req, res) => {
 });
 
 // Admin route - Get user's loan accounts
-app.get('/api/admin/users/:userId/loans', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/users/:userId/loans', adminRateLimit, authenticateAdmin, async (req, res) => {
   try {
       const { userId } = req.params;
 
@@ -1126,7 +1163,7 @@ app.get('/api/documents', authenticateToken, async (req, res) => {
 });
 
 // Admin route - Get user's documents  
-app.get('/api/admin/users/:userId/documents', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/users/:userId/documents', adminRateLimit, authenticateAdmin, async (req, res) => {
   try {
       const { userId } = req.params;
 
@@ -1201,7 +1238,7 @@ app.get('/api/documents/:documentId/download', authenticateToken, async (req, re
 });
 
 // Admin document download (can download any document)
-app.get('/api/admin/documents/:documentId/download', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/documents/:documentId/download', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { documentId } = req.params;
 
@@ -1237,7 +1274,7 @@ app.get('/api/admin/documents/:documentId/download', authenticateAdmin, async (r
 });
 
 // Admin route - Get all transactions for a specific user
-app.get('/api/admin/users/:userId/transactions', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/users/:userId/transactions', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { limit = 50, offset = 0 } = req.query;
@@ -1298,7 +1335,7 @@ app.get('/api/admin/users/:userId/transactions', authenticateAdmin, async (req, 
 });
 
 // Admin route - Get all loans across all users
-app.get('/api/admin/loans', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/loans', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         // Get all loan accounts with user information
         const loansResult = await pool.query(`
@@ -1370,7 +1407,7 @@ app.get('/api/admin/loans', authenticateAdmin, async (req, res) => {
 });
 
 // Admin route - Toggle user account verification
-app.put('/api/admin/users/:userId/verify', authenticateAdmin, async (req, res) => {
+app.put('/api/admin/users/:userId/verify', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         const { verified } = req.body;
@@ -1591,7 +1628,7 @@ app.get('/api/meeting-requests', authenticateToken, async (req, res) => {
 });
 
 // Get all account verification requests (Admin only)
-app.get('/api/admin/verification-requests', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/verification-requests', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { status } = req.query;
         
@@ -1633,7 +1670,7 @@ app.get('/api/admin/verification-requests', authenticateAdmin, async (req, res) 
 });
 
 // Approve/reject account verification request (Admin only)
-app.put('/api/admin/verification-requests/:requestId', authenticateAdmin, async (req, res) => {
+app.put('/api/admin/verification-requests/:requestId', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { requestId } = req.params;
         const { status, admin_notes } = req.body;
@@ -1714,7 +1751,7 @@ app.put('/api/admin/verification-requests/:requestId', authenticateAdmin, async 
 });
 
 // Admin route - Get all withdrawal requests
-app.get('/api/admin/withdrawal-requests', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/withdrawal-requests', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { status, limit = 50, offset = 0 } = req.query;
 
@@ -1747,7 +1784,7 @@ app.get('/api/admin/withdrawal-requests', authenticateAdmin, async (req, res) =>
 });
 
 // Admin route - Update withdrawal request status
-app.put('/api/admin/withdrawal-requests/:requestId', authenticateAdmin, [
+app.put('/api/admin/withdrawal-requests/:requestId', adminRateLimit, authenticateAdmin, [
     body('status').isIn(['pending', 'approved', 'rejected', 'processed']).withMessage('Invalid status'),
     body('admin_notes').optional().isString().withMessage('Admin notes must be a string')
 ], async (req, res) => {
@@ -1786,7 +1823,7 @@ app.put('/api/admin/withdrawal-requests/:requestId', authenticateAdmin, [
 
 
 // Admin route - Get all meeting requests
-app.get('/api/admin/meeting-requests', authenticateAdmin, async (req, res) => {
+app.get('/api/admin/meeting-requests', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
         const { status, limit = 50, offset = 0 } = req.query;
 
@@ -1817,7 +1854,7 @@ app.get('/api/admin/meeting-requests', authenticateAdmin, async (req, res) => {
 });
 
 // Admin route - Update meeting request status
-app.put('/api/admin/meeting-requests/:requestId', authenticateAdmin, [
+app.put('/api/admin/meeting-requests/:requestId', adminRateLimit, authenticateAdmin, [
     body('status').isIn(['pending', 'scheduled', 'completed', 'cancelled']).withMessage('Invalid status'),
     body('scheduled_date').optional().isISO8601().withMessage('Valid scheduled date required'),
     body('scheduled_time').optional().matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid time format required'),
