@@ -53,7 +53,7 @@ const PublicNavigation: React.FC = () => {
         right: 0,
         background: 'rgba(31, 41, 55, 0.95)',
         backdropFilter: 'blur(30px)',
-        borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
+        borderBottom: '1px solid rgba(111, 92, 242, 0.2)',
         zIndex: 1000,
         height: { xs: '70px', sm: '80px', md: '90px' },
         display: 'flex',
@@ -65,7 +65,7 @@ const PublicNavigation: React.FC = () => {
           left: 0,
           right: 0,
           height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.8), transparent)',
         }
       }}
     >
@@ -120,13 +120,13 @@ const PublicNavigation: React.FC = () => {
                   px: { xs: 2, sm: 3, md: 3 },
                   py: { xs: 0.8, sm: 1, md: 1.2 },
                   borderRadius: '8px',
-                  borderColor: 'rgba(107, 70, 193, 0.3)',
+                  borderColor: 'rgba(111, 92, 242, 0.3)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     background: 'rgba(75, 85, 99, 0.8)',
-                    borderColor: 'rgba(107, 70, 193, 0.6)',
+                    borderColor: 'rgba(111, 92, 242, 0.6)',
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 20px rgba(107, 70, 193, 0.3)',
+                    boxShadow: '0 8px 20px rgba(111, 92, 242, 0.3)',
                   },
                 }}
               >

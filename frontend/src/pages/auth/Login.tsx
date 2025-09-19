@@ -31,7 +31,7 @@ import {
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.2), rgba(147, 51, 234, 0.2))',
+  background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.2), rgba(111, 92, 242, 0.2))',
   filter: 'blur(60px)',
   animation: `${keyframes`
     0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
@@ -41,7 +41,7 @@ const FloatingOrb = styled(Box)(({ theme }) => ({
 }));
 
 const HeroGradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+  background: 'linear-gradient(135deg, #F9FAFB 0%, #8f7cf6 50%, #EC4899 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -172,7 +172,7 @@ const Login: React.FC = () => {
                 mx: 'auto',
                 backdropFilter: 'blur(30px)',
                 background: 'rgba(31, 41, 55, 0.8)',
-                border: '1px solid rgba(107, 70, 193, 0.3)',
+                border: '1px solid rgba(111, 92, 242, 0.3)',
                 borderRadius: '24px',
                 boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                 position: 'relative',
@@ -184,7 +184,7 @@ const Login: React.FC = () => {
                   left: 0,
                   right: 0,
                   height: '2px',
-                  background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+                  background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.8), transparent)',
                 },
               }}
             >
@@ -198,12 +198,12 @@ const Login: React.FC = () => {
                         height: 80,
                         mx: 'auto',
                         mb: 3,
-                        background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                        background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)',
                         borderRadius: '20px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 10px 30px rgba(107, 70, 193, 0.4)',
+                        boxShadow: '0 10px 30px rgba(111, 92, 242, 0.4)',
                         animation: `${keyframes`
                           0%, 100% { transform: translateY(0); }
                           50% { transform: translateY(-5px); }
@@ -412,11 +412,11 @@ const Login: React.FC = () => {
                             fontWeight: 600,
                             padding: '8px 16px',
                             borderRadius: '8px',
-                            background: 'rgba(107, 70, 193, 0.1)',
-                            border: '1px solid rgba(107, 70, 193, 0.2)',
+                            background: 'rgba(111, 92, 242, 0.1)',
+                            border: '1px solid rgba(111, 92, 242, 0.2)',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             '&:hover': {
-                              background: 'rgba(107, 70, 193, 0.2)',
+                              background: 'rgba(111, 92, 242, 0.2)',
                               transform: 'translateY(-2px)',
                               textDecoration: 'none',
                             },
@@ -442,7 +442,7 @@ const Login: React.FC = () => {
                             fontWeight: 500,
                             '&:hover': {
                               color: 'primary.main',
-                              backgroundColor: 'rgba(107, 70, 193, 0.1)',
+                              backgroundColor: 'rgba(111, 92, 242, 0.1)',
                             },
                           }}
                         >

@@ -639,7 +639,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
     <Card sx={{
       background: 'rgba(31, 41, 55, 0.6)',
       backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(107, 70, 193, 0.3)',
+      border: '1px solid rgba(111, 92, 242, 0.3)',
       borderRadius: '16px',
       boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
     }}>
@@ -991,7 +991,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
             mb: 3,
             background: 'rgba(15, 23, 42, 0.6)',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(107, 70, 193, 0.3)',
+            border: '1px solid rgba(111, 92, 242, 0.3)',
             borderRadius: '12px !important',
             '&:before': { display: 'none' }
           }}
@@ -1159,7 +1159,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
         PaperProps={{
           sx: {
             background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
-            border: '1px solid rgba(107, 70, 193, 0.3)',
+            border: '1px solid rgba(111, 92, 242, 0.3)',
             borderRadius: '20px',
             boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
           }

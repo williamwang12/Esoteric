@@ -40,7 +40,7 @@ const AnimatedProgress = styled(CircularProgress)(({ theme }) => ({
 
 const LoadingText = styled(Typography)(({ theme }) => ({
   animation: `${FloatAnimation} 3s ease-in-out infinite`,
-  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+  background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -56,7 +56,7 @@ const LoadingDots = styled(Box)(({ theme }) => ({
     width: 8,
     height: 8,
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #6B46C1, #9333EA)',
+    background: 'linear-gradient(135deg, #6f5cf2, #6f5cf2)',
     animation: `${PulseAnimation} 1.4s ease-in-out infinite`,
     '&:nth-of-type(1)': { animationDelay: '0s' },
     '&:nth-of-type(2)': { animationDelay: '0.2s' },
@@ -92,7 +92,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
             width: size * 1.5,
             height: size * 1.5,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(107, 70, 193, 0.2) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(111, 92, 242, 0.2) 0%, transparent 70%)',
             animation: `${PulseAnimation} 2s ease-in-out infinite`,
           }}
         />
@@ -102,7 +102,7 @@ const EnhancedLoader: React.FC<EnhancedLoaderProps> = ({
           thickness={4}
           sx={{
             color: 'primary.main',
-            filter: 'drop-shadow(0 0 10px rgba(107, 70, 193, 0.3))',
+            filter: 'drop-shadow(0 0 10px rgba(111, 92, 242, 0.3))',
           }}
         />
       </Box>

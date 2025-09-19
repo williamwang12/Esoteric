@@ -67,7 +67,7 @@ import ExcelUpload from '../../components/admin/ExcelUpload';
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(147, 51, 234, 0.15))',
+  background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(111, 92, 242, 0.15))',
   filter: 'blur(80px)',
   animation: `${keyframes`
     0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
@@ -1212,7 +1212,7 @@ const AdminDashboard: React.FC = () => {
                             variant="fullWidth"
                             sx={{
                               '& .MuiTabs-indicator': {
-                                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                               },
                               '& .MuiTab-root': {
                                 textTransform: 'none',
@@ -1272,7 +1272,7 @@ const AdminDashboard: React.FC = () => {
                                           <TableCell sx={{ 
                                             fontFamily: 'monospace', 
                                             fontWeight: 600, 
-                                            color: '#6B46C1',
+                                            color: '#6f5cf2',
                                             borderBottom: '1px solid #333'
                                           }}>
                                             {loan.account_number}
@@ -1302,9 +1302,9 @@ const AdminDashboard: React.FC = () => {
                                                 onClick={() => handleEditLoan(loan)}
                                                 title="Edit Loan"
                                                 sx={{ 
-                                                  color: '#6B46C1',
+                                                  color: '#6f5cf2',
                                                   '&:hover': { 
-                                                    backgroundColor: '#6B46C1', 
+                                                    backgroundColor: '#6f5cf2', 
                                                     color: 'white',
                                                     transform: 'scale(1.1)'
                                                   },
@@ -1345,7 +1345,7 @@ const AdminDashboard: React.FC = () => {
                                   border: '2px dashed #444',
                                   boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
                                 }}>
-                                  <AccountBalance sx={{ fontSize: 48, color: '#6B46C1', mb: 2 }} />
+                                  <AccountBalance sx={{ fontSize: 48, color: '#6f5cf2', mb: 2 }} />
                                   <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
                                     No Loan Account
                                   </Typography>
@@ -1358,10 +1358,10 @@ const AdminDashboard: React.FC = () => {
                                     onClick={() => setCreateLoanDialogOpen(true)}
                                     size="large"
                                     sx={{ 
-                                      background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                      background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                                       boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
                                       '&:hover': {
-                                        background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                                        background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                                         boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
                                         transform: 'translateY(-1px)',
                                       },
@@ -1385,10 +1385,10 @@ const AdminDashboard: React.FC = () => {
                                     startIcon={<Add />}
                                     onClick={() => handleAddTransaction(userLoans[0])}
                                     sx={{ 
-                                      background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                      background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                                       boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
                                       '&:hover': {
-                                        background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                                        background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                                         boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
                                         transform: 'translateY(-1px)',
                                       },
@@ -1501,10 +1501,10 @@ const AdminDashboard: React.FC = () => {
                                     setUploadDialogOpen(true);
                                   }}
                                   sx={{ 
-                                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                                    background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                                     boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
                                     '&:hover': {
-                                      background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                                      background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                                       boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
                                       transform: 'translateY(-1px)',
                                     },
@@ -1538,7 +1538,7 @@ const AdminDashboard: React.FC = () => {
                                           '&:hover': { backgroundColor: '#333' },
                                           backgroundColor: '#1a1a1a'
                                         }}>
-                                          <TableCell sx={{ fontWeight: 600, color: '#6B46C1', borderBottom: '1px solid #333' }}>
+                                          <TableCell sx={{ fontWeight: 600, color: '#6f5cf2', borderBottom: '1px solid #333' }}>
                                             {doc.title}
                                           </TableCell>
                                           <TableCell sx={{ borderBottom: '1px solid #333' }}>
@@ -1549,7 +1549,7 @@ const AdminDashboard: React.FC = () => {
                                                 fontWeight: 600, 
                                                 textTransform: 'capitalize',
                                                 backgroundColor: '#374151',
-                                                color: '#9333EA',
+                                                color: '#6f5cf2',
                                                 border: '1px solid #4B5563'
                                               }}
                                             />
@@ -1567,9 +1567,9 @@ const AdminDashboard: React.FC = () => {
                                                 onClick={() => handleDocumentDownload(doc.id, doc.title)}
                                                 title="Download Document"
                                                 sx={{ 
-                                                  color: '#6B46C1',
+                                                  color: '#6f5cf2',
                                                   '&:hover': { 
-                                                    backgroundColor: '#6B46C1', 
+                                                    backgroundColor: '#6f5cf2', 
                                                     color: 'white',
                                                     transform: 'scale(1.1)'
                                                   },
@@ -1610,7 +1610,7 @@ const AdminDashboard: React.FC = () => {
                                   border: '2px dashed #444',
                                   boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
                                 }}>
-                                  <Description sx={{ fontSize: 48, color: '#9333EA', mb: 2 }} />
+                                  <Description sx={{ fontSize: 48, color: '#6f5cf2', mb: 2 }} />
                                   <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
                                     No Documents
                                   </Typography>
@@ -2440,7 +2440,7 @@ const AdminDashboard: React.FC = () => {
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -2536,7 +2536,7 @@ const AdminDashboard: React.FC = () => {
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -2613,9 +2613,9 @@ const AdminDashboard: React.FC = () => {
             disabled={savingLoan}
             startIcon={savingLoan ? <CircularProgress size={16} /> : <Save />}
             sx={{ 
-              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+              background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
               }
             }}
           >
@@ -2898,7 +2898,7 @@ const AdminDashboard: React.FC = () => {
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -2938,16 +2938,16 @@ const AdminDashboard: React.FC = () => {
                         borderColor: '#444',
                       },
                       '&:hover fieldset': {
-                        borderColor: '#6B46C1',
+                        borderColor: '#6f5cf2',
                       },
                       '&.Mui-focused fieldset': {
-                        borderColor: '#6B46C1',
+                        borderColor: '#6f5cf2',
                       },
                     },
                     '& .MuiInputLabel-root': {
                       color: '#9ca3af',
                       '&.Mui-focused': {
-                        color: '#6B46C1',
+                        color: '#6f5cf2',
                       },
                     },
                     '& .MuiInputBase-input': {
@@ -2976,16 +2976,16 @@ const AdminDashboard: React.FC = () => {
                         borderColor: '#444',
                       },
                       '&:hover fieldset': {
-                        borderColor: '#6B46C1',
+                        borderColor: '#6f5cf2',
                       },
                       '&.Mui-focused fieldset': {
-                        borderColor: '#6B46C1',
+                        borderColor: '#6f5cf2',
                       },
                     },
                     '& .MuiInputLabel-root': {
                       color: '#9ca3af',
                       '&.Mui-focused': {
-                        color: '#6B46C1',
+                        color: '#6f5cf2',
                       },
                     },
                     '& .MuiInputBase-input': {
@@ -3013,9 +3013,9 @@ const AdminDashboard: React.FC = () => {
             disabled={!createLoanForm.principalAmount || creatingLoan}
             startIcon={creatingLoan ? <CircularProgress size={16} /> : <AccountBalance />}
             sx={{ 
-              background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+              background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
               }
             }}
           >
@@ -3039,7 +3039,7 @@ const AdminDashboard: React.FC = () => {
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -3151,13 +3151,13 @@ const AdminDashboard: React.FC = () => {
         PaperProps={{
           sx: {
             background: '#1a1a1a',
-            border: '1px solid rgba(107, 70, 193, 0.3)',
+            border: '1px solid rgba(111, 92, 242, 0.3)',
             borderRadius: '16px',
           }
         }}
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -3173,7 +3173,7 @@ const AdminDashboard: React.FC = () => {
                 {verificationAction === 'approved' ? 'Approve' : 'Reject'} Account Verification
               </Typography>
               
-              <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%)', borderRadius: 2, border: '1px solid rgba(107, 70, 193, 0.2)' }}>
+              <Box sx={{ mb: 3, p: 3, background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.05) 0%, rgba(111, 92, 242, 0.05) 100%)', borderRadius: 2, border: '1px solid rgba(111, 92, 242, 0.2)' }}>
                 <Typography variant="h6" gutterBottom>
                   {selectedVerificationRequest.first_name} {selectedVerificationRequest.last_name}
                 </Typography>

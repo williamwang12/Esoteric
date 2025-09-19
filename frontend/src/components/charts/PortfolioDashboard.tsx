@@ -269,7 +269,7 @@ const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({ analytics, loan
       {/* Key Performance Indicators */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 3, mb: 4 }}>
         <Fade in={isVisible} timeout={800}>
-          <Card sx={{ background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)', color: 'white' }}>
+          <Card sx={{ background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)', color: 'white' }}>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <TrendingUp sx={{ fontSize: 32, mr: 1 }} />

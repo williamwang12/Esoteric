@@ -33,7 +33,7 @@ import PublicNavigation from '../components/common/PublicNavigation';
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.2), rgba(147, 51, 234, 0.2))',
+  background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.2), rgba(111, 92, 242, 0.2))',
   filter: 'blur(60px)',
   animation: `${keyframes`
     0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.8; }
@@ -55,7 +55,7 @@ const FeatureCard = styled(Card)(({ theme }) => ({
   height: '100%',
   background: 'rgba(31, 41, 55, 0.8)',
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(107, 70, 193, 0.2)',
+  border: '1px solid rgba(111, 92, 242, 0.2)',
   borderRadius: '24px',
   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
   position: 'relative',
@@ -67,24 +67,24 @@ const FeatureCard = styled(Card)(({ theme }) => ({
     left: 0,
     right: 0,
     height: '2px',
-    background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.6), transparent)',
+    background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.6), transparent)',
   },
   '&:hover': {
     transform: 'translateY(-8px)',
-    boxShadow: '0 25px 50px rgba(107, 70, 193, 0.3), 0 0 0 1px rgba(107, 70, 193, 0.4)',
-    border: '1px solid rgba(107, 70, 193, 0.4)',
+    boxShadow: '0 25px 50px rgba(111, 92, 242, 0.3), 0 0 0 1px rgba(111, 92, 242, 0.4)',
+    border: '1px solid rgba(111, 92, 242, 0.4)',
   },
 }));
 
 const StatsCard = styled(Card)(({ theme }) => ({
-  background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(107, 70, 193, 0.1))',
+  background: 'linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(111, 92, 242, 0.1))',
   backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(107, 70, 193, 0.3)',
+  border: '1px solid rgba(111, 92, 242, 0.3)',
   borderRadius: '20px',
   transition: 'all 0.3s ease-in-out',
   '&:hover': {
     transform: 'scale(1.05)',
-    boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
+    boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
   },
 }));
 
@@ -185,11 +185,11 @@ const LandingPage: React.FC = () => {
                     px: 4,
                     fontSize: '1.2rem',
                     fontWeight: 600,
-                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                    boxShadow: '0 8px 24px rgba(107, 70, 193, 0.4)',
+                    background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)',
+                    boxShadow: '0 8px 24px rgba(111, 92, 242, 0.4)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #553C9A 0%, #7C3AED 50%, #8B5CF6 100%)',
-                      boxShadow: '0 12px 32px rgba(107, 70, 193, 0.6)',
+                      background: 'linear-gradient(135deg, #5a4cd8 0%, #6f5cf2 50%, #8f7cf6 100%)',
+                      boxShadow: '0 12px 32px rgba(111, 92, 242, 0.6)',
                       transform: 'translateY(-2px)',
                     },
                   }}
@@ -210,12 +210,12 @@ const LandingPage: React.FC = () => {
                     px: 4,
                     fontSize: '1.1rem',
                     fontWeight: 600,
-                    borderColor: 'rgba(107, 70, 193, 0.5)',
-                    color: '#6B46C1',
-                    background: 'rgba(107, 70, 193, 0.05)',
+                    borderColor: 'rgba(111, 92, 242, 0.5)',
+                    color: '#6f5cf2',
+                    background: 'rgba(111, 92, 242, 0.05)',
                     '&:hover': {
-                      borderColor: '#6B46C1',
-                      backgroundColor: 'rgba(107, 70, 193, 0.15)',
+                      borderColor: '#6f5cf2',
+                      backgroundColor: 'rgba(111, 92, 242, 0.15)',
                       transform: 'translateY(-2px)',
                     },
                   }}
@@ -244,7 +244,7 @@ const LandingPage: React.FC = () => {
                         display: 'inline-flex',
                         p: 2,
                         borderRadius: 3,
-                        background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                        background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                         color: 'white',
                         mb: 2,
                       }}
@@ -395,9 +395,9 @@ const LandingPage: React.FC = () => {
                     fontSize: '1.1rem',
                     fontWeight: 600,
                     textTransform: 'none',
-                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                    background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #553C9A 0%, #7C3AED 50%, #8B5CF6 100%)',
+                      background: 'linear-gradient(135deg, #5a4cd8 0%, #6f5cf2 50%, #8f7cf6 100%)',
                       transform: 'translateY(-2px)',
                     },
                   }}
@@ -411,7 +411,7 @@ const LandingPage: React.FC = () => {
                   borderRadius: 4,
                   overflow: 'hidden',
                   background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                  border: '2px solid rgba(107, 70, 193, 0.3)',
+                  border: '2px solid rgba(111, 92, 242, 0.3)',
                   p: 4,
                 }}
               >
@@ -430,8 +430,8 @@ const LandingPage: React.FC = () => {
                         sx={{
                           p: 2,
                           borderRadius: 2,
-                          background: 'rgba(107, 70, 193, 0.2)',
-                          color: '#A855F7',
+                          background: 'rgba(111, 92, 242, 0.2)',
+                          color: '#8f7cf6',
                         }}
                       >
                         {highlight.icon}
@@ -457,8 +457,8 @@ const LandingPage: React.FC = () => {
       <Box
         sx={{
           py: 8,
-          background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)',
-          borderTop: '1px solid rgba(107, 70, 193, 0.2)',
+          background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.1) 0%, rgba(111, 92, 242, 0.1) 100%)',
+          borderTop: '1px solid rgba(111, 92, 242, 0.2)',
         }}
       >
         <Container maxWidth="md">
@@ -491,11 +491,11 @@ const LandingPage: React.FC = () => {
                   px: 5,
                   fontSize: '1.2rem',
                   fontWeight: 600,
-                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
-                  boxShadow: '0 8px 24px rgba(107, 70, 193, 0.4)',
+                  background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)',
+                  boxShadow: '0 8px 24px rgba(111, 92, 242, 0.4)',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #553C9A 0%, #7C3AED 50%, #8B5CF6 100%)',
-                    boxShadow: '0 12px 32px rgba(107, 70, 193, 0.6)',
+                    background: 'linear-gradient(135deg, #5a4cd8 0%, #6f5cf2 50%, #8f7cf6 100%)',
+                    boxShadow: '0 12px 32px rgba(111, 92, 242, 0.6)',
                     transform: 'translateY(-2px)',
                   },
                 }}
@@ -512,12 +512,12 @@ const LandingPage: React.FC = () => {
                   px: 5,
                   fontSize: '1.1rem',
                   fontWeight: 600,
-                  borderColor: 'rgba(107, 70, 193, 0.5)',
-                  color: '#6B46C1',
-                  background: 'rgba(107, 70, 193, 0.05)',
+                  borderColor: 'rgba(111, 92, 242, 0.5)',
+                  color: '#6f5cf2',
+                  background: 'rgba(111, 92, 242, 0.05)',
                   '&:hover': {
-                    borderColor: '#6B46C1',
-                    backgroundColor: 'rgba(107, 70, 193, 0.15)',
+                    borderColor: '#6f5cf2',
+                    backgroundColor: 'rgba(111, 92, 242, 0.15)',
                     transform: 'translateY(-2px)',
                   },
                 }}
@@ -533,7 +533,7 @@ const LandingPage: React.FC = () => {
       <Box
         sx={{
           py: 4,
-          borderTop: '1px solid rgba(107, 70, 193, 0.2)',
+          borderTop: '1px solid rgba(111, 92, 242, 0.2)',
           background: 'rgba(31, 41, 55, 0.9)',
         }}
       >

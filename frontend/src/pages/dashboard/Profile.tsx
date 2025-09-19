@@ -44,7 +44,7 @@ import { useNavigate } from 'react-router-dom';
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.15), rgba(147, 51, 234, 0.15))',
+  background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.15), rgba(111, 92, 242, 0.15))',
   filter: 'blur(80px)',
   animation: `${keyframes`
     0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
@@ -276,7 +276,7 @@ const Profile: React.FC = () => {
         backdropFilter: 'blur(20px)',
         color: 'white',
         py: 2,
-        borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
+        borderBottom: '1px solid rgba(111, 92, 242, 0.2)',
         zIndex: 1000
       }}>
         <Container maxWidth="lg">
@@ -306,7 +306,7 @@ const Profile: React.FC = () => {
             }}>
               <Typography variant="h4" sx={{ 
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                background: 'linear-gradient(135deg, #F9FAFB 0%, #8f7cf6 50%, #EC4899 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
@@ -342,7 +342,7 @@ const Profile: React.FC = () => {
                 mb: 3,
                 background: 'rgba(31, 41, 55, 0.8)',
                 backdropFilter: 'blur(30px)',
-                border: '1px solid rgba(107, 70, 193, 0.3)',
+                border: '1px solid rgba(111, 92, 242, 0.3)',
                 borderRadius: '24px',
                 boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                 position: 'relative',
@@ -350,7 +350,7 @@ const Profile: React.FC = () => {
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 30px 60px rgba(107, 70, 193, 0.2)'
+                  boxShadow: '0 30px 60px rgba(111, 92, 242, 0.2)'
                 },
                 '&::before': {
                   content: '""',
@@ -359,7 +359,7 @@ const Profile: React.FC = () => {
                   left: 0,
                   right: 0,
                   height: '2px',
-                  background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+                  background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.8), transparent)',
                 }
               }}>
                 <CardContent sx={{ p: 4 }}>
@@ -368,7 +368,7 @@ const Profile: React.FC = () => {
                       variant="h4" 
                       sx={{ 
                         fontWeight: 800, 
-                        background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                        background: 'linear-gradient(135deg, #F9FAFB 0%, #8f7cf6 50%, #EC4899 100%)',
                         backgroundClip: 'text',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
@@ -388,7 +388,7 @@ const Profile: React.FC = () => {
                     height: 'fit-content',
                     background: 'rgba(31, 41, 55, 0.8)',
                     backdropFilter: 'blur(30px)',
-                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '20px',
                     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)',
                     position: 'relative',
@@ -396,7 +396,7 @@ const Profile: React.FC = () => {
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 25px 50px rgba(107, 70, 193, 0.2)'
+                      boxShadow: '0 25px 50px rgba(111, 92, 242, 0.2)'
                     },
                     '&::before': {
                       content: '""',
@@ -405,13 +405,13 @@ const Profile: React.FC = () => {
                       left: 0,
                       right: 0,
                       height: '1px',
-                      background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.6), transparent)',
+                      background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.6), transparent)',
                     }
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
                         <Box sx={{ 
-                          background: 'linear-gradient(135deg, #6B46C1, #9333EA)', 
+                          background: 'linear-gradient(135deg, #6f5cf2, #6f5cf2)', 
                           borderRadius: '12px', 
                           p: 1.5, 
                           mr: 2,
@@ -614,7 +614,7 @@ const Profile: React.FC = () => {
                   <CardContent sx={{ p: 4 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
                       <Box sx={{ 
-                        background: 'linear-gradient(135deg, #6B46C1, #9333EA)', 
+                        background: 'linear-gradient(135deg, #6f5cf2, #6f5cf2)', 
                         borderRadius: '12px', 
                         p: 1.5, 
                         mr: 2,
@@ -656,9 +656,9 @@ const Profile: React.FC = () => {
                           disabled={verificationRequestLoading || verificationRequestSent}
                           startIcon={verificationRequestLoading ? <CircularProgress size={16} /> : <Verified />}
                           sx={{ 
-                            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                            background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                             '&:hover': {
-                              background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                              background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                             }
                           }}
                         >
@@ -690,9 +690,9 @@ const Profile: React.FC = () => {
                         disabled={twoFALoading}
                         startIcon={twoFALoading ? <CircularProgress size={16} /> : <Security />}
                         sx={{ 
-                          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                           '&:hover': {
-                            background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                            background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                           }
                         }}
                       >
@@ -723,14 +723,14 @@ const Profile: React.FC = () => {
             sx: {
               background: 'rgba(31, 41, 55, 0.95)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(107, 70, 193, 0.3)',
+              border: '1px solid rgba(111, 92, 242, 0.3)',
               borderRadius: '20px',
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
             }
           }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+            background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -779,7 +779,7 @@ const Profile: React.FC = () => {
                   variant="body1" 
                   sx={{ 
                     fontFamily: 'monospace', 
-                    background: 'rgba(107, 70, 193, 0.1)',
+                    background: 'rgba(111, 92, 242, 0.1)',
                     p: 2,
                     borderRadius: '8px',
                     mb: 3,
@@ -845,9 +845,9 @@ const Profile: React.FC = () => {
               startIcon={twoFALoading ? <CircularProgress size={16} /> : <Security />}
               color={twoFAStatus?.isEnabled ? "error" : "primary"}
               sx={!twoFAStatus?.isEnabled ? { 
-                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                  background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                 }
               } : undefined}
             >
@@ -867,14 +867,14 @@ const Profile: React.FC = () => {
             sx: {
               background: 'rgba(31, 41, 55, 0.95)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(107, 70, 193, 0.3)',
+              border: '1px solid rgba(111, 92, 242, 0.3)',
               borderRadius: '20px',
               boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
             }
           }}
         >
           <DialogTitle sx={{ 
-            background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+            background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
             color: 'white',
             display: 'flex',
             alignItems: 'center',
@@ -923,9 +923,9 @@ const Profile: React.FC = () => {
               disabled={saving || !editForm.firstName || !editForm.lastName}
               startIcon={saving ? <CircularProgress size={16} /> : <Save />}
               sx={{ 
-                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #553C9A 0%, #7C2D92 100%)',
+                  background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
                 }
               }}
             >

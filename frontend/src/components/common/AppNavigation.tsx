@@ -137,7 +137,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
         sx={{
           background: 'rgba(31, 41, 55, 0.9)',
           backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(107, 70, 193, 0.2)',
+          borderBottom: '1px solid rgba(111, 92, 242, 0.2)',
           position: 'relative',
           '&::before': {
             content: '""',
@@ -146,7 +146,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             left: 0,
             right: 0,
             height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.8), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.8), transparent)',
           }
         }}
       >
@@ -292,7 +292,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                 sx={{
                   width: { xs: 32, sm: 36, md: 40 },
                   height: { xs: 32, sm: 36, md: 40 },
-                  background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                  background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                   fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
                   fontWeight: 600,
                 }}
@@ -312,7 +312,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                   minWidth: 180,
                   background: 'rgba(31, 41, 55, 0.95)',
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(107, 70, 193, 0.3)',
+                  border: '1px solid rgba(111, 92, 242, 0.3)',
                   borderRadius: '12px',
                   boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
                   '& .MuiMenuItem-root': {
@@ -321,7 +321,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                     borderRadius: '8px',
                     mx: 1,
                     '&:hover': {
-                      background: 'rgba(107, 70, 193, 0.2)',
+                      background: 'rgba(111, 92, 242, 0.2)',
                     },
                   },
                 },
@@ -353,7 +353,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
               background: 'rgba(31, 41, 55, 0.98)',
               backdropFilter: 'blur(20px)',
               border: 'none',
-              borderRight: '1px solid rgba(107, 70, 193, 0.3)',
+              borderRight: '1px solid rgba(111, 92, 242, 0.3)',
               color: 'white',
             },
           }}
@@ -364,7 +364,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             alignItems: 'center', 
             justifyContent: 'space-between',
             p: { xs: 1.5, sm: 2 },
-            borderBottom: '1px solid rgba(107, 70, 193, 0.3)'
+            borderBottom: '1px solid rgba(111, 92, 242, 0.3)'
           }}>
             <GradientText variant="h6" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               ESOTERIC
@@ -386,13 +386,13 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             alignItems: 'center', 
             gap: { xs: 1.5, sm: 2 },
             p: { xs: 1.5, sm: 2 },
-            borderBottom: '1px solid rgba(107, 70, 193, 0.3)'
+            borderBottom: '1px solid rgba(111, 92, 242, 0.3)'
           }}>
             <Avatar
               sx={{
                 width: { xs: 40, sm: 48 },
                 height: { xs: 40, sm: 48 },
-                background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                 fontSize: { xs: '0.9rem', sm: '1rem' }
               }}
             >
@@ -427,13 +427,13 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                     mx: { xs: 0.5, sm: 1 },
                     borderRadius: '8px',
                     '&.Mui-selected': {
-                      background: 'rgba(107, 70, 193, 0.3)',
+                      background: 'rgba(111, 92, 242, 0.3)',
                       '&:hover': {
-                        background: 'rgba(107, 70, 193, 0.4)',
+                        background: 'rgba(111, 92, 242, 0.4)',
                       },
                     },
                     '&:hover': {
-                      background: 'rgba(107, 70, 193, 0.1)',
+                      background: 'rgba(111, 92, 242, 0.1)',
                     },
                   }}
                 >
@@ -459,7 +459,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
           </List>
 
           {/* Mobile Menu Footer Actions */}
-          <Box sx={{ borderTop: '1px solid rgba(107, 70, 193, 0.3)' }}>
+          <Box sx={{ borderTop: '1px solid rgba(111, 92, 242, 0.3)' }}>
             <ListItem disablePadding>
               <ListItemButton onClick={handleProfileClick} sx={{ 
                 py: { xs: 1, sm: 1.5 }, 

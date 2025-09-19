@@ -65,7 +65,7 @@ import { documentsApi, loansApi } from '../../services/api';
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(107, 70, 193, 0.15), rgba(147, 51, 234, 0.15))',
+  background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.15), rgba(111, 92, 242, 0.15))',
   filter: 'blur(80px)',
   animation: `${keyframes`
     0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
@@ -360,7 +360,7 @@ const Dashboard: React.FC = () => {
               component="h1" 
               gutterBottom
               sx={{
-                background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+                background: 'linear-gradient(135deg, #F9FAFB 0%, #8f7cf6 50%, #EC4899 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -407,9 +407,9 @@ const Dashboard: React.FC = () => {
               display: 'flex', 
               justifyContent: 'center', 
               py: 8,
-              background: 'rgba(107, 70, 193, 0.02)',
+              background: 'rgba(111, 92, 242, 0.02)',
               borderRadius: '20px',
-              border: '1px solid rgba(107, 70, 193, 0.1)',
+              border: '1px solid rgba(111, 92, 242, 0.1)',
               backdropFilter: 'blur(10px)',
             }}>
               <Box sx={{ textAlign: 'center' }}>
@@ -437,7 +437,7 @@ const Dashboard: React.FC = () => {
                     thickness={4}
                     sx={{ 
                       color: 'primary.main',
-                      filter: 'drop-shadow(0 0 10px rgba(107, 70, 193, 0.4))',
+                      filter: 'drop-shadow(0 0 10px rgba(111, 92, 242, 0.4))',
                     }}
                   />
                 </Box>
@@ -445,7 +445,7 @@ const Dashboard: React.FC = () => {
                   variant="h6" 
                   sx={{ 
                     mt: 3,
-                    background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                    background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -471,7 +471,7 @@ const Dashboard: React.FC = () => {
                 <Card
                   sx={{
                     background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
-                    border: '2px solid rgba(107, 70, 193, 0.3)',
+                    border: '2px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '24px',
                     overflow: 'hidden',
                     position: 'relative',
@@ -484,7 +484,7 @@ const Dashboard: React.FC = () => {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      background: 'linear-gradient(45deg, rgba(107, 70, 193, 0.1) 0%, transparent 50%, rgba(147, 51, 234, 0.1) 100%)',
+                      background: 'linear-gradient(45deg, rgba(111, 92, 242, 0.1) 0%, transparent 50%, rgba(111, 92, 242, 0.1) 100%)',
                       pointerEvents: 'none'
                     }
                   }}
@@ -494,8 +494,8 @@ const Dashboard: React.FC = () => {
                       <AccountBalance 
                         sx={{ 
                           fontSize: 80, 
-                          color: '#A855F7',
-                          filter: 'drop-shadow(0 4px 12px rgba(168, 85, 247, 0.4))',
+                          color: '#8f7cf6',
+                          filter: 'drop-shadow(0 4px 12px rgba(143, 124, 246, 0.4))',
                           mb: 2
                         }} 
                       />
@@ -505,7 +505,7 @@ const Dashboard: React.FC = () => {
                       component="h2" 
                       gutterBottom
                       sx={{
-                        background: 'linear-gradient(135deg, #A855F7 0%, #EC4899 100%)',
+                        background: 'linear-gradient(135deg, #8f7cf6 0%, #EC4899 100%)',
                         backgroundClip: 'text',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
@@ -533,11 +533,11 @@ const Dashboard: React.FC = () => {
                     }}>
                       <Card sx={{ 
                         p: 3, 
-                        background: 'rgba(107, 70, 193, 0.2)', 
-                        border: '1px solid rgba(107, 70, 193, 0.3)',
+                        background: 'rgba(111, 92, 242, 0.2)', 
+                        border: '1px solid rgba(111, 92, 242, 0.3)',
                         backdropFilter: 'blur(10px)'
                       }}>
-                        <Typography variant="h6" gutterBottom sx={{ color: '#A855F7', fontWeight: 600 }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: '#8f7cf6', fontWeight: 600 }}>
                           Account Balance
                         </Typography>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
@@ -547,8 +547,8 @@ const Dashboard: React.FC = () => {
                       
                       <Card sx={{ 
                         p: 3, 
-                        background: 'rgba(168, 85, 247, 0.2)', 
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
+                        background: 'rgba(143, 124, 246, 0.2)', 
+                        border: '1px solid rgba(143, 124, 246, 0.3)',
                         backdropFilter: 'blur(10px)'
                       }}>
                         <Typography variant="h6" gutterBottom sx={{ color: '#EC4899', fontWeight: 600 }}>
@@ -560,7 +560,7 @@ const Dashboard: React.FC = () => {
                       </Card>
                     </Box>
 
-                    <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(107, 70, 193, 0.3)' }}>
+                    <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid rgba(111, 92, 242, 0.3)' }}>
                       <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'rgba(255,255,255,0.6)' }}>
                         Contact our team to activate your loan account and start monitoring your investment performance 
                         with detailed balance tracking and real-time updates.
@@ -779,7 +779,7 @@ const Dashboard: React.FC = () => {
                 <Fade in={cardAnimations[0]} timeout={800}>
                   <Card
                     sx={{
-                      background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 50%, #A855F7 100%)',
+                      background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 50%, #8f7cf6 100%)',
                       color: 'white',
                       position: 'relative',
                       overflow: 'hidden',
@@ -814,19 +814,19 @@ const Dashboard: React.FC = () => {
                     position: 'relative',
                     background: 'rgba(31, 41, 55, 0.6)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '16px',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
-                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
                     },
                   }}>
                     <CardContent sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <AttachMoney sx={{ fontSize: 32, mr: 2, color: '#9333EA' }} />
+                        <AttachMoney sx={{ fontSize: 32, mr: 2, color: '#6f5cf2' }} />
                         <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
                           Total Bonuses
                         </Typography>
@@ -843,14 +843,14 @@ const Dashboard: React.FC = () => {
                     position: 'relative',
                     background: 'rgba(31, 41, 55, 0.6)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '16px',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
-                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
                     },
                   }}>
                     <CardContent sx={{ p: 4 }}>
@@ -872,14 +872,14 @@ const Dashboard: React.FC = () => {
                     position: 'relative',
                     background: 'rgba(31, 41, 55, 0.6)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '16px',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
-                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
                     },
                   }}>
                     <CardContent sx={{ p: 4 }}>
@@ -910,14 +910,14 @@ const Dashboard: React.FC = () => {
                     position: 'relative',
                     background: 'rgba(31, 41, 55, 0.6)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '16px',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
-                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
                     },
                   }}>
                     <CardContent sx={{ p: 4 }}>
@@ -939,14 +939,14 @@ const Dashboard: React.FC = () => {
                     position: 'relative',
                     background: 'rgba(31, 41, 55, 0.6)',
                     backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(107, 70, 193, 0.3)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
                     borderRadius: '16px',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: '0 20px 40px rgba(107, 70, 193, 0.2)',
-                      border: '1px solid rgba(107, 70, 193, 0.4)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
                     },
                   }}>
                     <CardContent sx={{ p: 4 }}>
@@ -969,7 +969,7 @@ const Dashboard: React.FC = () => {
                 <Card sx={{
                   background: 'rgba(31, 41, 55, 0.6)',
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(107, 70, 193, 0.3)',
+                  border: '1px solid rgba(111, 92, 242, 0.3)',
                   borderRadius: '20px',
                   boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                   mt: 4,
@@ -982,7 +982,7 @@ const Dashboard: React.FC = () => {
                     left: 0,
                     right: 0,
                     height: '1px',
-                    background: 'linear-gradient(90deg, transparent, rgba(107, 70, 193, 0.6), transparent)',
+                    background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.6), transparent)',
                   },
                 }}>
                   <CardContent sx={{ p: 4 }}>
@@ -1002,7 +1002,7 @@ const Dashboard: React.FC = () => {
                       <Card sx={{
                         background: 'rgba(31, 41, 55, 0.6)',
                         backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(107, 70, 193, 0.3)',
+                        border: '1px solid rgba(111, 92, 242, 0.3)',
                         borderRadius: '16px',
                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                         height: 'fit-content'
@@ -1133,7 +1133,7 @@ const Dashboard: React.FC = () => {
                       <Card sx={{
                         background: 'rgba(31, 41, 55, 0.6)',
                         backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(107, 70, 193, 0.3)',
+                        border: '1px solid rgba(111, 92, 242, 0.3)',
                         borderRadius: '16px',
                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
                         height: 'fit-content'
@@ -1316,9 +1316,9 @@ const Dashboard: React.FC = () => {
                     <Box sx={{ 
                       textAlign: 'center', 
                       py: 6,
-                      background: 'rgba(107, 70, 193, 0.02)',
+                      background: 'rgba(111, 92, 242, 0.02)',
                       borderRadius: '16px',
-                      border: '1px solid rgba(107, 70, 193, 0.1)',
+                      border: '1px solid rgba(111, 92, 242, 0.1)',
                     }}>
                       <Box
                         sx={{
@@ -1334,7 +1334,7 @@ const Dashboard: React.FC = () => {
                           thickness={4}
                           sx={{ 
                             color: 'primary.main',
-                            filter: 'drop-shadow(0 0 10px rgba(107, 70, 193, 0.4))',
+                            filter: 'drop-shadow(0 0 10px rgba(111, 92, 242, 0.4))',
                           }}
                         />
                       </Box>
@@ -1342,7 +1342,7 @@ const Dashboard: React.FC = () => {
                         variant="h6" 
                         gutterBottom
                         sx={{
-                          background: 'linear-gradient(135deg, #6B46C1 0%, #9333EA 100%)',
+                          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
                           backgroundClip: 'text',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
@@ -2064,8 +2064,8 @@ const Dashboard: React.FC = () => {
                       {/* Additional Notes */}
                       {latestWithdrawal.notes && (
                         <Card sx={{
-                          background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(168, 85, 247, 0.05) 100%)',
-                          border: '1px solid rgba(147, 51, 234, 0.2)',
+                          background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.08) 0%, rgba(143, 124, 246, 0.05) 100%)',
+                          border: '1px solid rgba(111, 92, 242, 0.2)',
                           borderRadius: '12px',
                           p: 3
                         }}>
