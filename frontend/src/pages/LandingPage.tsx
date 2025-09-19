@@ -43,7 +43,7 @@ const FloatingOrb = styled(Box)(({ theme }) => ({
 }));
 
 const HeroGradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+  background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 50%, #EC4899 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -106,8 +106,8 @@ const LandingPage: React.FC = () => {
   const features = [
     {
       icon: <TrendingUp sx={{ fontSize: 48 }} />,
-      title: 'Portfolio Growth',
-      description: 'Track your investment performance with real-time analytics and comprehensive growth metrics.',
+      title: 'Consistent Growth',
+      description: 'Track your loan growth with real-time analytics and comprehensive growth metrics',
       color: '#22C55E',
     },
     {
@@ -119,21 +119,21 @@ const LandingPage: React.FC = () => {
     {
       icon: <Analytics sx={{ fontSize: 48 }} />,
       title: 'Advanced Analytics',
-      description: 'Powerful insights into your loan performance, returns, and financial trends.',
+      description: 'Powerful insights into your performance, returns, and financial trends.',
       color: '#F59E0B',
     },
     {
       icon: <Support sx={{ fontSize: 48 }} />,
-      title: '24/7 Support',
-      description: 'Dedicated customer support team available around the clock for all your needs.',
+      title: 'Client Focus',
+      description: 'Dedicated support team focused on your success and financial goals.',
       color: '#EF4444',
     },
   ];
 
   const stats = [
-    { value: '$50M+', label: 'Assets Under Management', icon: <AccountBalance /> },
-    { value: '500+', label: 'Active Investors', icon: <Timeline /> },
-    { value: '12.5%', label: 'Average Annual Return', icon: <AttachMoney /> },
+    { value: '5+', label: 'Ventures Managed', icon: <AccountBalance /> },
+    { value: '45.45%', label: 'Annual Growth in Clients', icon: <Timeline /> },
+    { value: '12%', label: 'Fixed Annual Return', icon: <AttachMoney /> },
     { value: '99.9%', label: 'Platform Uptime', icon: <Speed /> },
   ];
 
@@ -154,9 +154,7 @@ const LandingPage: React.FC = () => {
             <Slide direction="down" in={isVisible} timeout={1200}>
               <Box>
                 <HeroGradientText variant="h1" sx={{ mb: 3, fontSize: { xs: '3rem', md: '4rem' }, lineHeight: 1.5 }}>
-                  Venture Capital
-                  <br />
-                  Redefined
+                  VC Redefined
                 </HeroGradientText>
                 <Typography
                   variant="h4"
@@ -169,8 +167,7 @@ const LandingPage: React.FC = () => {
                     lineHeight: 1.4,
                   }}
                 >
-                  Experience next-generation investment management with advanced analytics, 
-                  secure portfolio tracking, and exceptional returns.
+                  It's our choice what we do with the time we are given.
                 </Typography>
               </Box>
             </Slide>
@@ -197,7 +194,7 @@ const LandingPage: React.FC = () => {
                     },
                   }}
                 >
-                  Start Investing Today
+                  Join the Community
                 </Button>
                 <Button
                   variant="outlined"
@@ -259,7 +256,7 @@ const LandingPage: React.FC = () => {
                       sx={{
                         fontWeight: 800,
                         mb: 1,
-                        background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 100%)',
+                        background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 100%)',
                         backgroundClip: 'text',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
@@ -288,7 +285,7 @@ const LandingPage: React.FC = () => {
                 sx={{
                   fontWeight: 800,
                   mb: 3,
-                  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 100%)',
+                  background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 100%)',
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -301,7 +298,7 @@ const LandingPage: React.FC = () => {
                 color="text.secondary"
                 sx={{ maxWidth: '600px', mx: 'auto' }}
               >
-                Advanced features designed for sophisticated investors seeking superior returns
+                We Don't Just Invest in Passion - We Generate It.
               </Typography>
             </Box>
           </Fade>
@@ -360,7 +357,7 @@ const LandingPage: React.FC = () => {
                   sx={{
                     fontWeight: 800,
                     mb: 4,
-                    background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 100%)',
+                    background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -369,16 +366,14 @@ const LandingPage: React.FC = () => {
                   Who We Are
                 </Typography>
                 <Typography variant="h6" color="text.secondary" sx={{ mb: 4, lineHeight: 1.8 }}>
-                  Esoteric is a next-generation investment platform founded by industry veterans 
-                  with decades of experience in private equity, venture capital, and quantitative finance. 
-                  We bridge the gap between traditional investment management and modern technology.
+                  We're a self-funded team of creators, innovators, and visionaries who believe in building something truly extraordinary - something that reflects the passion and potential of our people. Bridging financial insight and modern technology to redefine what's possible. Esoteric is built on passion, discipline, and a deep sense of community. We believe that lasting impact comes from hard work, collaboration, and a shared commitment to creating opportunities that benefit everyone involved.
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
                   {[
-                    'Founded by professional day traders',
-                    'Proprietary trading strategies developed over 2+ years',
-                    'Regulatory compliance with SEC and FINRA standards',
-                    'Trusted by high-net-worth individuals and institutions'
+                    'Built for Entrepreneurs – Supporting Bold Ideas from Inception to Scale',
+                    'Innovation-Driven – Proprietary Technology Built to Adapt to Changing Markets',
+                    'Community at the Core – A Network of Partners, Not Just Clients',
+                    'Long-Term Vision – Focused on Sustainable Expansion, Not Short-Term Wins'
                   ].map((item, index) => (
                     <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <CheckCircle sx={{ color: '#22C55E', fontSize: 24 }} />
@@ -425,10 +420,10 @@ const LandingPage: React.FC = () => {
                 </Typography>
                 <Box sx={{ display: 'grid', gap: 3 }}>
                   {[
-                    { title: 'Investment Expertise', value: '25+ years combined experience', icon: <BarChart /> },
-                    { title: 'Technology Innovation', value: 'AI-powered portfolio optimization', icon: <Analytics /> },
-                    { title: 'Risk Management', value: 'Institutional-grade controls', icon: <Shield /> },
-                    { title: 'Client Focus', value: 'Personalized investment strategies', icon: <Star /> },
+                    { title: 'Vision & Strategy', value: 'Guiding Ventures with Clarity and Foresight', icon: <BarChart /> },
+                    { title: 'Innovation Culture', value: 'Technology That Powers Smarter Decisions', icon: <Analytics /> },
+                    { title: 'Partnership Approach', value: 'Collaborating to Create Lasting Impact', icon: <Shield /> },
+                    { title: 'Integrity First', value: 'Building Trust Through Transparency and Accountability', icon: <Star /> },
                   ].map((highlight, index) => (
                     <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                       <Box
@@ -473,16 +468,16 @@ const LandingPage: React.FC = () => {
               sx={{
                 fontWeight: 800,
                 mb: 3,
-                background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 100%)',
+                background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Ready to Transform Your Portfolio?
+              Step Into the Future of Enterprise
             </Typography>
             <Typography variant="h5" color="text.secondary" sx={{ mb: 4 }}>
-              Join hundreds of sophisticated investors who trust Esoteric with their financial future.
+              Join a Growing Community of Visionaries and Partners Moving Beyond the Ordinary.
             </Typography>
             <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Button
@@ -548,7 +543,7 @@ const LandingPage: React.FC = () => {
               ESOTERIC
             </HeroGradientText>
             <Typography variant="body2" color="text.secondary">
-              © 2024 Esoteric. Professional investment management redefined.
+              © 2021 Esoteric. Professional Loan Management Redefined.
             </Typography>
           </Box>
         </Container>

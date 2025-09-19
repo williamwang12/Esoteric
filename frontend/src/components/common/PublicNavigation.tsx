@@ -11,7 +11,7 @@ import {
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 
 const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+  background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 50%, #EC4899 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -20,7 +20,7 @@ const GradientText = styled(Typography)(({ theme }) => ({
 }));
 
 const GradientButtonText = styled(Box)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #F9FAFB 0%, #A855F7 50%, #EC4899 100%)',
+  background: 'linear-gradient(135deg, #F9FAFB 0%, #6f5cf2 50%, #EC4899 100%)',
   backgroundClip: 'text',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
