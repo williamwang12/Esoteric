@@ -172,23 +172,27 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             </IconButton>
           )}
 
-          {/* Company Logo/Name */}
-          <GradientText 
-            variant="h5" 
-            sx={{ 
-              fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
-              mr: { xs: 'auto', md: 4 },
-              flexGrow: { xs: 1, md: 0 },
-              pl: { xs: 0, sm: 0, md: 49 },
-              textAlign: { xs: 'center', md: 'left' }
-            }}
-          >
-            ESOTERIC
-          </GradientText>
-
-          {/* Desktop Navigation Tabs */}
+          {/* Desktop Navigation: Logo + Tabs together */}
           {!isMobile && (
-            <Box sx={{ flexGrow: 1 }}>
+            <Box sx={{ 
+              flexGrow: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 3
+            }}>
+              {/* Company Logo/Name */}
+              <GradientText 
+                variant="h5" 
+                sx={{ 
+                  fontSize: { sm: '1.5rem', md: '1.75rem' },
+                  flexShrink: 0
+                }}
+              >
+                ESOTERIC
+              </GradientText>
+
+              {/* Navigation Tabs */}
               <Tabs
                 value={isAdminPage ? (user?.role === 'admin' ? 4 : 0) : currentTab}
                 onChange={handleTabChange}
@@ -230,6 +234,21 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
                 ))}
               </Tabs>
             </Box>
+          )}
+
+          {/* Mobile Logo */}
+          {isMobile && (
+            <GradientText 
+              variant="h5" 
+              sx={{ 
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                mr: 'auto',
+                flexGrow: 1,
+                textAlign: 'center'
+              }}
+            >
+              ESOTERIC
+            </GradientText>
           )}
 
           {/* User Profile Section */}
