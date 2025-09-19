@@ -1,4 +1,4 @@
-# Esoteric Enterprises Financial Platform - Design Document
+# Esoteric Enterprises Financial Platform - Updated Design Document
 
 ## 1. Executive Summary
 
@@ -33,7 +33,7 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 
 ### 2.2 Technology Stack
 
-#### Frontend (Current Implementation)
+#### Frontend
 
 - **Framework**: React 19.1.1 with TypeScript
 - **UI Library**: Material-UI (MUI) v7.2.0 with Emotion styling
@@ -44,23 +44,24 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 - **Build Tool**: React Scripts (Create React App)
 - **Deployment**: Heroku with serve for production
 
-#### Backend (Current Implementation)
+#### Backend
 
 - **Runtime**: Node.js with Express 5.1.0
 - **Language**: JavaScript with TypeScript support
 - **Authentication**: JWT tokens + Speakeasy 2.0.0 for TOTP 2FA
-- **Password Security**: Bcrypt 3.0.2 hashing
+- **Password Security**: Bcryptjs 3.0.2 hashing
 - **File Processing**: Multer 2.0.2 for uploads
 - **Excel Processing**: XLSX 0.18.5 for bulk operations
 - **Security**: Helmet 8.1.0, Express-rate-limit 8.1.0, CORS 2.8.5
 - **Validation**: Express-validator 7.2.1
 - **Email**: Nodemailer 7.0.6 (configured but notifications disabled)
 - **QR Codes**: QRCode 1.5.4 for 2FA setup
+- **JWT**: Jsonwebtoken 9.0.2 for secure token handling
 - **Testing**: Jest 30.0.5 with Supertest 7.1.4
 - **Environment**: Dotenv 17.2.1 for configuration
 - **Deployment**: Heroku
 
-#### Database (Current Implementation)
+#### Database
 
 - **Database**: PostgreSQL with pg driver 8.16.3
 - **Connection**: Connection pooling with SSL support
@@ -70,7 +71,7 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 
 ## 3. Core Features
 
-### 3.1 User Authentication (Implemented)
+### 3.1 User Authentication
 
 - Account registration with validation
 - Two-factor authentication (TOTP authenticator apps with QR codes)
@@ -80,25 +81,25 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 - Rate limiting for login attempts
 - Email verification (disabled - database columns remain but functionality removed)
 
-### 3.2 Customer Portal (Implemented)
+### 3.2 Customer Portal
 
-#### Dashboard (Implemented)
+#### Dashboard
 
 - Loan balance overview with Material-UI cards
 - Monthly payment tracking with bonus calculations
 - Recent transaction display
-- Interactive growth charts using Chart.js
+- Interactive growth chart
 - Transaction history with real-time updates
 - Responsive design with purple/dark theme
 
-#### Account Management (Implemented)
+#### Account Management
 
 - Personal profile management with form validation
-- Contact information updates (name, phone)
+- Contact information display
 - 2FA setup and management interface
 - Account verification status display
 
-#### Financial Data (Implemented)
+#### Financial Data
 
 - Comprehensive loan transaction history
 - Advanced filtering and sorting capabilities
@@ -107,7 +108,7 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 - Transaction categorization and analytics
 - Portfolio dashboard with advanced metrics
 
-#### Document Center (Implemented)
+#### Document Center
 
 - Secure document library with categorization
 - Document upload/download with file validation
@@ -115,14 +116,14 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 - File size and type restrictions
 - Clean file management system
 
-#### Request Management (Implemented)
+#### Request Management
 
 - Withdrawal request creation and tracking
 - Meeting request scheduling with admin workflow
 - Status updates and approval process
 - Request history and management
 
-### 3.3 Admin Panel (Implemented)
+### 3.3 Admin Panel
 
 - Comprehensive customer management dashboard
 - User account administration and verification
@@ -162,7 +163,7 @@ Esoteric Enterprises needs an attractive, secure financial website that enables 
 ### 5.1 Core Tables
 
 ```sql
--- Users table (Current Implementation)
+-- Users table
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -171,6 +172,8 @@ CREATE TABLE users (
     last_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
     role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     requires_2fa BOOLEAN DEFAULT false,
     last_login TIMESTAMP,
     email_verified BOOLEAN DEFAULT false,
@@ -178,12 +181,10 @@ CREATE TABLE users (
     email_verification_expires_at TIMESTAMP,
     account_verified BOOLEAN DEFAULT false,
     verified_by_admin INTEGER REFERENCES users(id),
-    verified_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    verified_at TIMESTAMP
 );
 
--- Loan accounts table (Current Implementation)
+-- Loan accounts table
 CREATE TABLE loan_accounts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
@@ -197,7 +198,7 @@ CREATE TABLE loan_accounts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Loan transactions table (Current Implementation)
+-- Loan transactions table
 CREATE TABLE loan_transactions (
     id SERIAL PRIMARY KEY,
     loan_account_id INTEGER REFERENCES loan_accounts(id),
@@ -205,12 +206,11 @@ CREATE TABLE loan_transactions (
     transaction_type VARCHAR(50) NOT NULL,
     bonus_percentage DECIMAL(5,4),
     description TEXT,
-    reference_id VARCHAR(255),
-    transaction_date TIMESTAMP NOT NULL,
+    transaction_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Documents table (Current Implementation)
+-- Documents table
 CREATE TABLE documents (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
@@ -221,7 +221,7 @@ CREATE TABLE documents (
     upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- User sessions tracking (Current Implementation)
+-- User sessions tracking
 CREATE TABLE user_sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
@@ -230,7 +230,7 @@ CREATE TABLE user_sessions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Two-factor authentication (Current Implementation)
+-- Two-factor authentication
 CREATE TABLE user_2fa (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
@@ -240,7 +240,7 @@ CREATE TABLE user_2fa (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2FA attempt tracking (Current Implementation)
+-- 2FA attempt tracking
 CREATE TABLE user_2fa_attempts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -249,7 +249,7 @@ CREATE TABLE user_2fa_attempts (
     ip_address INET
 );
 
--- Payment schedule (Current Implementation)
+-- Payment schedule
 CREATE TABLE payment_schedule (
     id SERIAL PRIMARY KEY,
     loan_account_id INTEGER REFERENCES loan_accounts(id),
@@ -261,7 +261,7 @@ CREATE TABLE payment_schedule (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Withdrawal requests (Current Implementation)
+-- Withdrawal requests
 CREATE TABLE withdrawal_requests (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -277,7 +277,7 @@ CREATE TABLE withdrawal_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Meeting requests (Current Implementation)
+-- Meeting requests
 CREATE TABLE meeting_requests (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -291,10 +291,12 @@ CREATE TABLE meeting_requests (
     scheduled_date TIMESTAMP,
     meeting_link VARCHAR(500),
     notes TEXT,
+    phone_number VARCHAR(50),
+    location TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Account verification requests (Current Implementation)
+-- Account verification requests
 CREATE TABLE account_verification_requests (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -306,9 +308,9 @@ CREATE TABLE account_verification_requests (
 );
 ```
 
-## 6. API Endpoints (Current Implementation)
+## 6. API Endpoints
 
-### 6.1 Authentication & User Management (Implemented)
+### 6.1 Authentication & User Management
 
 ```
 POST /api/auth/register                    - User registration with validation
@@ -320,7 +322,7 @@ PUT  /api/user/profile                     - Update user profile
 POST /api/user/request-account-verification - Request account verification
 ```
 
-### 6.2 Two-Factor Authentication (Implemented)
+### 6.2 Two-Factor Authentication
 
 ```
 POST /api/2fa/setup                        - Initialize 2FA setup with QR code
@@ -330,7 +332,7 @@ POST /api/2fa/generate-backup-codes        - Generate backup codes
 POST /api/2fa/disable                      - Disable 2FA
 ```
 
-### 6.3 Loan Management (Implemented)
+### 6.3 Loan Management
 
 ```
 GET  /api/loans                            - Get user loans
@@ -338,7 +340,7 @@ GET  /api/loans/:loanId/transactions       - Get loan transaction history
 GET  /api/loans/:loanId/analytics          - Get loan performance analytics
 ```
 
-### 6.4 Document Management (Implemented)
+### 6.4 Document Management
 
 ```
 GET    /api/documents                      - Get user documents
@@ -348,7 +350,7 @@ GET    /api/admin/documents/:id/download   - Admin document download
 DELETE /api/admin/documents/:id            - Delete document
 ```
 
-### 6.5 Request Management (Implemented)
+### 6.5 Request Management
 
 ```
 POST /api/withdrawal-requests              - Create withdrawal request
@@ -357,7 +359,7 @@ POST /api/meeting-requests                 - Create meeting request
 GET  /api/meeting-requests                 - Get user meeting requests
 ```
 
-### 6.6 Admin Operations (Implemented)
+### 6.6 Admin Operations
 
 ```
 GET  /api/admin/users                      - Get all users with filtering
@@ -378,9 +380,12 @@ GET  /api/admin/meeting-requests           - Get all meeting requests
 PUT  /api/admin/meeting-requests/:id       - Update meeting request
 GET  /api/admin/verification-requests      - Get verification requests
 PUT  /api/admin/verification-requests/:id  - Update verification request
+POST /api/admin/loans/excel-upload        - Bulk loan upload via Excel
+GET  /api/admin/loans/excel-template       - Download Excel template
+DELETE /api/admin/documents/:id            - Delete document
 ```
 
-### 6.7 System Health (Implemented)
+### 6.7 System Health
 
 ```
 GET /api/health                           - Health check endpoint
@@ -404,7 +409,7 @@ GET /api/health                           - Health check endpoint
 
 ### 7.3 Dashboard Design
 
-**Color Palette:** Deep purple (#6B46C1) with matte black (#1F2937).
+**Color Palette:** Custom purple (#6f5cf2) with matte black (#1F2937).
 
 **Design Features:**
 
@@ -466,8 +471,9 @@ GET /api/health                           - Health check endpoint
 - **Frontend Hosting** (Netlify/Vercel): Free
 - **SSL Certificate**: Free (Let's Encrypt)
 - **Domain**: $15/year
-
-**Total Monthly**: ~$35-40
+- **Calendly**: $10-$20/month
+- **DocuSign** $10-$20/month
+  **Total Monthly**: ~$60-70
 
 ## 10. Future Features
 
@@ -520,7 +526,7 @@ These are some other features that you could consider implementing in the future
 ### 12.2 Test Suite Coverage
 
 ```javascript
-auth-enhanced.test.js           - Complete authentication flows
+auth-enhanced.test.js          - Complete authentication flows
 user-profile.test.js           - Profile management and validation
 loans-basic.test.js           - Loan operations and transactions
 robust-api.test.js            - API integration and error handling
@@ -553,61 +559,3 @@ excel-upload.test.js          - Excel bulk upload functionality
 - **Scope Creep**: All major features successfully implemented
 - **Security Compliance**: 2FA, rate limiting, and security measures in place
 - **Maintainability**: Well-documented codebase with comprehensive tests
-
-## 14. Current Status & Conclusion
-
-### 14.1 Implementation Status: COMPLETE
-
-The Esoteric Enterprises financial platform has been **successfully implemented** with all major features operational. The system delivers a secure, modern loan management platform that exceeds the original design requirements.
-
-### 14.2 Achievements
-
-**Full Feature Implementation:**
-
-- Complete user authentication system with TOTP 2FA
-- Comprehensive loan management and tracking
-- Advanced admin panel with Excel bulk operations
-- Secure document management system
-- Request management workflow (withdrawals/meetings)
-- Real-time analytics and performance dashboards
-
-**Modern Technology Stack:**
-
-- React 19.1.1 with TypeScript and Material-UI v7
-- Node.js with Express 5.1.0 and comprehensive middleware
-- PostgreSQL with production-grade security measures
-- Complete test suite with database isolation
-
-**Security Excellence:**
-
-- Production-grade 2FA implementation with QR codes
-- Rate limiting and comprehensive input validation
-- Database safety with test isolation (recently fixed)
-- Security headers and CORS protection
-- Protection against XSS, SQL injection, and other attacks
-
-**Quality Assurance:**
-
-- Comprehensive test suite covering all major functionality
-- Database safety measures preventing production contamination
-- Automated testing with Jest and Supertest
-- Performance and security testing
-
-### 14.3 Current Operational Features
-
-- **User Portal**: Dashboard, loan tracking, document access, request management
-- **Admin Portal**: User management, loan administration, bulk operations, approval workflows
-- **Security**: TOTP 2FA, secure authentication, rate limiting, input validation
-- **Analytics**: Real-time performance tracking, transaction history, growth charts
-- **Integration**: Excel bulk upload, document management, automated workflows
-
-### 14.4 Deployment Ready
-
-The system is **production-ready** and currently operational with:
-
-- Heroku deployment configuration
-- Environment-specific configurations
-- Database safety measures
-- Comprehensive error handling and logging
-
-**Platform delivered successfully within original requirements and exceeds expectations.**
