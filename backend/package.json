@@ -4,6 +4,8 @@
   "description": "This directory contains the Node.js backend API server for the Esoteric loan management platform.",
   "main": "index.js",
   "scripts": {
+    "start": "node server-2fa.js",
+    "dev": "nodemon server-2fa.js",
     "test": "NODE_ENV=test jest --detectOpenHandles --forceExit --runInBand",
     "test:watch": "jest --watch --detectOpenHandles",
     "test:coverage": "jest --coverage --detectOpenHandles --forceExit --runInBand",

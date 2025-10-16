@@ -16,10 +16,13 @@ const XLSX = require('xlsx');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy for load balancer
+app.set('trust proxy', true);
+
 // Database connection
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL || `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'password'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'esoteric_loans'}`,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // Make pool available to routes
@@ -108,6 +111,11 @@ const upload = multer({
 // Import routes
 const auth2faRoutes = require('./routes/auth-2fa');
 const twoFARoutes = require('./routes/2fa');
+
+// Root health check for Elastic Beanstalk
+app.get('/', (req, res) => {
+    res.json({ status: 'healthy', service: 'esoteric-backend' });
+});
 
 // Basic health check
 app.get('/api/health', async (req, res) => {
