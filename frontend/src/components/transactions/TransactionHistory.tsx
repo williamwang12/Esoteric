@@ -96,14 +96,10 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
       return 'Invalid Date';
     }
     
-    return date.toLocaleString('en-US', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
     });
   };
 
@@ -248,7 +244,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
     if (!data?.transactions) return [];
 
     const sortedTransactions = [...data.transactions].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
     );
 
     if (!filters.search.trim()) {
@@ -425,7 +421,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ loanId }) => {
                             variant="outlined"
                           />
                           <Typography variant="caption" color="text.secondary">
-                            {formatDateTime(transaction.created_at)}
+                            {formatDateTime(transaction.transaction_date)}
                           </Typography>
                         </Box>
                         <Typography 

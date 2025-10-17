@@ -243,7 +243,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
       
       // Sort transactions by date
       const sortedTransactions = transactions.sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
       );
 
       // Build balance over time based on transactions
@@ -259,7 +259,7 @@ const InteractiveLoanChart: React.FC<InteractiveLoanChartProps> = ({ loanData, a
         // Process transactions up to this date
         while (transactionIndex < sortedTransactions.length) {
           const transaction = sortedTransactions[transactionIndex];
-          const transactionDate = new Date(transaction.created_at).toISOString().split('T')[0];
+          const transactionDate = new Date(transaction.transaction_date).toISOString().split('T')[0];
           
           if (transactionDate <= dateStr) {
             const amount = parseFloat(transaction.amount);

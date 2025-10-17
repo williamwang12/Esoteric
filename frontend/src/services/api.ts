@@ -296,6 +296,23 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  // Excel Transaction Import
+  uploadExcelTransactions: async (formData: FormData) => {
+    const response = await api.post('/admin/loans/excel-transactions', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  downloadExcelTransactionsTemplate: async () => {
+    const response = await api.get('/admin/loans/excel-transactions-template', {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
 };
 
 

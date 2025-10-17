@@ -2053,6 +2053,389 @@ app.get('/api/admin/loans/excel-template', adminRateLimit, authenticateAdmin, as
     }
 });
 
+// Admin route - Excel transaction import
+app.post('/api/admin/loans/excel-transactions', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('excel'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No Excel file uploaded' });
+        }
+
+        // Validate file extension
+        const fileExtension = path.extname(req.file.originalname).toLowerCase();
+        if (!['.xlsx', '.xls'].includes(fileExtension)) {
+            // Delete the uploaded file
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are allowed' });
+        }
+
+        console.log('📊 Processing Excel transaction file:', req.file.originalname);
+
+        // Read the Excel file
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0]; // Use first sheet
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON
+        const data = XLSX.utils.sheet_to_json(worksheet);
+        
+        console.log('📋 Parsed Excel transaction data:', data.length, 'rows');
+
+        // Validate required columns for transaction import
+        const requiredColumns = ['email', 'amount', 'transaction_type', 'transaction_date'];
+        const processedTransactions = [];
+        const errors = [];
+
+        // Valid transaction types
+        const validTransactionTypes = ['loan', 'monthly_payment', 'bonus', 'withdrawal', 'adjustment_increase', 'adjustment_decrease'];
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNumber = i + 2; // Excel rows start at 1, header is row 1
+
+            // Check required columns
+            const missingColumns = requiredColumns.filter(col => !row.hasOwnProperty(col));
+            if (missingColumns.length > 0) {
+                errors.push(`Row ${rowNumber}: Missing required columns: ${missingColumns.join(', ')}`);
+                continue;
+            }
+
+            // Validate email
+            if (!row.email || typeof row.email !== 'string') {
+                errors.push(`Row ${rowNumber}: Invalid email`);
+                continue;
+            }
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(row.email.trim())) {
+                errors.push(`Row ${rowNumber}: Invalid email format`);
+                continue;
+            }
+
+            // Validate amount
+            const amount = parseFloat(row.amount);
+            if (isNaN(amount) || amount <= 0) {
+                errors.push(`Row ${rowNumber}: Invalid amount (must be a positive number)`);
+                continue;
+            }
+
+            // Validate transaction_type
+            if (!row.transaction_type || !validTransactionTypes.includes(row.transaction_type.trim())) {
+                errors.push(`Row ${rowNumber}: Invalid transaction_type. Must be one of: ${validTransactionTypes.join(', ')}`);
+                continue;
+            }
+
+            // Validate transaction_date
+            let transactionDate;
+            try {
+                // Handle Excel date formats (Excel dates are numbers)
+                if (typeof row.transaction_date === 'number') {
+                    // Excel date serial number to JavaScript date
+                    transactionDate = new Date((row.transaction_date - 25569) * 86400 * 1000);
+                } else if (typeof row.transaction_date === 'string') {
+                    transactionDate = new Date(row.transaction_date);
+                } else {
+                    throw new Error('Invalid date format');
+                }
+                
+                if (isNaN(transactionDate.getTime())) {
+                    throw new Error('Invalid date');
+                }
+            } catch (error) {
+                errors.push(`Row ${rowNumber}: Invalid transaction_date (use YYYY-MM-DD format)`);
+                continue;
+            }
+
+            // Validate bonus_percentage if provided
+            let bonusPercentage = null;
+            if (row.bonus_percentage !== undefined && row.bonus_percentage !== '') {
+                bonusPercentage = parseFloat(row.bonus_percentage);
+                if (isNaN(bonusPercentage) || bonusPercentage < 0 || bonusPercentage > 1) {
+                    errors.push(`Row ${rowNumber}: Invalid bonus_percentage (must be between 0 and 1)`);
+                    continue;
+                }
+            }
+
+            processedTransactions.push({
+                email: row.email.trim().toLowerCase(),
+                amount: amount,
+                transactionType: row.transaction_type.trim(),
+                transactionDate: transactionDate,
+                bonusPercentage: bonusPercentage,
+                description: row.description || '',
+                referenceId: row.reference_id || '',
+                rowNumber: rowNumber
+            });
+        }
+
+        console.log('✅ Valid transactions:', processedTransactions.length);
+        console.log('❌ Errors:', errors.length);
+
+        if (errors.length > 0 && processedTransactions.length === 0) {
+            // Delete the uploaded file
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ 
+                error: 'No valid transactions found', 
+                errors: errors.slice(0, 10) // Limit to first 10 errors
+            });
+        }
+
+        // Process transactions in database transaction
+        await pool.query('BEGIN');
+        
+        const transactionResults = [];
+        const transactionErrors = [];
+
+        try {
+            for (const transaction of processedTransactions) {
+                try {
+                    // Check if user exists and get their loan account
+                    const loanResult = await pool.query(`
+                        SELECT la.id, la.user_id, la.current_balance, la.account_number, u.email 
+                        FROM loan_accounts la 
+                        JOIN users u ON la.user_id = u.id 
+                        WHERE LOWER(u.email) = $1
+                    `, [transaction.email]);
+
+                    if (loanResult.rows.length === 0) {
+                        transactionErrors.push(`Row ${transaction.rowNumber}: No loan account found for email ${transaction.email}`);
+                        continue;
+                    }
+
+                    const loan = loanResult.rows[0];
+
+                    // Insert transaction record
+                    const insertResult = await pool.query(
+                        `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, bonus_percentage, description, reference_id, transaction_date, created_at)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id`,
+                        [
+                            loan.id,
+                            transaction.amount,
+                            transaction.transactionType,
+                            transaction.bonusPercentage,
+                            transaction.description || `Imported transaction: ${transaction.transactionType}`,
+                            transaction.referenceId,
+                            transaction.transactionDate
+                        ]
+                    );
+
+                    // Update loan balance based on transaction type
+                    let balanceChange = 0;
+                    const currentBalance = parseFloat(loan.current_balance);
+
+                    switch (transaction.transactionType) {
+                        case 'loan':
+                        case 'monthly_payment':
+                        case 'bonus':
+                        case 'adjustment_increase':
+                            balanceChange = transaction.amount;
+                            break;
+                        case 'withdrawal':
+                        case 'adjustment_decrease':
+                            balanceChange = -transaction.amount;
+                            break;
+                    }
+
+                    const newBalance = currentBalance + balanceChange;
+
+                    // Update loan account balance
+                    await pool.query(
+                        'UPDATE loan_accounts SET current_balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+                        [newBalance, loan.id]
+                    );
+
+                    // Update totals if needed
+                    if (transaction.transactionType === 'bonus') {
+                        await pool.query(
+                            'UPDATE loan_accounts SET total_bonuses = total_bonuses + $1 WHERE id = $2',
+                            [transaction.amount, loan.id]
+                        );
+                    } else if (transaction.transactionType === 'withdrawal') {
+                        await pool.query(
+                            'UPDATE loan_accounts SET total_withdrawals = total_withdrawals + $1 WHERE id = $2',
+                            [transaction.amount, loan.id]
+                        );
+                    }
+
+                    transactionResults.push({
+                        id: insertResult.rows[0].id,
+                        email: transaction.email,
+                        accountNumber: loan.account_number,
+                        amount: transaction.amount,
+                        transactionType: transaction.transactionType,
+                        transactionDate: transaction.transactionDate,
+                        balanceChange: balanceChange,
+                        newBalance: newBalance,
+                        userId: loan.user_id
+                    });
+
+                    console.log(`💰 Added transaction for ${loan.account_number} (${transaction.email}): ${transaction.transactionType} $${transaction.amount}`);
+
+                } catch (error) {
+                    console.error('Transaction error for', transaction.email, ':', error);
+                    transactionErrors.push(`Row ${transaction.rowNumber}: Database error for email ${transaction.email}`);
+                }
+            }
+
+            await pool.query('COMMIT');
+            console.log('✅ Transaction import committed successfully');
+
+        } catch (error) {
+            await pool.query('ROLLBACK');
+            console.error('❌ Transaction import rolled back:', error);
+            throw error;
+        }
+
+        // Delete the uploaded file
+        fs.unlinkSync(req.file.path);
+
+        // Prepare response
+        const response = {
+            message: 'Excel transaction import processed successfully',
+            summary: {
+                totalRows: data.length,
+                validTransactions: processedTransactions.length,
+                successfulTransactions: transactionResults.length,
+                errors: errors.length + transactionErrors.length
+            },
+            transactions: transactionResults,
+            errors: [...errors, ...transactionErrors].slice(0, 20) // Limit errors in response
+        };
+
+        if (transactionResults.length === 0) {
+            return res.status(400).json({
+                error: 'No successful transaction imports',
+                ...response
+            });
+        }
+
+        res.json(response);
+
+    } catch (error) {
+        // Delete the uploaded file if it exists
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        
+        console.error('Excel transaction import error:', error);
+        res.status(500).json({ 
+            error: 'Internal server error while processing Excel transaction file',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Admin route - Download Excel template for transaction imports
+app.get('/api/admin/loans/excel-transactions-template', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        // Get actual users with loan accounts from database to create realistic template
+        const loanResult = await pool.query(`
+            SELECT u.email, la.account_number 
+            FROM loan_accounts la 
+            JOIN users u ON la.user_id = u.id 
+            ORDER BY la.created_at DESC 
+            LIMIT 5
+        `);
+
+        let templateData;
+        
+        if (loanResult.rows.length > 0) {
+            // Use real loan data as examples
+            templateData = [
+                {
+                    email: loanResult.rows[0]?.email || 'user1@example.com',
+                    amount: 1000.00,
+                    transaction_type: 'monthly_payment',
+                    transaction_date: '2024-01-15',
+                    bonus_percentage: 0.01,
+                    description: 'Monthly payment with 1% bonus',
+                    reference_id: 'MP-2024-001'
+                },
+                {
+                    email: loanResult.rows[1]?.email || 'user2@example.com',
+                    amount: 500.00,
+                    transaction_type: 'bonus',
+                    transaction_date: '2024-01-20',
+                    bonus_percentage: 0.005,
+                    description: 'Performance bonus payment',
+                    reference_id: 'BONUS-2024-001'
+                },
+                {
+                    email: loanResult.rows[2]?.email || 'user3@example.com',
+                    amount: 2000.00,
+                    transaction_type: 'withdrawal',
+                    transaction_date: '2024-01-25',
+                    bonus_percentage: '',
+                    description: 'Withdrawal request',
+                    reference_id: 'WD-2024-001'
+                }
+            ];
+        } else {
+            // Fallback to sample data if no loans exist
+            templateData = [
+                {
+                    email: 'user1@example.com',
+                    amount: 1000.00,
+                    transaction_type: 'monthly_payment',
+                    transaction_date: '2024-01-15',
+                    bonus_percentage: 0.01,
+                    description: 'Monthly payment with 1% bonus',
+                    reference_id: 'MP-2024-001'
+                },
+                {
+                    email: 'user2@example.com',
+                    amount: 500.00,
+                    transaction_type: 'bonus',
+                    transaction_date: '2024-01-20',
+                    bonus_percentage: 0.005,
+                    description: 'Performance bonus payment',
+                    reference_id: 'BONUS-2024-001'
+                },
+                {
+                    email: 'user3@example.com',
+                    amount: 2000.00,
+                    transaction_type: 'withdrawal',
+                    transaction_date: '2024-01-25',
+                    bonus_percentage: '',
+                    description: 'Withdrawal request',
+                    reference_id: 'WD-2024-001'
+                }
+            ];
+        }
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(templateData);
+
+        // Set column widths for better readability
+        ws['!cols'] = [
+            { width: 25 }, // email
+            { width: 15 }, // amount
+            { width: 20 }, // transaction_type
+            { width: 15 }, // transaction_date
+            { width: 18 }, // bonus_percentage
+            { width: 30 }, // description
+            { width: 20 }  // reference_id
+        ];
+
+        // Add the workbook to the response
+        XLSX.utils.book_append_sheet(wb, ws, 'Transaction Template');
+
+        // Generate buffer
+        const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="transaction_import_template.xlsx"');
+
+        res.send(excelBuffer);
+
+    } catch (error) {
+        console.error('Transaction template generation error:', error);
+        res.status(500).json({ error: 'Failed to generate Excel transaction template' });
+    }
+});
+
 // Admin route - Update meeting request status
 app.put('/api/admin/meeting-requests/:requestId', adminRateLimit, authenticateAdmin, [
     body('status').isIn(['pending', 'scheduled', 'completed', 'cancelled']).withMessage('Invalid status'),
