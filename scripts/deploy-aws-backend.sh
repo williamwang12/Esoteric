@@ -15,7 +15,7 @@ if ! command -v aws &> /dev/null; then
 fi
 
 # Check if EB CLI is installed
-if ! command -v eb &> /dev/null; then then
+if ! command -v eb &> /dev/null; then
     echo "❌ EB CLI is not installed. Please install it first:"
     echo "pip install awsebcli"
     exit 1
