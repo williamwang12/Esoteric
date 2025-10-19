@@ -58,11 +58,13 @@ import {
   RequestPage,
   Computer,
   TableChart,
+  TrendingUp,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import AppNavigation from '../../components/common/AppNavigation';
 import ExcelUpload from '../../components/admin/ExcelUpload';
+import YieldDeposits from '../../components/admin/YieldDeposits';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -1095,6 +1097,12 @@ const AdminDashboard: React.FC = () => {
                   label="Excel Upload" 
                   id="admin-tab-4"
                   aria-controls="admin-tabpanel-4"
+                />
+                <Tab 
+                  icon={<TrendingUp />} 
+                  label="Yield Deposits" 
+                  id="admin-tab-5"
+                  aria-controls="admin-tabpanel-5"
                 />
               </Tabs>
             </Box>
@@ -2417,6 +2425,11 @@ const AdminDashboard: React.FC = () => {
             {/* Excel Upload Tab */}
             <TabPanel value={tabValue} index={4}>
               <ExcelUpload onUploadComplete={() => fetchUsers(true)} />
+            </TabPanel>
+
+            {/* Yield Deposits Tab */}
+            <TabPanel value={tabValue} index={5}>
+              <YieldDeposits />
             </TabPanel>
 
             </>

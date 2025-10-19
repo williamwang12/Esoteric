@@ -313,6 +313,50 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  // Yield Deposits
+  getYieldDeposits: async (filters?: { status?: string; user_id?: number; start_date?: string; end_date?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.user_id) params.append('user_id', filters.user_id.toString());
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
+    
+    const response = await api.get(`/admin/yield-deposits?${params.toString()}`);
+    return response.data;
+  },
+
+  createYieldDeposit: async (depositData: {
+    user_id: number;
+    principal_amount: number;
+    start_date: string;
+    annual_yield_rate?: number;
+    notes?: string;
+  }) => {
+    const response = await api.post('/admin/yield-deposits', depositData);
+    return response.data;
+  },
+
+  updateYieldDeposit: async (id: number, updateData: {
+    status?: string;
+    notes?: string;
+    principal_amount?: number;
+  }) => {
+    const response = await api.put(`/admin/yield-deposits/${id}`, updateData);
+    return response.data;
+  },
+
+  getYieldDeposit: async (id: number) => {
+    const response = await api.get(`/admin/yield-deposits/${id}`);
+    return response.data;
+  },
+
+  triggerYieldPayout: async (id: number, payoutDate?: string) => {
+    const response = await api.post(`/admin/yield-deposits/${id}/payout`, {
+      payout_date: payoutDate,
+    });
+    return response.data;
+  },
 };
 
 

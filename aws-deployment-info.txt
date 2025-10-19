@@ -1,0 +1,19 @@
+🚀 Esoteric Loans - AWS Deployment Complete!
+
+📱 Frontend: http://esoteric-frontend-1760420958.s3-website-us-east-1.amazonaws.com
+🔧 Backend API: http://esoteric-alb-67634983.us-east-1.elb.amazonaws.com/api
+❤️ Health Check: http://esoteric-alb-67634983.us-east-1.elb.amazonaws.com/api/health
+
+🔧 Infrastructure Details:
+   ECS Cluster: esoteric-cluster
+   ECS Service: esoteric-service
+   Load Balancer: esoteric-alb
+   S3 Bucket: esoteric-frontend-1760420958
+
+💡 Test Account:
+   Email: demo@esoteric.com
+   Password: demo123
+
+📋 Management:
+   Update: ./scripts/update-aws-deployment.sh
+   Cleanup: ./scripts/cleanup-aws-resources.sh

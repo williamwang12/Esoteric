@@ -48,7 +48,12 @@ app.use(helmet({
 
 // CORS middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:3001', 
+        'http://esoteric-frontend-1760420958.s3-website-us-east-1.amazonaws.com',
+        'http://esoteric-frontend-1760847352.s3-website-us-east-1.amazonaws.com'
+    ],
     credentials: true
 }));
 
@@ -582,6 +587,58 @@ app.post('/api/admin/withdrawal-requests/:requestId/complete', adminRateLimit, a
                 INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
                 VALUES ($1, $2, 'withdrawal', $3, NOW(), NOW())
             `, [withdrawal.loan_account_id, -withdrawalAmount, `Withdrawal: ${withdrawal.reason}`]);
+
+            // Reduce yield deposits in LIFO order (newest first)
+            const yieldDepositsResult = await pool.query(`
+                SELECT yd.id, yd.principal_amount, yd.start_date, yd.user_id
+                FROM yield_deposits yd
+                JOIN loan_accounts la ON yd.user_id = la.user_id
+                WHERE la.id = $1 AND yd.status = 'active' AND yd.principal_amount > 0
+                ORDER BY yd.created_at DESC, yd.id DESC
+            `, [withdrawal.loan_account_id]);
+
+            let remainingWithdrawal = withdrawalAmount;
+            const depositReductions = [];
+
+            for (const deposit of yieldDepositsResult.rows) {
+                if (remainingWithdrawal <= 0) break;
+
+                const currentPrincipal = parseFloat(deposit.principal_amount);
+                const reductionAmount = Math.min(remainingWithdrawal, currentPrincipal);
+                const newPrincipal = currentPrincipal - reductionAmount;
+
+                // Update deposit principal amount or mark as inactive if fully withdrawn
+                if (newPrincipal > 0) {
+                    await pool.query(`
+                        UPDATE yield_deposits 
+                        SET principal_amount = $1
+                        WHERE id = $2
+                    `, [newPrincipal, deposit.id]);
+                } else {
+                    // If fully withdrawn, set to $0 and mark as inactive
+                    await pool.query(`
+                        UPDATE yield_deposits 
+                        SET principal_amount = 0, status = 'inactive'
+                        WHERE id = $1
+                    `, [deposit.id]);
+                    console.log(`🔒 Yield deposit #${deposit.id} fully withdrawn - marked as inactive`);
+                }
+
+                depositReductions.push({
+                    depositId: deposit.id,
+                    originalAmount: currentPrincipal,
+                    reducedBy: reductionAmount,
+                    newAmount: newPrincipal
+                });
+
+                remainingWithdrawal -= reductionAmount;
+
+                console.log(`📉 Reduced yield deposit #${deposit.id}: $${currentPrincipal.toFixed(2)} → $${newPrincipal.toFixed(2)} (-$${reductionAmount.toFixed(2)})`);
+            }
+
+            if (depositReductions.length > 0) {
+                console.log(`💰 Withdrawal processing: Reduced ${depositReductions.length} yield deposits totaling $${withdrawalAmount - remainingWithdrawal}`);
+            }
 
             // Commit transaction
             await pool.query('COMMIT');
@@ -2086,7 +2143,7 @@ app.post('/api/admin/loans/excel-transactions', uploadRateLimit, adminRateLimit,
         const errors = [];
 
         // Valid transaction types
-        const validTransactionTypes = ['loan', 'monthly_payment', 'bonus', 'withdrawal', 'adjustment_increase', 'adjustment_decrease'];
+        const validTransactionTypes = ['loan', 'monthly_payment', 'bonus', 'withdrawal', 'adjustment_increase', 'adjustment_decrease', 'yield_payment'];
 
         for (let i = 0; i < data.length; i++) {
             const row = data[i];
@@ -2131,15 +2188,29 @@ app.post('/api/admin/loans/excel-transactions', uploadRateLimit, adminRateLimit,
                 // Handle Excel date formats (Excel dates are numbers)
                 if (typeof row.transaction_date === 'number') {
                     // Excel date serial number to JavaScript date
-                    transactionDate = new Date((row.transaction_date - 25569) * 86400 * 1000);
+                    const jsDate = new Date((row.transaction_date - 25569) * 86400 * 1000);
+                    // Format as YYYY-MM-DD to avoid timezone issues
+                    transactionDate = jsDate.getFullYear() + '-' + 
+                                    String(jsDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                    String(jsDate.getDate()).padStart(2, '0');
                 } else if (typeof row.transaction_date === 'string') {
-                    transactionDate = new Date(row.transaction_date);
+                    // If it's already a string, use it directly but validate format
+                    const dateStr = row.transaction_date.trim();
+                    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        transactionDate = dateStr;
+                    } else {
+                        // Try to parse and reformat
+                        const jsDate = new Date(dateStr);
+                        if (isNaN(jsDate.getTime())) {
+                            throw new Error('Invalid date');
+                        }
+                        // Format as YYYY-MM-DD to avoid timezone issues
+                        transactionDate = jsDate.getFullYear() + '-' + 
+                                        String(jsDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                                        String(jsDate.getDate()).padStart(2, '0');
+                    }
                 } else {
                     throw new Error('Invalid date format');
-                }
-                
-                if (isNaN(transactionDate.getTime())) {
-                    throw new Error('Invalid date');
                 }
             } catch (error) {
                 errors.push(`Row ${rowNumber}: Invalid transaction_date (use YYYY-MM-DD format)`);
@@ -2533,6 +2604,410 @@ app.put('/api/admin/meeting-requests/:requestId', adminRateLimit, authenticateAd
         res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 });
+
+// =====================================================================
+// YIELD DEPOSITS API ENDPOINTS
+// =====================================================================
+
+// Get all yield deposits with optional filtering
+app.get('/api/admin/yield-deposits', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { status, user_id, start_date, end_date } = req.query;
+        
+        let query = `
+            SELECT 
+                yd.*,
+                u.email,
+                u.first_name,
+                u.last_name,
+                COALESCE(user_balances.total_balance, 0) as account_balance
+            FROM yield_deposits yd
+            JOIN users u ON yd.user_id = u.id
+            LEFT JOIN (
+                SELECT user_id, SUM(current_balance) as total_balance
+                FROM loan_accounts 
+                GROUP BY user_id
+            ) user_balances ON user_balances.user_id = u.id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        let paramCount = 0;
+        
+        if (status) {
+            paramCount++;
+            query += ` AND yd.status = $${paramCount}`;
+            params.push(status);
+        }
+        
+        if (user_id) {
+            paramCount++;
+            query += ` AND yd.user_id = $${paramCount}`;
+            params.push(user_id);
+        }
+        
+        if (start_date) {
+            paramCount++;
+            query += ` AND yd.start_date >= $${paramCount}`;
+            params.push(start_date);
+        }
+        
+        if (end_date) {
+            paramCount++;
+            query += ` AND yd.start_date <= $${paramCount}`;
+            params.push(end_date);
+        }
+        
+        query += ` ORDER BY yd.created_at DESC`;
+        
+        const result = await pool.query(query, params);
+        
+        // Calculate next payout dates and amounts
+        const deposits = result.rows.map(deposit => {
+            const nextPayoutDate = calculateNextPayoutDate(deposit.start_date, deposit.last_payout_date);
+            const annualPayout = parseFloat(deposit.principal_amount) * parseFloat(deposit.annual_yield_rate);
+            
+            return {
+                ...deposit,
+                next_payout_date: nextPayoutDate,
+                annual_payout: annualPayout.toFixed(2)
+            };
+        });
+        
+        res.json(deposits);
+    } catch (error) {
+        console.error('Error fetching yield deposits:', error);
+        res.status(500).json({ error: 'Failed to fetch yield deposits' });
+    }
+});
+
+// Create new yield deposit
+app.post('/api/admin/yield-deposits', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { user_id, principal_amount, start_date, annual_yield_rate = 0.12, notes } = req.body;
+        
+        // Validation
+        if (!user_id || !principal_amount || !start_date) {
+            return res.status(400).json({ error: 'user_id, principal_amount, and start_date are required' });
+        }
+        
+        if (parseFloat(principal_amount) <= 0) {
+            return res.status(400).json({ error: 'Principal amount must be greater than 0' });
+        }
+        
+        // Verify user exists and has a loan account
+        const userResult = await pool.query(`
+            SELECT u.id, u.email, la.id as loan_account_id
+            FROM users u
+            LEFT JOIN loan_accounts la ON la.user_id = u.id
+            WHERE u.id = $1
+        `, [user_id]);
+        
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        if (!userResult.rows[0].loan_account_id) {
+            return res.status(400).json({ error: 'User does not have a loan account' });
+        }
+        
+        // Start a database transaction
+        const client = await pool.connect();
+        let deposit;
+        
+        try {
+            await client.query('BEGIN');
+            
+            // Create the deposit
+            const insertResult = await client.query(`
+                INSERT INTO yield_deposits (
+                    user_id, principal_amount, annual_yield_rate, start_date, 
+                    created_by, notes, status
+                ) VALUES ($1, $2, $3, $4, $5, $6, 'active')
+                RETURNING *
+            `, [user_id, principal_amount, annual_yield_rate, start_date, req.user.id, notes]);
+            
+            deposit = insertResult.rows[0];
+            
+            // Add principal amount to user's account balance
+            await client.query(`
+                UPDATE loan_accounts 
+                SET current_balance = current_balance + $1
+                WHERE user_id = $2
+            `, [principal_amount, user_id]);
+            
+            // Create a transaction record for the deposit
+            await client.query(`
+                INSERT INTO loan_transactions (
+                    loan_account_id, amount, transaction_type, description, transaction_date
+                ) VALUES ($1, $2, 'yield_deposit', $3, $4)
+            `, [userResult.rows[0].loan_account_id, principal_amount, `Yield deposit principal - ${annual_yield_rate * 100}% annual yield`, start_date]);
+            
+            await client.query('COMMIT');
+            
+            console.log(`💰 Created yield deposit: ${deposit.id} for user ${userResult.rows[0].email} - $${principal_amount} (added to balance)`);
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+        
+        res.status(201).json({
+            ...deposit,
+            user_email: userResult.rows[0].email,
+            annual_payout: (parseFloat(principal_amount) * parseFloat(annual_yield_rate)).toFixed(2)
+        });
+        
+    } catch (error) {
+        console.error('Error creating yield deposit:', error);
+        res.status(500).json({ error: 'Failed to create yield deposit' });
+    }
+});
+
+// Update yield deposit
+app.put('/api/admin/yield-deposits/:id', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, notes, principal_amount } = req.body;
+        
+        // Build dynamic update query
+        const updateFields = [];
+        const params = [];
+        let paramCount = 0;
+        
+        if (status !== undefined) {
+            paramCount++;
+            updateFields.push(`status = $${paramCount}`);
+            params.push(status);
+        }
+        
+        if (notes !== undefined) {
+            paramCount++;
+            updateFields.push(`notes = $${paramCount}`);
+            params.push(notes);
+        }
+        
+        if (principal_amount !== undefined) {
+            if (parseFloat(principal_amount) <= 0) {
+                return res.status(400).json({ error: 'Principal amount must be greater than 0' });
+            }
+            paramCount++;
+            updateFields.push(`principal_amount = $${paramCount}`);
+            params.push(principal_amount);
+        }
+        
+        if (updateFields.length === 0) {
+            return res.status(400).json({ error: 'No fields to update' });
+        }
+        
+        paramCount++;
+        params.push(id);
+        
+        const query = `
+            UPDATE yield_deposits 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramCount}
+            RETURNING *
+        `;
+        
+        const result = await pool.query(query, params);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Yield deposit not found' });
+        }
+        
+        console.log(`📝 Updated yield deposit ${id}: ${updateFields.join(', ')}`);
+        res.json(result.rows[0]);
+        
+    } catch (error) {
+        console.error('Error updating yield deposit:', error);
+        res.status(500).json({ error: 'Failed to update yield deposit' });
+    }
+});
+
+// Manual payout trigger
+app.post('/api/admin/yield-deposits/:id/payout', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { payout_date = new Date().toISOString().split('T')[0] } = req.body;
+        
+        const result = await processYieldPayout(id, payout_date, req.user.id);
+        
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+        
+    } catch (error) {
+        console.error('Error processing manual payout:', error);
+        res.status(500).json({ error: 'Failed to process payout' });
+    }
+});
+
+// Get yield deposit details with payout history
+app.get('/api/admin/yield-deposits/:id', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Get deposit details
+        const depositResult = await pool.query(`
+            SELECT 
+                yd.*,
+                u.email,
+                u.first_name,
+                u.last_name
+            FROM yield_deposits yd
+            JOIN users u ON yd.user_id = u.id
+            WHERE yd.id = $1
+        `, [id]);
+        
+        if (depositResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Yield deposit not found' });
+        }
+        
+        // Get payout history
+        const payoutsResult = await pool.query(`
+            SELECT 
+                yp.*,
+                lt.description as transaction_description
+            FROM yield_payouts yp
+            LEFT JOIN loan_transactions lt ON yp.transaction_id = lt.id
+            WHERE yp.deposit_id = $1
+            ORDER BY yp.payout_date DESC
+        `, [id]);
+        
+        const deposit = depositResult.rows[0];
+        const nextPayoutDate = calculateNextPayoutDate(deposit.start_date, deposit.last_payout_date);
+        const annualPayout = parseFloat(deposit.principal_amount) * parseFloat(deposit.annual_yield_rate);
+        
+        res.json({
+            ...deposit,
+            next_payout_date: nextPayoutDate,
+            annual_payout: annualPayout.toFixed(2),
+            payouts: payoutsResult.rows
+        });
+        
+    } catch (error) {
+        console.error('Error fetching yield deposit details:', error);
+        res.status(500).json({ error: 'Failed to fetch yield deposit details' });
+    }
+});
+
+// Helper function to calculate next payout date
+function calculateNextPayoutDate(startDate, lastPayoutDate) {
+    const start = new Date(startDate);
+    const today = new Date();
+    const lastPayout = lastPayoutDate ? new Date(lastPayoutDate) : null;
+    
+    // Calculate how many years since start
+    let yearsSinceStart = 0;
+    let nextPayout = new Date(start);
+    
+    while (nextPayout <= today) {
+        yearsSinceStart++;
+        nextPayout = new Date(start);
+        nextPayout.setFullYear(start.getFullYear() + yearsSinceStart);
+    }
+    
+    // If we already paid out for this year, move to next year
+    if (lastPayout && lastPayout >= new Date(start.setFullYear(start.getFullYear() + yearsSinceStart - 1))) {
+        nextPayout.setFullYear(nextPayout.getFullYear() + 1);
+    }
+    
+    return nextPayout.toISOString().split('T')[0];
+}
+
+// Helper function to process yield payout
+async function processYieldPayout(depositId, payoutDate, processedBy) {
+    try {
+        await pool.query('BEGIN');
+        
+        // Get deposit details
+        const depositResult = await pool.query(`
+            SELECT yd.*, u.email, la.id as loan_account_id
+            FROM yield_deposits yd
+            JOIN users u ON yd.user_id = u.id
+            JOIN loan_accounts la ON la.user_id = u.id
+            WHERE yd.id = $1 AND yd.status = 'active'
+        `, [depositId]);
+        
+        if (depositResult.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return { success: false, error: 'Deposit not found or not active' };
+        }
+        
+        const deposit = depositResult.rows[0];
+        const payoutAmount = parseFloat(deposit.principal_amount) * parseFloat(deposit.annual_yield_rate);
+        
+        // Check if payout already exists for this date
+        const existingPayout = await pool.query(`
+            SELECT id FROM yield_payouts 
+            WHERE deposit_id = $1 AND payout_date = $2
+        `, [depositId, payoutDate]);
+        
+        if (existingPayout.rows.length > 0) {
+            await pool.query('ROLLBACK');
+            return { success: false, error: 'Payout already exists for this date' };
+        }
+        
+        // Create transaction
+        const transactionResult = await pool.query(`
+            INSERT INTO loan_transactions (
+                loan_account_id, amount, transaction_type, description, 
+                transaction_date, created_at
+            ) VALUES ($1, $2, 'yield_payment', $3, $4, NOW())
+            RETURNING id
+        `, [
+            deposit.loan_account_id,
+            payoutAmount,
+            `12% yield payment for deposit #${depositId}`,
+            payoutDate
+        ]);
+        
+        const transactionId = transactionResult.rows[0].id;
+        
+        // Update loan account balance
+        await pool.query(`
+            UPDATE loan_accounts 
+            SET current_balance = current_balance + $1
+            WHERE id = $2
+        `, [payoutAmount, deposit.loan_account_id]);
+        
+        // Create payout record
+        const payoutResult = await pool.query(`
+            INSERT INTO yield_payouts (
+                deposit_id, amount, payout_date, transaction_id, processed_by
+            ) VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `, [depositId, payoutAmount, payoutDate, transactionId, processedBy]);
+        
+        // Update deposit last payout date and total paid out
+        await pool.query(`
+            UPDATE yield_deposits 
+            SET last_payout_date = $1, total_paid_out = total_paid_out + $2
+            WHERE id = $3
+        `, [payoutDate, payoutAmount, depositId]);
+        
+        await pool.query('COMMIT');
+        
+        console.log(`💰 Processed yield payout: $${payoutAmount} for deposit ${depositId} (${deposit.email})`);
+        
+        return {
+            success: true,
+            payout: payoutResult.rows[0],
+            transaction_id: transactionId,
+            amount: payoutAmount
+        };
+        
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Error processing yield payout:', error);
+        throw error;
+    }
+}
 
 
 // Error handling middleware
