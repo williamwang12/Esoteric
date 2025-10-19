@@ -1100,7 +1100,7 @@ const AdminDashboard: React.FC = () => {
                 />
                 <Tab 
                   icon={<TrendingUp />} 
-                  label="Yield Deposits" 
+                  label="Deposits" 
                   id="admin-tab-5"
                   aria-controls="admin-tabpanel-5"
                 />
@@ -2427,7 +2427,7 @@ const AdminDashboard: React.FC = () => {
               <ExcelUpload onUploadComplete={() => fetchUsers(true)} />
             </TabPanel>
 
-            {/* Yield Deposits Tab */}
+            {/* Deposits Tab */}
             <TabPanel value={tabValue} index={5}>
               <YieldDeposits />
             </TabPanel>

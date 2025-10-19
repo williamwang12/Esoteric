@@ -357,6 +357,11 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  deleteYieldDeposit: async (id: number) => {
+    const response = await api.delete(`/admin/yield-deposits/${id}`);
+    return response.data;
+  },
 };
 
 

@@ -27,12 +27,12 @@ import {
   CircularProgress,
   Autocomplete,
   IconButton,
-  Tooltip
+  Tooltip,
+  Switch
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
-  Payment as PaymentIcon,
+  Delete as DeleteIcon,
   AccountBalance as AccountBalanceIcon,
   TrendingUp as TrendingUpIcon,
   Schedule as ScheduleIcon
@@ -77,7 +77,7 @@ const YieldDeposits: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<YieldDeposit | null>(null);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
@@ -127,7 +127,7 @@ const YieldDeposits: React.FC = () => {
         notes: createForm.notes || undefined
       });
 
-      setAlert({ type: 'success', message: 'Yield deposit created successfully' });
+      setAlert({ type: 'success', message: 'Deposit created successfully' });
       setCreateDialogOpen(false);
       setCreateForm({
         user_id: 0,
@@ -141,23 +141,25 @@ const YieldDeposits: React.FC = () => {
     }
   };
 
-  const handleTriggerPayout = async () => {
+  const handleDeleteDeposit = async () => {
     if (!selectedDeposit) return;
 
     try {
-      await adminApi.triggerYieldPayout(selectedDeposit.id);
-      setAlert({ type: 'success', message: 'Payout processed successfully' });
-      setPayoutDialogOpen(false);
+      await adminApi.deleteYieldDeposit(selectedDeposit.id);
+      setAlert({ type: 'success', message: 'Deposit deleted successfully' });
+      setDeleteDialogOpen(false);
+      setSelectedDeposit(null);
       fetchData();
     } catch (error: any) {
-      setAlert({ type: 'error', message: error.response?.data?.error || 'Failed to process payout' });
+      setAlert({ type: 'error', message: error.response?.data?.error || 'Failed to delete deposit' });
     }
   };
 
-  const handleUpdateStatus = async (depositId: number, newStatus: string) => {
+  const handleToggleStatus = async (depositId: number, currentStatus: string) => {
     try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
       await adminApi.updateYieldDeposit(depositId, { status: newStatus });
-      setAlert({ type: 'success', message: 'Deposit status updated' });
+      setAlert({ type: 'success', message: `Deposit ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully` });
       fetchData();
     } catch (error: any) {
       setAlert({ type: 'error', message: error.response?.data?.error || 'Failed to update status' });
@@ -215,7 +217,7 @@ const YieldDeposits: React.FC = () => {
 
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" component="h1">
-          Yield Deposits
+          Deposits
         </Typography>
         <Button
           variant="contained"
@@ -230,14 +232,14 @@ const YieldDeposits: React.FC = () => {
       {/* Process Overview */}
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="subtitle2" gutterBottom>
-          <strong>Yield Deposits Process:</strong>
+          <strong>Deposits Process:</strong>
         </Typography>
         <Typography variant="body2" component="div">
           • When creating a deposit, the <strong>principal amount is immediately added</strong> to the client's account balance
           <br />
           • Each year on the anniversary date, <strong>12% of the current principal</strong> is automatically paid out
           <br />
-          • When clients withdraw funds, the withdrawal <strong>reduces yield deposits in LIFO order</strong> (newest first)
+          • When clients withdraw funds, the withdrawal <strong>reduces deposits in LIFO order</strong> (newest first)
           <br />
           • Future payouts are automatically <strong>adjusted based on the reduced principal amounts</strong>
           <br />
@@ -336,7 +338,7 @@ const YieldDeposits: React.FC = () => {
             ) : deposits.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} align="center">
-                  No yield deposits found
+                  No deposits found
                 </TableCell>
               </TableRow>
             ) : (
@@ -375,29 +377,27 @@ const YieldDeposits: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="Trigger Payout">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setSelectedDeposit(deposit);
-                          setPayoutDialogOpen(true);
-                        }}
-                        disabled={deposit.status !== 'active'}
-                      >
-                        <PaymentIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Status">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          const newStatus = deposit.status === 'active' ? 'inactive' : 'active';
-                          handleUpdateStatus(deposit.id, newStatus);
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
+                    <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                      <Tooltip title={deposit.status === 'active' ? 'Deactivate' : 'Activate'}>
+                        <Switch
+                          checked={deposit.status === 'active'}
+                          onChange={() => handleToggleStatus(deposit.id, deposit.status)}
+                          size="small"
+                        />
+                      </Tooltip>
+                      <Tooltip title="Delete Deposit">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setSelectedDeposit(deposit);
+                            setDeleteDialogOpen(true);
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))
@@ -407,8 +407,23 @@ const YieldDeposits: React.FC = () => {
       </TableContainer>
 
       {/* Create Deposit Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Yield Deposit</DialogTitle>
+      <Dialog 
+        open={createDialogOpen} 
+        onClose={() => setCreateDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: { 
+            backgroundColor: '#424242',
+            backgroundImage: 'none',
+            opacity: 1
+          }
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+        }}
+      >
+        <DialogTitle>Create New Deposit</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             <Autocomplete
@@ -417,12 +432,15 @@ const YieldDeposits: React.FC = () => {
               value={users.find(u => u.id === createForm.user_id) || null}
               onChange={(_, user) => setCreateForm(prev => ({ ...prev, user_id: user?.id || 0 }))}
               renderInput={(params) => (
-                <TextField {...params} label="Client *" required />
+                <TextField {...params} label="Client" required />
+              )}
+              PaperComponent={(props) => (
+                <Paper {...props} sx={{ backgroundColor: '#424242', backgroundImage: 'none' }} />
               )}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
-                label="Principal Amount *"
+                label="Principal Amount"
                 type="number"
                 required
                 value={createForm.principal_amount || ''}
@@ -436,7 +454,7 @@ const YieldDeposits: React.FC = () => {
                 sx={{ flex: 1 }}
               />
               <TextField
-                label="Start Date *"
+                label="Start Date"
                 type="date"
                 required
                 value={createForm.start_date}
@@ -466,14 +484,14 @@ const YieldDeposits: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Payout Confirmation Dialog */}
-      <Dialog open={payoutDialogOpen} onClose={() => setPayoutDialogOpen(false)}>
-        <DialogTitle>Trigger Yield Payout</DialogTitle>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete Deposit</DialogTitle>
         <DialogContent>
           {selectedDeposit && (
             <Box>
               <Typography variant="body1" gutterBottom>
-                Are you sure you want to trigger a payout for:
+                Are you sure you want to delete this deposit?
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 <strong>Client:</strong> {selectedDeposit.first_name} {selectedDeposit.last_name}
@@ -482,18 +500,18 @@ const YieldDeposits: React.FC = () => {
                 <strong>Principal:</strong> {formatCurrency(selectedDeposit.principal_amount)}
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                <strong>Payout Amount:</strong> {formatCurrency(selectedDeposit.annual_payout)}
+                <strong>Status:</strong> {selectedDeposit.status}
               </Typography>
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                This will add {formatCurrency(selectedDeposit.annual_payout)} to the client's account balance.
+              <Alert severity="error" sx={{ mt: 2 }}>
+                This action cannot be undone. The deposit will be marked as deleted.
               </Alert>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPayoutDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleTriggerPayout} variant="contained" color="primary">
-            Process Payout
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteDeposit} variant="contained" color="error">
+            Delete Deposit
           </Button>
         </DialogActions>
       </Dialog>

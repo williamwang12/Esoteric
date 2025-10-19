@@ -2827,6 +2827,91 @@ app.put('/api/admin/yield-deposits/:id', adminRateLimit, authenticateAdmin, asyn
     }
 });
 
+// Delete yield deposit - subtracts money from account and deletes record
+app.delete('/api/admin/yield-deposits/:id', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Start a database transaction
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            
+            // Get the deposit details first
+            const depositResult = await client.query(`
+                SELECT yd.*, la.id as loan_account_id, la.current_balance
+                FROM yield_deposits yd
+                JOIN users u ON yd.user_id = u.id
+                JOIN loan_accounts la ON la.user_id = u.id
+                WHERE yd.id = $1
+            `, [id]);
+            
+            if (depositResult.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ error: 'Deposit not found' });
+            }
+            
+            const deposit = depositResult.rows[0];
+            const principalAmount = parseFloat(deposit.principal_amount);
+            const currentBalance = parseFloat(deposit.current_balance);
+            
+            // Check if account has sufficient balance to subtract
+            if (currentBalance < principalAmount) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ 
+                    error: `Insufficient account balance. Account has $${currentBalance.toFixed(2)} but deposit principal is $${principalAmount.toFixed(2)}` 
+                });
+            }
+            
+            // Subtract principal amount from user's account balance
+            await client.query(`
+                UPDATE loan_accounts 
+                SET current_balance = current_balance - $1
+                WHERE id = $2
+            `, [principalAmount, deposit.loan_account_id]);
+            
+            // Create a transaction record for the withdrawal
+            await client.query(`
+                INSERT INTO loan_transactions (
+                    loan_account_id, amount, transaction_type, description, transaction_date
+                ) VALUES ($1, $2, 'deposit_deletion', $3, NOW())
+            `, [
+                deposit.loan_account_id, 
+                -principalAmount, 
+                `Deposit deletion - Principal withdrawal for deposit #${id}`
+            ]);
+            
+            // Delete the yield deposit record
+            await client.query(`
+                DELETE FROM yield_deposits WHERE id = $1
+            `, [id]);
+            
+            // Also delete any associated payout records
+            await client.query(`
+                DELETE FROM yield_payouts WHERE deposit_id = $1
+            `, [id]);
+            
+            await client.query('COMMIT');
+            
+            console.log(`🗑️ Deleted yield deposit ${id} and subtracted $${principalAmount.toFixed(2)} from account`);
+            res.json({ 
+                message: 'Deposit deleted successfully',
+                principal_withdrawn: principalAmount
+            });
+            
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+        
+    } catch (error) {
+        console.error('Error deleting yield deposit:', error);
+        res.status(500).json({ error: 'Failed to delete deposit' });
+    }
+});
+
 // Manual payout trigger
 app.post('/api/admin/yield-deposits/:id/payout', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
