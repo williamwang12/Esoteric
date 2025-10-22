@@ -20,7 +20,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
   Card,
   CardContent,
   Alert,
@@ -81,6 +80,11 @@ const YieldDeposits: React.FC = () => {
   const [selectedDeposit, setSelectedDeposit] = useState<YieldDeposit | null>(null);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
+  // Daily yield payment state
+  const [dailyYieldStatus, setDailyYieldStatus] = useState<any>(null);
+  const [processingDailyYield, setProcessingDailyYield] = useState(false);
+  const [selectedPaymentDate, setSelectedPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('');
   
@@ -94,7 +98,12 @@ const YieldDeposits: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    fetchDailyYieldStatus(selectedPaymentDate);
   }, [statusFilter]);
+
+  useEffect(() => {
+    fetchDailyYieldStatus(selectedPaymentDate);
+  }, [selectedPaymentDate]);
 
   const fetchData = async () => {
     try {
@@ -172,6 +181,36 @@ const YieldDeposits: React.FC = () => {
       case 'inactive': return 'warning';
       case 'completed': return 'default';
       default: return 'default';
+    }
+  };
+
+  // Daily yield payment functions
+  const fetchDailyYieldStatus = async (date?: string) => {
+    try {
+      const status = await adminApi.getDailyYieldStatus(date);
+      setDailyYieldStatus(status);
+    } catch (error) {
+      console.error('Error fetching daily yield status:', error);
+    }
+  };
+
+  const handleProcessDailyYield = async () => {
+    try {
+      setProcessingDailyYield(true);
+      const result = await adminApi.processDailyYieldPayments(selectedPaymentDate);
+      setAlert({ 
+        type: 'success', 
+        message: `Processed ${result.total_payments} payments totaling ${formatCurrency(result.total_amount)}` 
+      });
+      fetchDailyYieldStatus(selectedPaymentDate);
+      fetchData(); // Refresh deposits to show updated balances
+    } catch (error: any) {
+      setAlert({ 
+        type: 'error', 
+        message: error.response?.data?.error || 'Failed to process daily yield payments' 
+      });
+    } finally {
+      setProcessingDailyYield(false);
     }
   };
 
@@ -270,10 +309,10 @@ const YieldDeposits: React.FC = () => {
               <TrendingUpIcon color="warning" sx={{ mr: 2 }} />
               <Box>
                 <Typography variant="h6">
-                  {formatCurrency(totalAnnualLiability)}
+                  {formatCurrency(totalAnnualLiability / 365)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Annual Yield Liability
+                  Daily Yield Liability
                 </Typography>
               </Box>
             </Box>
@@ -295,6 +334,61 @@ const YieldDeposits: React.FC = () => {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Daily Yield Payment Section */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Daily Yield Payments (12% ÷ 365 = 0.0329% daily)
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Process daily yield payments for all active deposits. Payments are calculated as 12% annual yield divided by 365 days.
+          </Typography>
+          
+          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+            <Box sx={{ minWidth: 200 }}>
+              <TextField
+                label="Payment Date"
+                type="date"
+                value={selectedPaymentDate}
+                onChange={(e) => setSelectedPaymentDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+            </Box>
+            <Box sx={{ minWidth: 200 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleProcessDailyYield}
+                disabled={processingDailyYield}
+                fullWidth
+              >
+                {processingDailyYield ? <CircularProgress size={20} /> : 'Process Daily Payments'}
+              </Button>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 300 }}>
+              {dailyYieldStatus && (
+                <Box>
+                  <Typography variant="body2">
+                    <strong>Status for {dailyYieldStatus.date}:</strong>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Processed: {dailyYieldStatus.payments_processed.count} payments 
+                    ({formatCurrency(dailyYieldStatus.payments_processed.amount)})
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Pending: {dailyYieldStatus.pending_payments} deposits
+                  </Typography>
+                  {dailyYieldStatus.is_complete && (
+                    <Chip label="All payments complete" color="success" size="small" sx={{ mt: 1 }} />
+                  )}
+                </Box>
+              )}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Box mb={3}>

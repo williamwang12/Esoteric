@@ -362,6 +362,124 @@ export const adminApi = {
     const response = await api.delete(`/admin/yield-deposits/${id}`);
     return response.data;
   },
+
+  // Daily yield payment system
+  processDailyYieldPayments: async (targetDate?: string) => {
+    const response = await api.post('/admin/yield-deposits/process-daily-payments', {
+      target_date: targetDate
+    });
+    return response.data;
+  },
+
+  getDailyYieldStatus: async (date?: string) => {
+    const params = date ? { date } : {};
+    const response = await api.get('/admin/yield-deposits/daily-status', { params });
+    return response.data;
+  },
+
+  // Client Onboarding Excel Upload
+  uploadClientOnboarding: async (formData: FormData) => {
+    const response = await api.post('/admin/clients/excel-onboarding', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  downloadClientOnboardingTemplate: async () => {
+    const response = await api.get('/admin/clients/excel-onboarding-template', {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
+
+  // Clear temporary password
+  clearTempPassword: async (userId: string) => {
+    const response = await api.put(`/admin/users/${userId}/clear-temp-password`);
+    return response.data;
+  },
+
+  // Comprehensive Transaction Import
+  uploadTransactionImport: async (formData: FormData) => {
+    const response = await api.post('/admin/transactions/excel-import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  downloadTransactionImportTemplate: async () => {
+    const response = await api.get(`/admin/transactions/excel-import-template?t=${Date.now()}`, {
+      responseType: 'arraybuffer',
+    });
+    return response.data;
+  },
+};
+
+// Calendly API
+export const calendlyApi = {
+  // Get Calendly user info
+  getUser: async () => {
+    const response = await api.get('/calendly/user');
+    return response.data;
+  },
+
+  // Get event types
+  getEventTypes: async () => {
+    const response = await api.get('/calendly/event-types');
+    return response.data;
+  },
+
+  // Get scheduled events
+  getScheduledEvents: async (filters?: {
+    status?: string;
+    start_time?: string;
+    end_time?: string;
+    sort?: string;
+    count?: number;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.start_time) params.append('start_time', filters.start_time);
+    if (filters?.end_time) params.append('end_time', filters.end_time);
+    if (filters?.sort) params.append('sort', filters.sort);
+    if (filters?.count) params.append('count', filters.count.toString());
+
+    const response = await api.get(`/calendly/scheduled-events?${params.toString()}`);
+    return response.data;
+  },
+
+  // Get event details with invitees
+  getEventDetails: async (eventUuid: string) => {
+    const response = await api.get(`/calendly/events/${eventUuid}`);
+    return response.data;
+  },
+
+  // Cancel an event
+  cancelEvent: async (eventUuid: string, reason?: string) => {
+    const response = await api.post(`/calendly/events/${eventUuid}/cancel`, {
+      reason: reason || 'Cancelled by admin'
+    });
+    return response.data;
+  },
+
+  // Get availability for an event type
+  getAvailability: async (eventTypeUuid: string, startTime: string, endTime: string) => {
+    const params = new URLSearchParams();
+    params.append('start_time', startTime);
+    params.append('end_time', endTime);
+
+    const response = await api.get(`/calendly/availability/${eventTypeUuid}?${params.toString()}`);
+    return response.data;
+  },
+
+  // Admin: Get dashboard data
+  getDashboard: async () => {
+    const response = await api.get('/admin/calendly/dashboard');
+    return response.data;
+  },
 };
 
 

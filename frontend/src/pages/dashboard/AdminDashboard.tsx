@@ -59,12 +59,17 @@ import {
   Computer,
   TableChart,
   TrendingUp,
+  PersonAdd,
+  SwapHoriz,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import AppNavigation from '../../components/common/AppNavigation';
 import ExcelUpload from '../../components/admin/ExcelUpload';
+import ClientOnboarding from '../../components/admin/ClientOnboarding';
+import TransactionImport from '../../components/admin/TransactionImport';
 import YieldDeposits from '../../components/admin/YieldDeposits';
+import CalendlyDashboard from '../../components/admin/CalendlyDashboard';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -155,6 +160,30 @@ const UserCard = memo(({ user, isSelected, onClick }: {
         >
           {user.account_numbers}
         </Typography>
+      )}
+      {user.temp_password && (
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="caption" color="warning.main" sx={{ fontWeight: 'bold' }}>
+            Temporary Password:
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontFamily: 'monospace',
+              fontSize: '0.85rem',
+              color: 'warning.main',
+              backgroundColor: 'warning.lighter',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: '1px solid',
+              borderColor: 'warning.main',
+              mt: 0.5,
+              wordBreak: 'break-all'
+            }}
+          >
+            {user.temp_password}
+          </Typography>
+        </Box>
       )}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Chip 
@@ -445,6 +474,28 @@ const AdminDashboard: React.FC = () => {
   const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setUserSearchTerm(event.target.value);
   }, []);
+
+  const handleClearTempPassword = async (userId: string) => {
+    try {
+      await adminApi.clearTempPassword(userId);
+      
+      // Update the users list
+      setUsers(prev => prev.map(user => 
+        user.id === parseInt(userId) 
+          ? { ...user, temp_password: null }
+          : user
+      ));
+      
+      // Update selected user if it's the same user
+      if (selectedUser && selectedUser.id === parseInt(userId)) {
+        setSelectedUser((prev: any) => ({ ...prev, temp_password: null }));
+      }
+      
+      console.log('Temporary password cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear temporary password:', error);
+    }
+  };
 
   const handleUploadDocument = async () => {
     if (!uploadForm.file || !uploadForm.title || !uploadForm.category || !uploadForm.userId) {
@@ -1099,10 +1150,28 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-4"
                 />
                 <Tab 
-                  icon={<TrendingUp />} 
-                  label="Deposits" 
+                  icon={<PersonAdd />} 
+                  label="Client Onboarding" 
                   id="admin-tab-5"
                   aria-controls="admin-tabpanel-5"
+                />
+                <Tab 
+                  icon={<SwapHoriz />} 
+                  label="Transaction Import" 
+                  id="admin-tab-6"
+                  aria-controls="admin-tabpanel-6"
+                />
+                <Tab 
+                  icon={<TrendingUp />} 
+                  label="Deposits" 
+                  id="admin-tab-7"
+                  aria-controls="admin-tabpanel-7"
+                />
+                <Tab 
+                  icon={<Schedule />} 
+                  label="Scheduling" 
+                  id="admin-tab-8"
+                  aria-controls="admin-tabpanel-8"
                 />
               </Tabs>
             </Box>
@@ -1209,6 +1278,39 @@ const AdminDashboard: React.FC = () => {
                           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                             {selectedUser.email}
                           </Typography>
+                          
+                          {/* Temporary Password Section */}
+                          {selectedUser.temp_password && (
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    Temporary Password Available
+                                  </Typography>
+                                  <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                      fontFamily: 'monospace',
+                                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      wordBreak: 'break-all'
+                                    }}
+                                  >
+                                    {selectedUser.temp_password}
+                                  </Typography>
+                                </Box>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="warning"
+                                  onClick={() => handleClearTempPassword(selectedUser.id)}
+                                >
+                                  Clear
+                                </Button>
+                              </Box>
+                            </Alert>
+                          )}
                         </Box>
 
                         {/* User Details Subtabs */}
@@ -2427,9 +2529,23 @@ const AdminDashboard: React.FC = () => {
               <ExcelUpload onUploadComplete={() => fetchUsers(true)} />
             </TabPanel>
 
-            {/* Deposits Tab */}
+            {/* Client Onboarding Tab */}
             <TabPanel value={tabValue} index={5}>
+              <ClientOnboarding />
+            </TabPanel>
+
+            {/* Transaction Import Tab */}
+            <TabPanel value={tabValue} index={6}>
+              <TransactionImport />
+            </TabPanel>
+            {/* Deposits Tab */}
+            <TabPanel value={tabValue} index={7}>
               <YieldDeposits />
+            </TabPanel>
+
+            {/* Calendly Scheduling Tab */}
+            <TabPanel value={tabValue} index={8}>
+              <CalendlyDashboard />
             </TabPanel>
 
             </>

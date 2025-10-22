@@ -22,7 +22,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Paper,
   keyframes,
   styled,
 } from '@mui/material';
@@ -44,11 +43,7 @@ import {
   PictureAsPdf,
   Article,
   Folder,
-  CalendarMonth,
-  RequestPage,
-  Cancel,
-  VideoCall,
-  Phone
+  RequestPage
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -59,7 +54,7 @@ import InteractiveLoanChart from '../../components/charts/InteractiveLoanChart';
 import TransactionHistory from '../../components/transactions/TransactionHistory';
 import AppNavigation from '../../components/common/AppNavigation';
 import WithdrawalRequestDialog from '../../components/dialogs/WithdrawalRequestDialog';
-import MeetingRequestDialog from '../../components/dialogs/MeetingRequestDialog';
+import CalendlyBooking from '../../components/calendly/CalendlyBooking';
 import { documentsApi, loansApi } from '../../services/api';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
@@ -117,10 +112,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false, false, false]);
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
-  const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
-  const [meetingDetailsOpen, setMeetingDetailsOpen] = useState(false);
   const [withdrawalDetailsOpen, setWithdrawalDetailsOpen] = useState(false);
-  const [meetingRequest, setMeetingRequest] = useState<any>(null);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
 
   const handleLogout = () => {
@@ -128,63 +120,7 @@ const Dashboard: React.FC = () => {
     navigate('/login');
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'null' || dateString === 'undefined') return 'Date TBD';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Date TBD';
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      return 'Date TBD';
-    }
-  };
 
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    try {
-      // Handle time format like "14:30:00" or "14:30"
-      const [hours, minutes] = timeString.split(':');
-      const time = new Date();
-      time.setHours(parseInt(hours), parseInt(minutes));
-      return time.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch (error) {
-      return timeString;
-    }
-  };
-
-  const handleCancelMeeting = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/meeting-requests/${meetingRequest.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: 'cancelled',
-          admin_notes: 'Cancelled by user request'
-        }),
-      });
-
-      if (response.ok) {
-        setMeetingDetailsOpen(false);
-        fetchLoanData(); // Refresh to update the meeting status
-      } else {
-        console.error('Failed to cancel meeting');
-      }
-    } catch (error) {
-      console.error('Error cancelling meeting:', error);
-    }
-  };
 
   const handleDocumentDownload = async (documentId: string, title: string) => {
     try {
@@ -266,25 +202,6 @@ const Dashboard: React.FC = () => {
       // Check if user is admin based on their role
       setIsAdmin(user?.role === 'admin');
 
-      // Fetch meeting requests
-      try {
-        const meetingResponse = await fetch(`${process.env.REACT_APP_API_URL}/meeting-requests`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (meetingResponse.ok) {
-          const meetingRequests = await meetingResponse.json();
-          // Get the most recent meeting request
-          if (meetingRequests.length > 0) {
-            const latestRequest = meetingRequests.sort((a: any, b: any) => 
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            )[0];
-            setMeetingRequest(latestRequest);
-          }
-        }
-      } catch (meetingError) {
-        console.error('Meeting requests fetch error:', meetingError);
-      }
 
       // Fetch withdrawal requests
       try {
@@ -996,8 +913,11 @@ const Dashboard: React.FC = () => {
                       Manage your account with quick actions for withdrawals and consultations
                     </Typography>
                     
-                    {/* Two Side-by-Side Blocks */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 4 }}>
+                    {/* Stacked Blocks */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {/* Calendly Meetings Integration */}
+                      <CalendlyBooking showAsCard={true} showHeader={true} />
+
                       {/* Withdrawals Block */}
                       <Card sx={{
                         background: 'rgba(31, 41, 55, 0.6)',
@@ -1119,133 +1039,6 @@ const Dashboard: React.FC = () => {
                                   </Card>
                                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
                                     Click to view withdrawal details
-                                  </Typography>
-                                </>
-                              );
-                            }
-                            
-                            return null;
-                          })()}
-                        </CardContent>
-                      </Card>
-
-                      {/* Meetings Block */}
-                      <Card sx={{
-                        background: 'rgba(31, 41, 55, 0.6)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(111, 92, 242, 0.3)',
-                        borderRadius: '16px',
-                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-                        height: 'fit-content'
-                      }}>
-                        <CardContent sx={{ p: 4 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                            <CalendarMonth sx={{ fontSize: 28, color: 'primary.main' }} />
-                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                              Meetings
-                            </Typography>
-                          </Box>
-                          
-                          {(() => {
-                            // Check if there's an active meeting request (pending or scheduled)
-                            const hasActiveMeeting = meetingRequest && 
-                              (meetingRequest.status === 'pending' || meetingRequest.status === 'scheduled');
-
-                            if (!hasActiveMeeting) {
-                              // Show schedule button
-                              return (
-                                <>
-                                  <Button
-                                    variant="contained"
-                                    size="large"
-                                    fullWidth
-                                    startIcon={<CalendarMonth />}
-                                    onClick={() => setMeetingDialogOpen(true)}
-                                    sx={{
-                                      py: 2.5,
-                                      px: 3,
-                                      mb: 3,
-                                      background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
-                                      color: 'white',
-                                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                                      borderRadius: '16px',
-                                      fontWeight: 700,
-                                      fontSize: '1.1rem',
-                                      textTransform: 'none',
-                                      letterSpacing: '0.025em',
-                                      '&:hover': {
-                                        background: 'linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)',
-                                        boxShadow: '0 12px 24px rgba(59, 130, 246, 0.4)',
-                                        transform: 'translateY(-3px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.4)',
-                                      },
-                                      boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)',
-                                      transition: 'all 0.3s ease-in-out',
-                                    }}
-                                  >
-                                    Schedule Meeting
-                                  </Button>
-                                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                                    Schedule a consultation with our team
-                                  </Typography>
-                                </>
-                              );
-                            } else if (meetingRequest.status === 'pending') {
-                              // Show pending status
-                              return (
-                                <>
-                                  <Card sx={{
-                                    py: 2.5,
-                                    px: 3,
-                                    mb: 3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%)',
-                                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                                    borderRadius: '16px',
-                                    textAlign: 'center'
-                                  }}>
-                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                                      Meeting Request Pending
-                                    </Typography>
-                                  </Card>
-                                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                                    We'll confirm your meeting details soon
-                                  </Typography>
-                                </>
-                              );
-                            } else if (meetingRequest.status === 'scheduled') {
-                              // Show simple scheduled status - click to see details
-                              return (
-                                <>
-                                  <Card sx={{
-                                    py: 2.5,
-                                    px: 3,
-                                    mb: 3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.05) 100%)',
-                                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                                    borderRadius: '16px',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                      transform: 'translateY(-1px)',
-                                      boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)',
-                                      border: '1px solid rgba(16, 185, 129, 0.4)',
-                                    }
-                                  }}
-                                  onClick={() => setMeetingDetailsOpen(true)}
-                                  >
-                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#10B981' }}>
-                                      Meeting Scheduled
-                                    </Typography>
-                                  </Card>
-                                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                                    Click to view meeting details
                                   </Typography>
                                 </>
                               );
@@ -1598,284 +1391,7 @@ const Dashboard: React.FC = () => {
               console.log('Withdrawal request submitted successfully');
             }}
           />
-          <MeetingRequestDialog
-            open={meetingDialogOpen}
-            onClose={() => setMeetingDialogOpen(false)}
-            onRequestSubmitted={() => {
-              // Refresh meeting data after submission
-              fetchLoanData();
-              console.log('Meeting request submitted successfully');
-            }}
-          />
 
-          {/* Meeting Details Dialog */}
-          {meetingRequest && meetingRequest.status === 'scheduled' && (
-            <Dialog
-              open={meetingDetailsOpen}
-              onClose={() => setMeetingDetailsOpen(false)}
-              maxWidth="sm"
-              fullWidth
-              PaperProps={{
-                sx: {
-                  background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  borderRadius: '20px',
-                  boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
-                }
-              }}
-            >
-              <DialogTitle sx={{ pb: 2, position: 'relative', overflow: 'hidden' }}>
-                <Box sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.8), rgba(96, 165, 250, 0.8))'
-                }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mt: 2 }}>
-                  <Box sx={{
-                    background: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
-                    borderRadius: '16px',
-                    p: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 8px 16px rgba(59, 130, 246, 0.3)'
-                  }}>
-                    <CalendarMonth sx={{ fontSize: 28, color: 'white' }} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
-                      Meeting Details
-                    </Typography>
-                    <Typography variant="body1" color="text.secondary">
-                      Your scheduled consultation information
-                    </Typography>
-                  </Box>
-                </Box>
-              </DialogTitle>
-
-              <DialogContent sx={{ pt: 2, px: 3 }}>
-                <Box sx={{ display: 'grid', gap: 3 }}>
-                  {/* Hero Meeting Card */}
-                  <Card sx={{
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '16px',
-                    p: 4,
-                    textAlign: 'center',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: '3px',
-                      background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8))'
-                    }
-                  }}>
-                    <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 600, mb: 2 }}>
-                      Scheduled Meeting
-                    </Typography>
-                    <Typography variant="h3" sx={{ 
-                      fontWeight: 900, 
-                      color: '#10B981', 
-                      mb: 1,
-                      textShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
-                    }}>
-                      {formatDate(meetingRequest.scheduled_date || meetingRequest.preferred_date)}
-                    </Typography>
-                    {meetingRequest.scheduled_time && (
-                      <Typography variant="h5" sx={{ color: '#10B981', fontWeight: 600, mb: 2 }}>
-                        {formatTime(meetingRequest.scheduled_time)}
-                      </Typography>
-                    )}
-                    <Box sx={{ 
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      px: 3,
-                      py: 1,
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      borderRadius: '25px',
-                      border: '1px solid rgba(16, 185, 129, 0.4)'
-                    }}>
-                      <Box sx={{ 
-                        width: 8, 
-                        height: 8, 
-                        borderRadius: '50%', 
-                        background: '#10B981',
-                        boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)'
-                      }} />
-                      <Typography variant="body2" sx={{ color: '#10B981', fontWeight: 600 }}>
-                        CONFIRMED
-                      </Typography>
-                    </Box>
-                  </Card>
-
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                    {/* Meeting Type */}
-                    <Card sx={{
-                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%)',
-                      border: '1px solid rgba(245, 158, 11, 0.2)',
-                      borderRadius: '12px',
-                      p: 3
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
-                        {meetingRequest.meeting_type === 'video' ? 'Video Call' : 'Phone Call'}
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {meetingRequest.meeting_type === 'video' ? 'Google Meet' : 'Phone Conference'}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {meetingRequest.meeting_type === 'video' ? 'Join via link below' : 'We\'ll call you'}
-                      </Typography>
-                    </Card>
-
-                    {/* Request Info */}
-                    <Card sx={{
-                      background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.08) 0%, rgba(156, 163, 175, 0.05) 100%)',
-                      border: '1px solid rgba(107, 114, 128, 0.2)',
-                      borderRadius: '12px',
-                      p: 3
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
-                        Requested
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {new Date(meetingRequest.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(meetingRequest.created_at).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </Typography>
-                    </Card>
-                  </Box>
-
-                  {/* Purpose */}
-                  {meetingRequest.purpose && (
-                    <Card sx={{
-                      background: 'linear-gradient(135deg, rgba(107, 114, 128, 0.08) 0%, rgba(156, 163, 175, 0.05) 100%)',
-                      border: '1px solid rgba(107, 114, 128, 0.2)',
-                      borderRadius: '12px',
-                      p: 3
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#6B7280' }}>
-                        Meeting Purpose
-                      </Typography>
-                      <Typography variant="body1" sx={{ 
-                        color: 'text.primary',
-                        lineHeight: 1.6,
-                        fontSize: '1.1rem'
-                      }}>
-                        "{meetingRequest.purpose}"
-                      </Typography>
-                    </Card>
-                  )}
-
-                  {/* Join Meeting Button for Video Calls */}
-                  {meetingRequest.meeting_type === 'video' && meetingRequest.meeting_link && (
-                    <Card sx={{
-                      background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
-                      borderRadius: '12px',
-                      p: 3,
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 700, mb: 2 }}>
-                        Ready to Join?
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        startIcon={<VideoCall />}
-                        href={meetingRequest.meeting_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{
-                          py: 2,
-                          background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
-                          color: 'white',
-                          fontWeight: 700,
-                          borderRadius: '12px',
-                          textTransform: 'none',
-                          fontSize: '1.1rem',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)',
-                            boxShadow: '0 8px 16px rgba(34, 197, 94, 0.4)',
-                            transform: 'translateY(-2px)',
-                          },
-                          boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
-                          transition: 'all 0.3s ease-in-out'
-                        }}
-                      >
-                        Join Video Call
-                      </Button>
-                    </Card>
-                  )}
-                </Box>
-              </DialogContent>
-
-              <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 2 }}>
-                <Button 
-                  onClick={() => setMeetingDetailsOpen(false)} 
-                  variant="contained"
-                  size="large"
-                  sx={{ 
-                    minWidth: 100,
-                    py: 1.5,
-                    background: 'linear-gradient(135deg, #6B7280, #4B5563)',
-                    color: 'white',
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    textTransform: 'none',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #4B5563, #374151)',
-                      boxShadow: '0 6px 12px rgba(107, 114, 128, 0.4)',
-                      transform: 'translateY(-1px)',
-                    },
-                    boxShadow: '0 3px 8px rgba(107, 114, 128, 0.3)',
-                    transition: 'all 0.3s ease-in-out'
-                  }}
-                >
-                  Close
-                </Button>
-                <Button 
-                  onClick={handleCancelMeeting}
-                  variant="contained"
-                  startIcon={<Cancel />}
-                  size="large"
-                  sx={{ 
-                    minWidth: 150,
-                    py: 1.5,
-                    background: 'linear-gradient(135deg, #EF4444, #DC2626)',
-                    color: 'white',
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    textTransform: 'none',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-                      boxShadow: '0 8px 16px rgba(239, 68, 68, 0.4)',
-                      transform: 'translateY(-1px)',
-                    },
-                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                    transition: 'all 0.3s ease-in-out'
-                  }}
-                >
-                  Cancel Meeting
-                </Button>
-              </DialogActions>
-            </Dialog>
-          )}
 
           {/* Withdrawal Details Dialog */}
           {(() => {

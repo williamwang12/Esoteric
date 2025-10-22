@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
 const fs = require('fs');
@@ -515,7 +516,7 @@ app.get('/api/admin/users', adminRateLimit, authenticateAdmin, async (req, res) 
     try {
         const result = await pool.query(`
             SELECT u.id, u.email, u.first_name, u.last_name, u.requires_2fa, u.last_login, u.created_at,
-                   u.account_verified, u.verified_at, u.verified_by_admin,
+                   u.account_verified, u.verified_at, u.verified_by_admin, u.temp_password,
                    u2fa.is_enabled as has_2fa_enabled, u2fa.last_used as last_2fa_use,
                    COUNT(la.id) as loan_accounts_count,
                    STRING_AGG(la.account_number, ', ' ORDER BY la.created_at) as account_numbers,
@@ -533,6 +534,34 @@ app.get('/api/admin/users', adminRateLimit, authenticateAdmin, async (req, res) 
     } catch (error) {
         console.error('Admin users fetch error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Clear temporary password for a user
+app.put('/api/admin/users/:userId/clear-temp-password', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const result = await pool.query(`
+            UPDATE users 
+            SET temp_password = NULL
+            WHERE id = $1
+            RETURNING id, email, first_name, last_name
+        `, [userId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        console.log(`🔐 Cleared temporary password for user ${userId} (${result.rows[0].email})`);
+        res.json({ 
+            message: 'Temporary password cleared successfully',
+            user: result.rows[0]
+        });
+        
+    } catch (error) {
+        console.error('Clear temp password error:', error);
+        res.status(500).json({ error: 'Failed to clear temporary password' });
     }
 });
 
@@ -2507,6 +2536,753 @@ app.get('/api/admin/loans/excel-transactions-template', adminRateLimit, authenti
     }
 });
 
+// Client Onboarding Excel Upload
+app.post('/api/admin/clients/excel-onboarding', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('excel'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No Excel file uploaded' });
+        }
+
+        // Validate file extension
+        const fileExtension = path.extname(req.file.originalname).toLowerCase();
+        if (!['.xlsx', '.xls'].includes(fileExtension)) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are allowed' });
+        }
+
+        console.log('📊 Processing client onboarding Excel file:', req.file.originalname);
+
+        // Read the Excel file
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON
+        const data = XLSX.utils.sheet_to_json(worksheet);
+        
+        console.log('📋 Parsed Excel data:', data.length, 'rows');
+
+        // Validate required columns
+        const requiredColumns = ['email', 'deposit_amount'];
+        const processedDeposits = [];
+        const errors = [];
+        const warnings = [];
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNumber = i + 2; // Excel rows start at 1, header is row 1
+
+            // Check required columns
+            const missingColumns = requiredColumns.filter(col => !row.hasOwnProperty(col));
+            if (missingColumns.length > 0) {
+                errors.push(`Row ${rowNumber}: Missing required columns: ${missingColumns.join(', ')}`);
+                continue;
+            }
+
+            // Validate email
+            if (!row.email || typeof row.email !== 'string') {
+                errors.push(`Row ${rowNumber}: Invalid email`);
+                continue;
+            }
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(row.email)) {
+                errors.push(`Row ${rowNumber}: Invalid email format`);
+                continue;
+            }
+
+            // Validate deposit amount
+            const depositAmount = parseFloat(row.deposit_amount);
+            if (isNaN(depositAmount) || depositAmount <= 0) {
+                errors.push(`Row ${rowNumber}: Deposit amount must be a positive number`);
+                continue;
+            }
+
+            // Validate start date (optional, defaults to today)
+            let startDate = new Date().toISOString().split('T')[0]; // Default to today
+            if (row.start_date) {
+                let parsedDate;
+                
+                // Handle different date formats from Excel
+                if (typeof row.start_date === 'number') {
+                    // Excel serial date number
+                    parsedDate = new Date((row.start_date - 25569) * 86400 * 1000);
+                } else if (typeof row.start_date === 'string') {
+                    // String date - try parsing directly
+                    parsedDate = new Date(row.start_date);
+                } else {
+                    // Already a Date object
+                    parsedDate = row.start_date;
+                }
+                
+                if (isNaN(parsedDate.getTime())) {
+                    errors.push(`Row ${rowNumber}: Invalid start date format. Use YYYY-MM-DD`);
+                    continue;
+                }
+                
+                startDate = parsedDate.toISOString().split('T')[0];
+            }
+
+            processedDeposits.push({
+                email: row.email.toLowerCase().trim(),
+                deposit_amount: depositAmount,
+                start_date: startDate,
+                first_name: row.first_name?.trim() || '',
+                last_name: row.last_name?.trim() || '',
+                phone: row.phone?.trim() || '',
+                row_number: rowNumber
+            });
+        }
+
+        // Clean up uploaded file
+        fs.unlinkSync(req.file.path);
+
+        if (errors.length > 0) {
+            return res.status(400).json({ 
+                error: 'Validation errors found', 
+                errors: errors,
+                warnings: warnings
+            });
+        }
+
+        if (processedDeposits.length === 0) {
+            return res.status(400).json({ error: 'No valid deposit data found' });
+        }
+
+        // Group deposits by email to handle multiple deposits per user
+        const depositsByEmail = new Map();
+        for (const deposit of processedDeposits) {
+            if (!depositsByEmail.has(deposit.email)) {
+                depositsByEmail.set(deposit.email, {
+                    email: deposit.email,
+                    first_name: deposit.first_name,
+                    last_name: deposit.last_name,
+                    phone: deposit.phone,
+                    deposits: []
+                });
+            }
+            depositsByEmail.get(deposit.email).deposits.push({
+                amount: deposit.deposit_amount,
+                start_date: deposit.start_date,
+                row_number: deposit.row_number
+            });
+        }
+
+        // Check for existing users
+        for (const [email, userData] of depositsByEmail) {
+            const existingUser = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+            if (existingUser.rows.length > 0) {
+                errors.push(`User ${email} already exists`);
+            }
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({ 
+                error: 'Validation errors found', 
+                errors: errors,
+                warnings: warnings
+            });
+        }
+
+        // Process the onboarding
+        const results = {
+            created_users: [],
+            created_deposits: [],
+            errors: [],
+            warnings: warnings
+        };
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            for (const [email, userData] of depositsByEmail) {
+                try {
+                    // Generate temporary password
+                    const tempPassword = Math.random().toString(36).slice(-12);
+                    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+                    // Create new user
+                    const userResult = await client.query(`
+                        INSERT INTO users (
+                            email, password_hash, first_name, last_name, phone, 
+                            email_verified, account_verified, role, temp_password
+                        ) VALUES ($1, $2, $3, $4, $5, true, false, 'user', $6)
+                        RETURNING id, email
+                    `, [
+                        email, 
+                        hashedPassword, 
+                        userData.first_name || 'New', 
+                        userData.last_name || 'Client', 
+                        userData.phone,
+                        tempPassword
+                    ]);
+
+                    const userId = userResult.rows[0].id;
+                    results.created_users.push({
+                        email: email,
+                        user_id: userId,
+                        temp_password: tempPassword,
+                        deposits_count: userData.deposits.length
+                    });
+
+                    // Create loan account for new user
+                    await client.query(`
+                        INSERT INTO loan_accounts (
+                            user_id, account_number, principal_amount, current_balance
+                        ) VALUES ($1, $2, 0, 0)
+                    `, [userId, `ACC${userId.toString().padStart(8, '0')}`]);
+
+                    let totalDepositAmount = 0;
+
+                    // Create multiple deposits for this user
+                    for (const depositData of userData.deposits) {
+                        const depositResult = await client.query(`
+                            INSERT INTO yield_deposits (
+                                user_id, principal_amount, annual_yield_rate, start_date, 
+                                created_by, notes, status
+                            ) VALUES ($1, $2, 0.12, $3, $4, $5, 'active')
+                            RETURNING *
+                        `, [
+                            userId, 
+                            depositData.amount, 
+                            depositData.start_date,
+                            req.user.id, 
+                            `Onboarding deposit from Excel upload (Start: ${depositData.start_date})`
+                        ]);
+
+                        totalDepositAmount += depositData.amount;
+
+                        results.created_deposits.push({
+                            email: email,
+                            deposit_id: depositResult.rows[0].id,
+                            amount: depositData.amount,
+                            start_date: depositData.start_date
+                        });
+                    }
+
+                    // Add total deposit amount to user's account balance
+                    const accountResult = await client.query(`
+                        UPDATE loan_accounts 
+                        SET current_balance = current_balance + $1
+                        WHERE user_id = $2
+                        RETURNING id
+                    `, [totalDepositAmount, userId]);
+
+                    // Create transaction record for the total deposits
+                    await client.query(`
+                        INSERT INTO loan_transactions (
+                            loan_account_id, amount, transaction_type, description, transaction_date
+                        ) VALUES ($1, $2, 'yield_deposit', $3, CURRENT_DATE)
+                    `, [
+                        accountResult.rows[0].id, 
+                        totalDepositAmount, 
+                        `${userData.deposits.length} deposits totaling $${totalDepositAmount.toFixed(2)} - 12% annual yield`
+                    ]);
+
+                } catch (error) {
+                    console.error(`Error processing user ${email}:`, error);
+                    results.errors.push(`Failed to process ${email} - ${error.message}`);
+                }
+            }
+
+            await client.query('COMMIT');
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+
+        console.log(`✅ Client onboarding completed: ${results.created_users.length} users, ${results.created_deposits.length} deposits`);
+
+        res.json({
+            message: 'Client onboarding completed successfully',
+            summary: {
+                total_rows_processed: processedDeposits.length,
+                unique_users_processed: depositsByEmail.size,
+                users_created: results.created_users.length,
+                deposits_created: results.created_deposits.length,
+                errors: results.errors.length
+            },
+            results: results
+        });
+
+    } catch (error) {
+        console.error('Client onboarding error:', error);
+        res.status(500).json({ error: 'Failed to process client onboarding' });
+    }
+});
+
+// Client Onboarding Excel Template
+app.get('/api/admin/clients/excel-onboarding-template', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        // Create empty template data with just headers
+        const templateData = [
+            {
+                email: '',
+                deposit_amount: '',
+                start_date: '',
+                first_name: '',
+                last_name: '',
+                phone: ''
+            }
+        ];
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(templateData, { skipHeader: true });
+
+        // Add descriptive headers
+        const headers = [
+            'email',
+            'deposit_amount', 
+            'start_date',
+            'first_name',
+            'last_name',
+            'phone'
+        ];
+
+        XLSX.utils.sheet_add_aoa(ws, [headers], { origin: 'A1' });
+
+        // Set column widths for better readability
+        ws['!cols'] = [
+            { width: 30 }, // email
+            { width: 18 }, // deposit_amount
+            { width: 15 }, // start_date
+            { width: 20 }, // first_name
+            { width: 20 }, // last_name
+            { width: 20 }  // phone
+        ];
+
+        // Add the workbook to the response
+        XLSX.utils.book_append_sheet(wb, ws, 'Client Onboarding');
+
+        // Generate buffer
+        const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="client_onboarding_template.xlsx"');
+
+        res.send(excelBuffer);
+
+    } catch (error) {
+        console.error('Client onboarding template generation error:', error);
+        res.status(500).json({ error: 'Failed to generate client onboarding template' });
+    }
+});
+
+// Comprehensive Transaction Import Excel Template
+app.get('/api/admin/transactions/excel-import-template', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        // Create template with just headers - no data rows
+        const templateData = [];
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(templateData, { skipHeader: true });
+
+        // Add descriptive headers
+        const headers = [
+            'email',
+            'transaction_type',
+            'amount',
+            'transaction_date',
+            'description',
+            'first_name',
+            'last_name',
+            'phone'
+        ];
+
+        XLSX.utils.sheet_add_aoa(ws, [headers], { origin: 'A1' });
+
+        // Set column widths for better readability
+        ws['!cols'] = [
+            { width: 30 }, // email
+            { width: 15 }, // transaction_type
+            { width: 15 }, // amount
+            { width: 15 }, // transaction_date
+            { width: 40 }, // description
+            { width: 20 }, // first_name
+            { width: 20 }, // last_name
+            { width: 20 }  // phone
+        ];
+
+        // Add the clean template sheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+        // Generate buffer
+        const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="transaction_import_template.xlsx"');
+
+        res.send(excelBuffer);
+
+    } catch (error) {
+        console.error('Transaction import template generation error:', error);
+        res.status(500).json({ error: 'Failed to generate transaction import template' });
+    }
+});
+
+// Comprehensive Transaction Import Processing
+app.post('/api/admin/transactions/excel-import', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('excel'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No Excel file uploaded' });
+        }
+
+        // Validate file extension
+        const fileExtension = path.extname(req.file.originalname).toLowerCase();
+        if (!['.xlsx', '.xls'].includes(fileExtension)) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are allowed' });
+        }
+
+        console.log('📊 Processing transaction import Excel file:', req.file.originalname);
+
+        // Read the Excel file
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON
+        const data = XLSX.utils.sheet_to_json(worksheet);
+        
+        console.log('📋 Parsed Excel data:', data.length, 'rows');
+
+        // Validate required columns
+        const requiredColumns = ['email', 'transaction_type', 'amount', 'transaction_date'];
+        const processedTransactions = [];
+        const errors = [];
+        const warnings = [];
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNumber = i + 2; // Excel rows start at 1, header is row 1
+
+            // Check required columns
+            const missingColumns = requiredColumns.filter(col => !row.hasOwnProperty(col));
+            if (missingColumns.length > 0) {
+                errors.push(`Row ${rowNumber}: Missing required columns: ${missingColumns.join(', ')}`);
+                continue;
+            }
+
+            // Validate email
+            if (!row.email || typeof row.email !== 'string') {
+                errors.push(`Row ${rowNumber}: Invalid email`);
+                continue;
+            }
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(row.email)) {
+                errors.push(`Row ${rowNumber}: Invalid email format`);
+                continue;
+            }
+
+            // Validate transaction type
+            const transactionType = row.transaction_type?.toString().toLowerCase();
+            if (!['deposit', 'withdrawal'].includes(transactionType)) {
+                errors.push(`Row ${rowNumber}: Transaction type must be "deposit" or "withdrawal"`);
+                continue;
+            }
+
+            // Validate amount
+            const amount = parseFloat(row.amount);
+            if (isNaN(amount) || amount <= 0) {
+                errors.push(`Row ${rowNumber}: Amount must be a positive number`);
+                continue;
+            }
+
+            // Validate transaction date
+            let transactionDate;
+            if (row.transaction_date) {
+                let parsedDate;
+                
+                // Handle different date formats from Excel
+                if (typeof row.transaction_date === 'number') {
+                    // Excel serial date number
+                    parsedDate = new Date((row.transaction_date - 25569) * 86400 * 1000);
+                } else if (typeof row.transaction_date === 'string') {
+                    // String date - try parsing directly
+                    parsedDate = new Date(row.transaction_date);
+                } else {
+                    // Already a Date object
+                    parsedDate = row.transaction_date;
+                }
+                
+                if (isNaN(parsedDate.getTime())) {
+                    errors.push(`Row ${rowNumber}: Invalid transaction date format. Use YYYY-MM-DD`);
+                    continue;
+                }
+                
+                transactionDate = parsedDate.toISOString().split('T')[0];
+            } else {
+                errors.push(`Row ${rowNumber}: Transaction date is required`);
+                continue;
+            }
+
+            processedTransactions.push({
+                email: row.email.toLowerCase().trim(),
+                transaction_type: transactionType,
+                amount: amount,
+                transaction_date: transactionDate,
+                description: row.description?.trim() || '',
+                first_name: row.first_name?.trim() || '',
+                last_name: row.last_name?.trim() || '',
+                phone: row.phone?.trim() || '',
+                row_number: rowNumber
+            });
+        }
+
+        // Clean up uploaded file
+        fs.unlinkSync(req.file.path);
+
+        if (errors.length > 0) {
+            return res.status(400).json({ 
+                error: 'Validation errors found', 
+                errors: errors,
+                warnings: warnings
+            });
+        }
+
+        if (processedTransactions.length === 0) {
+            return res.status(400).json({ error: 'No valid transaction data found' });
+        }
+
+        // Sort transactions by date to process chronologically
+        processedTransactions.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
+
+        // Group by email to track user creation
+        const userEmails = new Set(processedTransactions.map(t => t.email));
+        const newUsers = new Map();
+
+        // Check which users exist
+        for (const email of userEmails) {
+            const existingUser = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+            if (existingUser.rows.length === 0) {
+                // Find first transaction for this email to get user info
+                const firstTransaction = processedTransactions.find(t => t.email === email);
+                newUsers.set(email, {
+                    email: email,
+                    first_name: firstTransaction.first_name || 'New',
+                    last_name: firstTransaction.last_name || 'Client',
+                    phone: firstTransaction.phone || ''
+                });
+            }
+        }
+
+        // Process the transactions
+        const results = {
+            created_users: [],
+            processed_transactions: [],
+            created_deposits: [],
+            processed_withdrawals: [],
+            errors: [],
+            warnings: warnings
+        };
+
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Create new users first
+            for (const [email, userData] of newUsers) {
+                try {
+                    // Generate temporary password
+                    const tempPassword = Math.random().toString(36).slice(-12);
+                    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+                    // Create new user
+                    const userResult = await client.query(`
+                        INSERT INTO users (
+                            email, password_hash, first_name, last_name, phone, 
+                            email_verified, account_verified, role, temp_password
+                        ) VALUES ($1, $2, $3, $4, $5, true, false, 'user', $6)
+                        RETURNING id, email
+                    `, [
+                        email, 
+                        hashedPassword, 
+                        userData.first_name, 
+                        userData.last_name, 
+                        userData.phone,
+                        tempPassword
+                    ]);
+
+                    const userId = userResult.rows[0].id;
+                    results.created_users.push({
+                        email: email,
+                        user_id: userId,
+                        temp_password: tempPassword
+                    });
+
+                    // Create loan account for new user
+                    await client.query(`
+                        INSERT INTO loan_accounts (
+                            user_id, account_number, principal_amount, current_balance
+                        ) VALUES ($1, $2, 0, 0)
+                    `, [userId, `ACC${userId.toString().padStart(8, '0')}`]);
+
+                } catch (error) {
+                    console.error(`Error creating user ${email}:`, error);
+                    results.errors.push(`Failed to create user ${email}: ${error.message}`);
+                }
+            }
+
+            // Process transactions chronologically
+            for (const transaction of processedTransactions) {
+                try {
+                    // Get user info
+                    const userResult = await client.query(`
+                        SELECT u.id, u.email, la.id as loan_account_id
+                        FROM users u
+                        JOIN loan_accounts la ON u.id = la.user_id
+                        WHERE u.email = $1
+                    `, [transaction.email]);
+
+                    if (userResult.rows.length === 0) {
+                        results.errors.push(`Row ${transaction.row_number}: User ${transaction.email} not found`);
+                        continue;
+                    }
+
+                    const user = userResult.rows[0];
+
+                    if (transaction.transaction_type === 'deposit') {
+                        // Create yield deposit
+                        const depositResult = await client.query(`
+                            INSERT INTO yield_deposits (
+                                user_id, principal_amount, annual_yield_rate, start_date, 
+                                created_by, notes, status
+                            ) VALUES ($1, $2, 0.12, $3, $4, $5, 'active')
+                            RETURNING *
+                        `, [
+                            user.id, 
+                            transaction.amount, 
+                            transaction.transaction_date,
+                            req.user.id, 
+                            transaction.description || `Deposit from transaction import (${transaction.transaction_date})`
+                        ]);
+
+                        // Add to account balance
+                        await client.query(`
+                            UPDATE loan_accounts 
+                            SET current_balance = current_balance + $1
+                            WHERE id = $2
+                        `, [transaction.amount, user.loan_account_id]);
+
+                        // Create transaction record
+                        await client.query(`
+                            INSERT INTO loan_transactions (
+                                loan_account_id, amount, transaction_type, description, transaction_date
+                            ) VALUES ($1, $2, 'yield_deposit', $3, $4)
+                        `, [
+                            user.loan_account_id, 
+                            transaction.amount, 
+                            transaction.description || `Deposit - 12% annual yield`,
+                            transaction.transaction_date
+                        ]);
+
+                        results.created_deposits.push({
+                            email: transaction.email,
+                            deposit_id: depositResult.rows[0].id,
+                            amount: transaction.amount,
+                            date: transaction.transaction_date
+                        });
+
+                    } else if (transaction.transaction_type === 'withdrawal') {
+                        // NEW POLICY: Withdrawals subtract from cumulative sum but don't affect 12% yield base until year refresh
+                        // Simply check balance and subtract - do NOT reduce deposit principal amounts
+                        
+                        // Get current account balance
+                        const balanceResult = await client.query(`
+                            SELECT current_balance FROM loan_accounts WHERE id = $1
+                        `, [user.loan_account_id]);
+                        
+                        const currentBalance = parseFloat(balanceResult.rows[0].current_balance || 0);
+                        
+                        if (currentBalance < transaction.amount) {
+                            results.warnings.push(`Row ${transaction.row_number}: Insufficient balance. Current: $${currentBalance.toFixed(2)}, Requested: $${transaction.amount.toFixed(2)}. Withdrawal not processed.`);
+                        } else {
+                            // Subtract from account balance only - DO NOT touch deposit principal amounts
+                            await client.query(`
+                                UPDATE loan_accounts 
+                                SET current_balance = current_balance - $1
+                                WHERE id = $2
+                            `, [transaction.amount, user.loan_account_id]);
+
+                            // Create transaction record for audit trail
+                            await client.query(`
+                                INSERT INTO loan_transactions (
+                                    loan_account_id, amount, transaction_type, description, transaction_date
+                                ) VALUES ($1, $2, 'withdrawal', $3, $4)
+                            `, [
+                                user.loan_account_id, 
+                                -transaction.amount, 
+                                transaction.description || `Withdrawal - Balance reduced only (12% yield base unchanged)`,
+                                transaction.transaction_date
+                            ]);
+
+                            results.processed_withdrawals.push({
+                                email: transaction.email,
+                                requested_amount: transaction.amount,
+                                actual_amount: transaction.amount,
+                                date: transaction.transaction_date,
+                                note: 'Withdrawal processed - 12% yield base unchanged until year refresh'
+                            });
+                        }
+                    }
+
+                    results.processed_transactions.push({
+                        email: transaction.email,
+                        type: transaction.transaction_type,
+                        amount: transaction.amount,
+                        date: transaction.transaction_date,
+                        description: transaction.description
+                    });
+
+                } catch (error) {
+                    console.error(`Error processing transaction for ${transaction.email}:`, error);
+                    results.errors.push(`Row ${transaction.row_number}: Failed to process ${transaction.transaction_type} for ${transaction.email} - ${error.message}`);
+                }
+            }
+
+            await client.query('COMMIT');
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+
+        console.log(`✅ Transaction import completed: ${results.created_users.length} users, ${results.processed_transactions.length} transactions`);
+
+        res.json({
+            message: 'Transaction import completed successfully',
+            summary: {
+                total_transactions_processed: processedTransactions.length,
+                users_created: results.created_users.length,
+                deposits_created: results.created_deposits.length,
+                withdrawals_processed: results.processed_withdrawals.length,
+                errors: results.errors.length,
+                warnings: results.warnings.length
+            },
+            results: results
+        });
+
+    } catch (error) {
+        console.error('Transaction import error:', error);
+        res.status(500).json({ error: 'Failed to process transaction import' });
+    }
+});
+
 // Admin route - Update meeting request status
 app.put('/api/admin/meeting-requests/:requestId', adminRateLimit, authenticateAdmin, [
     body('status').isIn(['pending', 'scheduled', 'completed', 'cancelled']).withMessage('Invalid status'),
@@ -2932,6 +3708,72 @@ app.post('/api/admin/yield-deposits/:id/payout', adminRateLimit, authenticateAdm
     }
 });
 
+// Endpoint to manually trigger daily yield payments
+app.post('/api/admin/yield-deposits/process-daily-payments', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { target_date } = req.body;
+        
+        const result = await processDailyYieldPayments(target_date, req.user.id);
+        
+        res.json({
+            message: 'Daily yield payments processed successfully',
+            ...result
+        });
+        
+    } catch (error) {
+        console.error('Error in daily yield payment endpoint:', error);
+        res.status(500).json({ error: 'Failed to process daily yield payments' });
+    }
+});
+
+// Endpoint to get daily yield payment status
+app.get('/api/admin/yield-deposits/daily-status', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { date = new Date().toISOString().split('T')[0] } = req.query;
+        
+        // Get payment summary for the date
+        const summaryResult = await pool.query(`
+            SELECT 
+                COUNT(*) as total_payments,
+                SUM(yp.amount) as total_amount,
+                COUNT(DISTINCT yd.user_id) as unique_users
+            FROM yield_payouts yp
+            JOIN yield_deposits yd ON yp.deposit_id = yd.id
+            WHERE yp.payout_date = $1
+        `, [date]);
+        
+        // Get active deposits that haven't been paid today
+        const pendingResult = await pool.query(`
+            SELECT COUNT(*) as pending_deposits
+            FROM yield_deposits yd
+            WHERE yd.status = 'active' 
+              AND yd.start_date <= $1
+              AND NOT EXISTS (
+                  SELECT 1 FROM yield_payouts yp 
+                  WHERE yp.deposit_id = yd.id AND yp.payout_date = $1
+              )
+        `, [date]);
+        
+        const summary = summaryResult.rows[0];
+        const pending = pendingResult.rows[0];
+        
+        res.json({
+            date,
+            payments_processed: {
+                count: parseInt(summary.total_payments),
+                amount: parseFloat(summary.total_amount || 0),
+                unique_users: parseInt(summary.unique_users)
+            },
+            pending_payments: parseInt(pending.pending_deposits),
+            is_complete: parseInt(pending.pending_deposits) === 0
+        });
+        
+    } catch (error) {
+        console.error('Error getting daily yield status:', error);
+        res.status(500).json({ error: 'Failed to get daily yield status' });
+    }
+});
+
 // Get yield deposit details with payout history
 app.get('/api/admin/yield-deposits/:id', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {
@@ -3094,6 +3936,114 @@ async function processYieldPayout(depositId, payoutDate, processedBy) {
     }
 }
 
+// NEW DAILY YIELD PAYMENT SYSTEM
+// Process daily yield payments for all active deposits
+async function processDailyYieldPayments(targetDate = null, processedBy = null) {
+    const paymentDate = targetDate || new Date().toISOString().split('T')[0];
+    
+    try {
+        await pool.query('BEGIN');
+        
+        console.log(`🏦 Processing daily yield payments for ${paymentDate}...`);
+        
+        // Get all active deposits
+        const depositsResult = await pool.query(`
+            SELECT yd.id, yd.user_id, yd.principal_amount, yd.annual_yield_rate, yd.start_date,
+                   u.email, la.id as loan_account_id
+            FROM yield_deposits yd
+            JOIN users u ON yd.user_id = u.id
+            JOIN loan_accounts la ON la.user_id = u.id
+            WHERE yd.status = 'active' 
+              AND yd.start_date <= $1
+            ORDER BY yd.id
+        `, [paymentDate]);
+        
+        let totalPayments = 0;
+        let totalAmount = 0;
+        const processedDeposits = [];
+        
+        for (const deposit of depositsResult.rows) {
+            // Check if payment already exists for this date
+            const existingPayment = await pool.query(`
+                SELECT id FROM yield_payouts 
+                WHERE deposit_id = $1 AND payout_date = $2
+            `, [deposit.id, paymentDate]);
+            
+            if (existingPayment.rows.length > 0) {
+                console.log(`⏭️  Skipping deposit ${deposit.id} - payment already exists for ${paymentDate}`);
+                continue;
+            }
+            
+            // Calculate daily yield: 12% / 365 days
+            const dailyYieldRate = parseFloat(deposit.annual_yield_rate) / 365;
+            const dailyPayment = parseFloat(deposit.principal_amount) * dailyYieldRate;
+            
+            // Create yield payout record
+            const payoutResult = await pool.query(`
+                INSERT INTO yield_payouts (
+                    deposit_id, amount, payout_date, processed_by, created_at
+                ) VALUES ($1, $2, $3, $4, NOW())
+                RETURNING id
+            `, [deposit.id, dailyPayment, paymentDate, processedBy]);
+            
+            // Create transaction record
+            await pool.query(`
+                INSERT INTO loan_transactions (
+                    loan_account_id, amount, transaction_type, description, 
+                    transaction_date, created_at
+                ) VALUES ($1, $2, 'daily_yield', $3, $4, NOW())
+            `, [
+                deposit.loan_account_id,
+                dailyPayment,
+                `Daily yield payment (${(dailyYieldRate * 100).toFixed(6)}%) for deposit #${deposit.id}`,
+                paymentDate
+            ]);
+            
+            // Update loan account balance
+            await pool.query(`
+                UPDATE loan_accounts 
+                SET current_balance = current_balance + $1
+                WHERE id = $2
+            `, [dailyPayment, deposit.loan_account_id]);
+            
+            // Update deposit's total paid out
+            await pool.query(`
+                UPDATE yield_deposits 
+                SET last_payout_date = $1, total_paid_out = COALESCE(total_paid_out, 0) + $2
+                WHERE id = $3
+            `, [paymentDate, dailyPayment, deposit.id]);
+            
+            totalPayments++;
+            totalAmount += dailyPayment;
+            
+            processedDeposits.push({
+                deposit_id: deposit.id,
+                email: deposit.email,
+                principal: parseFloat(deposit.principal_amount),
+                daily_payment: dailyPayment,
+                payout_id: payoutResult.rows[0].id
+            });
+        }
+        
+        await pool.query('COMMIT');
+        
+        console.log(`✅ Daily yield processing complete: ${totalPayments} payments totaling $${totalAmount.toFixed(2)}`);
+        
+        return {
+            success: true,
+            date: paymentDate,
+            total_payments: totalPayments,
+            total_amount: totalAmount,
+            processed_deposits: processedDeposits
+        };
+        
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Error processing daily yield payments:', error);
+        throw error;
+    }
+}
+
 
 // Error handling middleware
 app.use((error, req, res, next) => {
@@ -3113,6 +4063,187 @@ app.use((error, req, res, next) => {
     }
     next(error);
 });
+
+// ==============================================
+// CALENDLY API INTEGRATION
+// ==============================================
+
+const axios = require('axios');
+
+// Calendly API configuration
+const calendlyConfig = {
+    baseURL: process.env.CALENDLY_API_BASE_URL || 'https://api.calendly.com',
+    token: process.env.CALENDLY_API_TOKEN,
+    userURI: process.env.CALENDLY_USER_URI
+};
+
+// Calendly API client
+const calendlyApi = axios.create({
+    baseURL: calendlyConfig.baseURL,
+    headers: {
+        'Authorization': `Bearer ${calendlyConfig.token}`,
+        'Content-Type': 'application/json'
+    }
+});
+
+// Get Calendly user info
+app.get('/api/calendly/user', authenticateToken, async (req, res) => {
+    try {
+        const response = await calendlyApi.get('/users/me');
+        res.json(response.data);
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch Calendly user info',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// Get Calendly event types
+app.get('/api/calendly/event-types', authenticateToken, async (req, res) => {
+    try {
+        const response = await calendlyApi.get(`/event_types?user=${calendlyConfig.userURI}`);
+        res.json(response.data);
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch event types',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// Get Calendly scheduled events
+app.get('/api/calendly/scheduled-events', authenticateToken, async (req, res) => {
+    try {
+        const { status, start_time, end_time, sort, count } = req.query;
+        
+        const params = new URLSearchParams();
+        params.append('user', calendlyConfig.userURI);
+        
+        if (status) params.append('status', status);
+        if (start_time) params.append('min_start_time', start_time);
+        if (end_time) params.append('max_start_time', end_time);
+        if (sort) params.append('sort', sort);
+        if (count) params.append('count', count);
+        
+        const response = await calendlyApi.get(`/scheduled_events?${params.toString()}`);
+        res.json(response.data);
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch scheduled events',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// Get event details with invitee information
+app.get('/api/calendly/events/:eventUuid', authenticateToken, async (req, res) => {
+    try {
+        const { eventUuid } = req.params;
+        
+        // Get event details
+        const eventResponse = await calendlyApi.get(`/scheduled_events/${eventUuid}`);
+        const event = eventResponse.data.resource;
+        
+        // Get invitees for this event
+        const inviteesResponse = await calendlyApi.get(`/scheduled_events/${eventUuid}/invitees`);
+        const invitees = inviteesResponse.data.collection;
+        
+        res.json({
+            event,
+            invitees
+        });
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch event details',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// Cancel a scheduled event
+app.post('/api/calendly/events/:eventUuid/cancel', authenticateToken, async (req, res) => {
+    try {
+        const { eventUuid } = req.params;
+        const { reason } = req.body;
+        
+        const response = await calendlyApi.post(`/scheduled_events/${eventUuid}/cancellation`, {
+            reason: reason || 'Cancelled by admin'
+        });
+        
+        res.json({
+            message: 'Event cancelled successfully',
+            cancellation: response.data.resource
+        });
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to cancel event',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// Get available time slots for an event type
+app.get('/api/calendly/availability/:eventTypeUuid', authenticateToken, async (req, res) => {
+    try {
+        const { eventTypeUuid } = req.params;
+        const { start_time, end_time } = req.query;
+        
+        if (!start_time || !end_time) {
+            return res.status(400).json({
+                error: 'start_time and end_time parameters are required'
+            });
+        }
+        
+        const params = new URLSearchParams();
+        params.append('event_type', `https://api.calendly.com/event_types/${eventTypeUuid}`);
+        params.append('start_time', start_time);
+        params.append('end_time', end_time);
+        
+        const response = await calendlyApi.get(`/event_type_available_times?${params.toString()}`);
+        res.json(response.data);
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch availability',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// Admin endpoint to get all Calendly data for dashboard
+app.get('/api/admin/calendly/dashboard', authenticateAdmin, async (req, res) => {
+    try {
+        // Get user info, event types, and recent events in parallel
+        const [userResponse, eventTypesResponse, eventsResponse] = await Promise.all([
+            calendlyApi.get('/users/me'),
+            calendlyApi.get(`/event_types?user=${calendlyConfig.userURI}`),
+            calendlyApi.get(`/scheduled_events?user=${calendlyConfig.userURI}&sort=start_time:desc&count=10`)
+        ]);
+        
+        res.json({
+            user: userResponse.data.resource,
+            eventTypes: eventTypesResponse.data.collection,
+            recentEvents: eventsResponse.data.collection,
+            pagination: eventsResponse.data.pagination
+        });
+    } catch (error) {
+        console.error('Calendly API error:', error.response?.data || error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch Calendly dashboard data',
+            details: error.response?.data?.message || error.message
+        });
+    }
+});
+
+// ==============================================
+// END CALENDLY API INTEGRATION
+// ==============================================
 
 // 404 handler
 app.use((req, res) => {
