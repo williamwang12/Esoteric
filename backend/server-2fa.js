@@ -13,6 +13,7 @@ const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 const XLSX = require('xlsx');
+const docusign = require('docusign-esign');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -4243,6 +4244,464 @@ app.get('/api/admin/calendly/dashboard', authenticateAdmin, async (req, res) => 
 
 // ==============================================
 // END CALENDLY API INTEGRATION
+// ==============================================
+
+// ==============================================
+// DOCUSIGN API INTEGRATION
+// ==============================================
+
+// DocuSign configuration
+const docuSignConfig = {
+    integrationKey: process.env.DOCUSIGN_INTEGRATION_KEY,
+    clientSecret: process.env.DOCUSIGN_CLIENT_SECRET,
+    userId: process.env.DOCUSIGN_USER_ID,
+    accountId: process.env.DOCUSIGN_ACCOUNT_ID,
+    privateKeyPath: process.env.DOCUSIGN_PRIVATE_KEY_PATH,
+    environment: process.env.DOCUSIGN_ENVIRONMENT || 'production',
+    redirectUri: process.env.DOCUSIGN_REDIRECT_URI
+};
+
+// DocuSign API client setup
+const dsApiClient = new docusign.ApiClient();
+dsApiClient.setBasePath(docuSignConfig.environment === 'production' ? 
+    'https://na1.docusign.net/restapi' : 'https://demo.docusign.net/restapi');
+
+// JWT Authentication for DocuSign
+async function getDocuSignAccessToken() {
+    try {
+        const jwtLifeSec = 10 * 60; // 10 minutes
+        const scopes = ['signature', 'impersonation'];
+        
+        // Read private key
+        const privateKey = fs.readFileSync(path.resolve(docuSignConfig.privateKeyPath));
+        
+        const results = await dsApiClient.requestJWTUserToken(
+            docuSignConfig.integrationKey,
+            docuSignConfig.userId,
+            scopes,
+            privateKey,
+            jwtLifeSec
+        );
+        
+        const accessToken = results.body.access_token;
+        dsApiClient.addDefaultHeader('Authorization', 'Bearer ' + accessToken);
+        
+        return accessToken;
+    } catch (error) {
+        console.error('DocuSign JWT authentication error:', error);
+        throw error;
+    }
+}
+
+// Create DocuSign envelope
+app.post('/api/docusign/create-envelope', authenticateToken, async (req, res) => {
+    try {
+        const { documentBase64, documentName, signerEmail, signerName, subject } = req.body;
+        
+        if (!documentBase64 || !documentName || !signerEmail || !signerName) {
+            return res.status(400).json({ 
+                error: 'Missing required fields: documentBase64, documentName, signerEmail, signerName' 
+            });
+        }
+
+        await getDocuSignAccessToken();
+        
+        // Create envelope definition
+        const envelopeDefinition = {
+            emailSubject: subject || 'Please sign this document',
+            documents: [{
+                documentBase64: documentBase64,
+                name: documentName,
+                fileExtension: 'pdf',
+                documentId: '1'
+            }],
+            recipients: {
+                signers: [{
+                    email: signerEmail,
+                    name: signerName,
+                    recipientId: '1',
+                    routingOrder: '1',
+                    tabs: {
+                        signHereTabs: [{
+                            documentId: '1',
+                            pageNumber: '1',
+                            xPosition: '100',
+                            yPosition: '100'
+                        }]
+                    }
+                }]
+            },
+            status: 'sent'
+        };
+
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const results = await envelopesApi.createEnvelope(docuSignConfig.accountId, {
+            envelopeDefinition: envelopeDefinition
+        });
+
+        res.json({
+            envelopeId: results.envelopeId,
+            status: results.status,
+            statusDateTime: results.statusDateTime,
+            uri: results.uri
+        });
+
+    } catch (error) {
+        console.error('DocuSign create envelope error:', error);
+        res.status(500).json({ 
+            error: 'Failed to create DocuSign envelope',
+            details: error.response?.body || error.message
+        });
+    }
+});
+
+// Get envelope status
+app.get('/api/docusign/envelope/:envelopeId/status', authenticateToken, async (req, res) => {
+    try {
+        const { envelopeId } = req.params;
+        
+        await getDocuSignAccessToken();
+        
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const envelope = await envelopesApi.getEnvelope(docuSignConfig.accountId, envelopeId);
+        
+        // Get recipients info
+        const recipients = await envelopesApi.listRecipients(docuSignConfig.accountId, envelopeId);
+        
+        res.json({
+            envelopeId: envelope.envelopeId,
+            status: envelope.status,
+            statusDateTime: envelope.statusDateTime,
+            subject: envelope.emailSubject,
+            recipients: recipients.signers || []
+        });
+
+    } catch (error) {
+        console.error('DocuSign get envelope status error:', error);
+        res.status(500).json({ 
+            error: 'Failed to get envelope status',
+            details: error.response?.body || error.message
+        });
+    }
+});
+
+// Download completed document
+app.get('/api/docusign/envelope/:envelopeId/documents/:documentId', authenticateToken, async (req, res) => {
+    try {
+        const { envelopeId, documentId } = req.params;
+        
+        await getDocuSignAccessToken();
+        
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const document = await envelopesApi.getDocument(
+            docuSignConfig.accountId, 
+            envelopeId, 
+            documentId || 'combined'
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="signed-document-${envelopeId}.pdf"`);
+        res.send(document);
+
+    } catch (error) {
+        console.error('DocuSign download document error:', error);
+        res.status(500).json({ 
+            error: 'Failed to download document',
+            details: error.response?.body || error.message
+        });
+    }
+});
+
+// Get user envelopes list
+app.get('/api/docusign/envelopes', authenticateToken, async (req, res) => {
+    try {
+        await getDocuSignAccessToken();
+        
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const options = {
+            fromDate: req.query.from_date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // Last 30 days
+        };
+        
+        const envelopes = await envelopesApi.listStatusChanges(docuSignConfig.accountId, options);
+        
+        res.json({
+            envelopes: envelopes.envelopes || [],
+            totalSetSize: envelopes.totalSetSize
+        });
+
+    } catch (error) {
+        console.error('DocuSign list envelopes error:', error);
+        res.status(500).json({ 
+            error: 'Failed to get envelopes list',
+            details: error.response?.body || error.message
+        });
+    }
+});
+
+// Create embedded signing URL for direct client signing
+app.post('/api/docusign/create-embedded-envelope', authenticateToken, async (req, res) => {
+    try {
+        const { documentId, documentTitle } = req.body;
+        
+        await getDocuSignAccessToken();
+        
+        // Get the document from the database
+        const documentResult = await pool.query(
+            'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+            [documentId, req.user.userId]
+        );
+        
+        if (documentResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Document not found' });
+        }
+        
+        const document = documentResult.rows[0];
+        
+        // Read the document file
+        const documentPath = path.resolve(document.file_path);
+        const documentBase64 = fs.readFileSync(documentPath, { encoding: 'base64' });
+        
+        // Create the envelope definition
+        const envelopeDefinition = new docusign.EnvelopeDefinition();
+        envelopeDefinition.emailSubject = `Please sign: ${document.title}`;
+        envelopeDefinition.status = 'sent';
+        
+        // Create the document
+        const doc = new docusign.Document();
+        doc.documentBase64 = documentBase64;
+        doc.name = document.title;
+        doc.fileExtension = 'pdf';
+        doc.documentId = '1';
+        envelopeDefinition.documents = [doc];
+        
+        // Create the signer (the current user)
+        const signer = new docusign.Signer();
+        signer.email = req.user.email;
+        signer.name = `${req.user.firstName} ${req.user.lastName}`;
+        signer.recipientId = '1';
+        signer.clientUserId = req.user.userId.toString(); // This makes it embedded
+        
+        // Add signature tab
+        const signHere = new docusign.SignHere();
+        signHere.anchorString = 'Signature:';
+        signHere.anchorUnits = 'pixels';
+        signHere.anchorXOffset = '100';
+        signHere.anchorYOffset = '0';
+        
+        // If no anchor found, place signature at bottom of page
+        const signHereDefault = new docusign.SignHere();
+        signHereDefault.documentId = '1';
+        signHereDefault.pageNumber = '1';
+        signHereDefault.xPosition = '100';
+        signHereDefault.yPosition = '650';
+        
+        // Add date tab next to signature
+        const dateTab = new docusign.DateSigned();
+        dateTab.anchorString = 'Date:';
+        dateTab.anchorUnits = 'pixels';
+        dateTab.anchorXOffset = '100';
+        dateTab.anchorYOffset = '0';
+        
+        const dateTabDefault = new docusign.DateSigned();
+        dateTabDefault.documentId = '1';
+        dateTabDefault.pageNumber = '1';
+        dateTabDefault.xPosition = '350';
+        dateTabDefault.yPosition = '650';
+        
+        const tabs = new docusign.Tabs();
+        tabs.signHereTabs = [signHere, signHereDefault];
+        tabs.dateSignedTabs = [dateTab, dateTabDefault];
+        signer.tabs = tabs;
+        
+        // Add recipients to envelope
+        const recipients = new docusign.Recipients();
+        recipients.signers = [signer];
+        envelopeDefinition.recipients = recipients;
+        
+        // Create the envelope
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const envelopeResults = await envelopesApi.createEnvelope(docuSignConfig.accountId, {
+            envelopeDefinition: envelopeDefinition
+        });
+        
+        const envelopeId = envelopeResults.envelopeId;
+        
+        // Create the recipient view (embedded signing URL)
+        const recipientViewRequest = new docusign.RecipientViewRequest();
+        recipientViewRequest.authenticationMethod = 'none';
+        recipientViewRequest.email = req.user.email;
+        recipientViewRequest.userName = `${req.user.firstName} ${req.user.lastName}`;
+        recipientViewRequest.clientUserId = req.user.userId.toString();
+        recipientViewRequest.returnUrl = `${process.env.FRONTEND_URL}/documents?signed=true`;
+        
+        const viewResults = await envelopesApi.createRecipientView(
+            docuSignConfig.accountId, 
+            envelopeId, 
+            { recipientViewRequest: recipientViewRequest }
+        );
+        
+        // Update document with envelope ID
+        await pool.query(
+            'UPDATE documents SET docusign_envelope_id = $1, docusign_status = $2 WHERE id = $3',
+            [envelopeId, 'sent', documentId]
+        );
+        
+        res.json({
+            success: true,
+            envelopeId: envelopeId,
+            signingUrl: viewResults.url,
+            message: 'Embedded signing session created successfully'
+        });
+        
+    } catch (error) {
+        console.error('DocuSign embedded signing error:', error);
+        res.status(500).json({ 
+            error: 'Failed to create embedded signing session',
+            details: error.message 
+        });
+    }
+});
+
+// Get signing URL for existing envelope (if user needs to re-sign)
+app.post('/api/docusign/get-signing-url/:envelopeId', authenticateToken, async (req, res) => {
+    try {
+        const { envelopeId } = req.params;
+        
+        await getDocuSignAccessToken();
+        
+        // Create the recipient view request
+        const recipientViewRequest = new docusign.RecipientViewRequest();
+        recipientViewRequest.authenticationMethod = 'none';
+        recipientViewRequest.email = req.user.email;
+        recipientViewRequest.userName = `${req.user.firstName} ${req.user.lastName}`;
+        recipientViewRequest.clientUserId = req.user.userId.toString();
+        recipientViewRequest.returnUrl = `${process.env.FRONTEND_URL}/documents?signed=true`;
+        
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const viewResults = await envelopesApi.createRecipientView(
+            docuSignConfig.accountId, 
+            envelopeId, 
+            { recipientViewRequest: recipientViewRequest }
+        );
+        
+        res.json({
+            success: true,
+            signingUrl: viewResults.url
+        });
+        
+    } catch (error) {
+        console.error('DocuSign get signing URL error:', error);
+        res.status(500).json({ 
+            error: 'Failed to get signing URL',
+            details: error.message 
+        });
+    }
+});
+
+// Check and update DocuSign envelope status
+app.post('/api/docusign/update-status/:envelopeId', authenticateToken, async (req, res) => {
+    try {
+        const { envelopeId } = req.params;
+        
+        await getDocuSignAccessToken();
+        
+        // Get envelope status from DocuSign
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const envelope = await envelopesApi.getEnvelope(docuSignConfig.accountId, envelopeId);
+        
+        const status = envelope.status.toLowerCase();
+        
+        // Update document status in database
+        const result = await pool.query(
+            'UPDATE documents SET docusign_status = $1 WHERE docusign_envelope_id = $2 AND user_id = $3 RETURNING *',
+            [status, envelopeId, req.user.userId]
+        );
+        
+        if (result.rows.length > 0) {
+            res.json({
+                success: true,
+                status: status,
+                document: result.rows[0]
+            });
+        } else {
+            res.status(404).json({ error: 'Document not found' });
+        }
+        
+    } catch (error) {
+        console.error('DocuSign status update error:', error);
+        res.status(500).json({ 
+            error: 'Failed to update document status',
+            details: error.message 
+        });
+    }
+});
+
+// Refresh all document statuses for a user
+app.post('/api/docusign/refresh-statuses', authenticateToken, async (req, res) => {
+    try {
+        await getDocuSignAccessToken();
+        
+        // Get all documents with DocuSign envelopes for this user
+        const documentsResult = await pool.query(
+            'SELECT * FROM documents WHERE user_id = $1 AND docusign_envelope_id IS NOT NULL',
+            [req.user.userId]
+        );
+        
+        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+        const updatedDocuments = [];
+        
+        for (const doc of documentsResult.rows) {
+            try {
+                // Get current status from DocuSign
+                const envelope = await envelopesApi.getEnvelope(docuSignConfig.accountId, doc.docusign_envelope_id);
+                const status = envelope.status.toLowerCase();
+                
+                // Update if status has changed
+                if (status !== doc.docusign_status) {
+                    const updateResult = await pool.query(
+                        'UPDATE documents SET docusign_status = $1 WHERE id = $2 RETURNING *',
+                        [status, doc.id]
+                    );
+                    updatedDocuments.push(updateResult.rows[0]);
+                }
+            } catch (error) {
+                console.error(`Failed to update status for envelope ${doc.docusign_envelope_id}:`, error);
+            }
+        }
+        
+        res.json({
+            success: true,
+            updatedCount: updatedDocuments.length,
+            updatedDocuments
+        });
+        
+    } catch (error) {
+        console.error('DocuSign refresh statuses error:', error);
+        res.status(500).json({ 
+            error: 'Failed to refresh document statuses',
+            details: error.message 
+        });
+    }
+});
+
+// DocuSign webhook endpoint (for real-time status updates)
+app.post('/api/docusign/webhook', express.raw({ type: 'application/xml' }), async (req, res) => {
+    try {
+        // Parse the XML webhook data
+        console.log('DocuSign webhook received:', req.body.toString());
+        
+        // Here you would parse the XML and update your database
+        // with the envelope status changes
+        
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('DocuSign webhook error:', error);
+        res.status(500).send('Error processing webhook');
+    }
+});
+
+// ==============================================
+// END DOCUSIGN API INTEGRATION
 // ==============================================
 
 // 404 handler

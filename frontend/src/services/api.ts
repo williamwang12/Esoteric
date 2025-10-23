@@ -482,6 +482,85 @@ export const calendlyApi = {
   },
 };
 
+// DocuSign API
+export const docuSignApi = {
+  // Create and send envelope for signing
+  createEnvelope: async (documentData: {
+    documentBase64: string;
+    documentName: string;
+    signerEmail: string;
+    signerName: string;
+    subject?: string;
+  }) => {
+    const response = await api.post('/docusign/create-envelope', documentData);
+    return response.data;
+  },
+
+  // NEW: Create embedded signing session for direct client signing
+  createEmbeddedEnvelope: async (documentId: string, documentTitle: string) => {
+    const response = await api.post('/docusign/create-embedded-envelope', {
+      documentId,
+      documentTitle
+    });
+    return response.data;
+  },
+
+  // NEW: Get signing URL for existing envelope  
+  getSigningUrl: async (envelopeId: string) => {
+    const response = await api.post(`/docusign/get-signing-url/${envelopeId}`);
+    return response.data;
+  },
+
+  // NEW: Update document status from DocuSign
+  updateDocumentStatus: async (envelopeId: string) => {
+    const response = await api.post(`/docusign/update-status/${envelopeId}`);
+    return response.data;
+  },
+
+  // NEW: Refresh all document statuses
+  refreshAllStatuses: async () => {
+    const response = await api.post('/docusign/refresh-statuses');
+    return response.data;
+  },
+
+  // Get envelope status
+  getEnvelopeStatus: async (envelopeId: string) => {
+    const response = await api.get(`/docusign/envelope/${envelopeId}/status`);
+    return response.data;
+  },
+
+  // Download signed document
+  downloadSignedDocument: async (envelopeId: string, documentId?: string) => {
+    const response = await api.get(
+      `/docusign/envelope/${envelopeId}/documents/${documentId || 'combined'}`,
+      { responseType: 'blob' }
+    );
+    return response.data;
+  },
+
+  // Get list of envelopes
+  getEnvelopes: async (fromDate?: string) => {
+    const params = fromDate ? { from_date: fromDate } : {};
+    const response = await api.get('/docusign/envelopes', { params });
+    return response.data;
+  },
+
+  // Convert file to base64 for DocuSign
+  fileToBase64: (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:application/pdf;base64, prefix
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  }
+};
+
 
 // Health check
 export const healthCheck = async () => {

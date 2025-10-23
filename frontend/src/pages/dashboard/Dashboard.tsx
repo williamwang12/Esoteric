@@ -43,7 +43,11 @@ import {
   PictureAsPdf,
   Article,
   Folder,
-  RequestPage
+  RequestPage,
+  Visibility,
+  Edit,
+  CheckCircle,
+  Refresh
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -55,7 +59,10 @@ import TransactionHistory from '../../components/transactions/TransactionHistory
 import AppNavigation from '../../components/common/AppNavigation';
 import WithdrawalRequestDialog from '../../components/dialogs/WithdrawalRequestDialog';
 import CalendlyBooking from '../../components/calendly/CalendlyBooking';
-import { documentsApi, loansApi } from '../../services/api';
+import DocuSignSender from '../../components/docusign/DocuSignSender';
+import DocuSignStatus from '../../components/docusign/DocuSignStatus';
+import EmbeddedSigning from '../../components/docusign/EmbeddedSigning';
+import { documentsApi, loansApi, docuSignApi } from '../../services/api';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -114,6 +121,11 @@ const Dashboard: React.FC = () => {
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
   const [withdrawalDetailsOpen, setWithdrawalDetailsOpen] = useState(false);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
+  const [docuSignSenderOpen, setDocuSignSenderOpen] = useState(false);
+  const [docuSignStatusOpen, setDocuSignStatusOpen] = useState(false);
+  const [embeddedSigningOpen, setEmbeddedSigningOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [selectedEnvelopeId, setSelectedEnvelopeId] = useState<string>('');
 
   const handleLogout = () => {
     logout();
@@ -137,6 +149,50 @@ const Dashboard: React.FC = () => {
       console.error('Download error:', error);
       // You could show a toast notification here
     }
+  };
+
+  const handleSendForSigning = (document: any) => {
+    setSelectedDocument(document);
+    setDocuSignSenderOpen(true);
+  };
+
+  const handleSignDocument = (document: any) => {
+    setSelectedDocument(document);
+    setEmbeddedSigningOpen(true);
+  };
+
+  const handleViewSigningStatus = (envelopeId: string, documentTitle?: string) => {
+    setSelectedEnvelopeId(envelopeId);
+    setSelectedDocument({ title: documentTitle });
+    setDocuSignStatusOpen(true);
+  };
+
+  const handleEnvelopeSent = (envelopeId: string) => {
+    console.log('Envelope sent with ID:', envelopeId);
+    setDocuSignSenderOpen(false);
+    // Optionally refresh documents or show success message
+  };
+
+  const handleRefreshDocumentStatuses = async () => {
+    try {
+      console.log('Refreshing document statuses...');
+      await docuSignApi.refreshAllStatuses();
+      // Refresh the documents list to show updated statuses
+      fetchLoanData();
+    } catch (error) {
+      console.error('Failed to refresh document statuses:', error);
+    }
+  };
+
+  const canSendForSigning = (document: any) => {
+    // Check if document can be sent for signing (e.g., PDF files, certain categories)
+    return document.title.toLowerCase().endsWith('.pdf') && 
+           ['loan_agreement', 'contract', 'form'].includes(document.category.toLowerCase());
+  };
+
+  const isDocumentSigned = (document: any) => {
+    return document.docusign_status === 'completed' || 
+           document.docusign_status === 'signed';
   };
 
   // Filter and search documents
@@ -1169,11 +1225,29 @@ const Dashboard: React.FC = () => {
                       Document Center
                     </Typography>
                   </Box>
-                  <Chip 
-                    label={`${filteredDocuments.length} documents`}
-                    color="primary"
-                    variant="outlined"
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Chip 
+                      label={`${filteredDocuments.length} documents`}
+                      color="primary"
+                      variant="outlined"
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Refresh />}
+                      onClick={handleRefreshDocumentStatuses}
+                      sx={{
+                        borderColor: 'secondary.main',
+                        color: 'secondary.main',
+                        '&:hover': {
+                          borderColor: 'secondary.dark',
+                          backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                        }
+                      }}
+                    >
+                      Refresh Status
+                    </Button>
+                  </Box>
                 </Box>
 
                 {/* Search and Filter Controls */}
@@ -1294,21 +1368,80 @@ const Dashboard: React.FC = () => {
                                 </Typography>
                               </Box>
                             </Box>
-                            <Button
-                              variant="contained"
-                              fullWidth
-                              startIcon={<GetApp />}
-                              onClick={() => handleDocumentDownload(doc.id, doc.title)}
-                              sx={{
-                                mt: 2,
-                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                                '&:hover': {
-                                  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
-                                }
-                              }}
-                            >
-                              Download
-                            </Button>
+                            {/* Action Buttons */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+                              <Button
+                                variant="contained"
+                                startIcon={<GetApp />}
+                                onClick={() => handleDocumentDownload(doc.id, doc.title)}
+                                fullWidth
+                                sx={{
+                                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                                  '&:hover': {
+                                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
+                                  }
+                                }}
+                              >
+                                Download
+                              </Button>
+                              
+                              {/* DocuSign Actions */}
+                              {canSendForSigning(doc) && (
+                                <Button
+                                  variant="outlined"
+                                  startIcon={isDocumentSigned(doc) ? <CheckCircle /> : <Edit />}
+                                  onClick={() => handleSignDocument(doc)}
+                                  disabled={isDocumentSigned(doc)}
+                                  fullWidth
+                                  sx={{
+                                    borderColor: isDocumentSigned(doc) ? 'success.main' : 'primary.main',
+                                    color: isDocumentSigned(doc) ? 'success.main' : 'primary.main',
+                                    '&:hover': {
+                                      borderColor: isDocumentSigned(doc) ? 'success.main' : 'primary.dark',
+                                      backgroundColor: isDocumentSigned(doc) ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.primary.main, 0.1),
+                                    },
+                                    '&.Mui-disabled': {
+                                      borderColor: 'success.main',
+                                      color: 'success.main',
+                                      opacity: 0.8,
+                                    }
+                                  }}
+                                >
+                                  {isDocumentSigned(doc) ? 'Document Signed' : 'Sign Document'}
+                                </Button>
+                              )}
+                              
+                              {doc.docusign_envelope_id && (
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<Visibility />}
+                                  onClick={() => handleViewSigningStatus(doc.docusign_envelope_id, doc.title)}
+                                  fullWidth
+                                  sx={{
+                                    borderColor: 'secondary.main',
+                                    color: 'secondary.main',
+                                    '&:hover': {
+                                      borderColor: 'secondary.dark',
+                                      backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                                    }
+                                  }}
+                                >
+                                  View Status
+                                </Button>
+                              )}
+                            </Box>
+                            
+                            {/* DocuSign Status Badge */}
+                            {doc.docusign_envelope_id && (
+                              <Box sx={{ mt: 1 }}>
+                                <Chip 
+                                  label={`Signature: ${doc.docusign_status || 'Sent'}`}
+                                  size="small"
+                                  color={doc.docusign_status === 'completed' ? 'success' : 'warning'}
+                                  variant="outlined"
+                                />
+                              </Box>
+                            )}
                           </CardContent>
                         </Card>
                       </Fade>
@@ -1633,6 +1766,41 @@ const Dashboard: React.FC = () => {
             return null;
           })()}
         </>
+      )}
+
+      {/* DocuSign Dialog Components */}
+      {selectedDocument && (
+        <DocuSignSender
+          open={docuSignSenderOpen}
+          onClose={() => setDocuSignSenderOpen(false)}
+          document={selectedDocument}
+          onEnvelopeSent={handleEnvelopeSent}
+        />
+      )}
+
+      {selectedEnvelopeId && (
+        <DocuSignStatus
+          open={docuSignStatusOpen}
+          onClose={() => setDocuSignStatusOpen(false)}
+          envelopeId={selectedEnvelopeId}
+          documentTitle={selectedDocument?.title}
+        />
+      )}
+
+      {selectedDocument && (
+        <EmbeddedSigning
+          open={embeddedSigningOpen}
+          onClose={() => setEmbeddedSigningOpen(false)}
+          document={selectedDocument}
+          onSigningComplete={async (envelopeId) => {
+            console.log('Document signed with envelope ID:', envelopeId);
+            setEmbeddedSigningOpen(false);
+            // Wait a moment for DocuSign to process, then refresh status
+            setTimeout(async () => {
+              await handleRefreshDocumentStatuses();
+            }, 2000);
+          }}
+        />
       )}
     </Box>
   );
