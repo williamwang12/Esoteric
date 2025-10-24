@@ -225,9 +225,6 @@ const DocuSignStatus: React.FC<DocuSignStatusProps> = ({
                     <Typography variant="h6" gutterBottom>
                       {envelopeStatus.subject}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Last Updated: {formatDateTime(envelopeStatus.statusDateTime)}
-                    </Typography>
                   </Box>
                   
                   <Chip

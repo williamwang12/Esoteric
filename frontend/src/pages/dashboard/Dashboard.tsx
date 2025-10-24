@@ -1449,18 +1449,6 @@ const Dashboard: React.FC = () => {
                                 </Button>
                               )}
                             </Box>
-                            
-                            {/* DocuSign Status Badge */}
-                            {doc.docusign_envelope_id && (
-                              <Box sx={{ mt: 1 }}>
-                                <Chip 
-                                  label={`Signature: ${doc.docusign_status || 'Sent'}`}
-                                  size="small"
-                                  color={doc.docusign_status === 'completed' ? 'success' : 'warning'}
-                                  variant="outlined"
-                                />
-                              </Box>
-                            )}
                           </CardContent>
                         </Card>
                       </Fade>
