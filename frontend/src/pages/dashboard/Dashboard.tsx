@@ -126,6 +126,7 @@ const Dashboard: React.FC = () => {
   const [embeddedSigningOpen, setEmbeddedSigningOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [selectedEnvelopeId, setSelectedEnvelopeId] = useState<string>('');
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -175,12 +176,18 @@ const Dashboard: React.FC = () => {
 
   const handleRefreshDocumentStatuses = async () => {
     try {
+      setRefreshingStatus(true);
       console.log('Refreshing document statuses...');
       await docuSignApi.refreshAllStatuses();
+      
       // Refresh the documents list to show updated statuses
-      fetchLoanData();
+      const userDocuments = await documentsApi.getDocuments();
+      setDocuments(userDocuments);
+      console.log('Documents refreshed successfully');
     } catch (error) {
       console.error('Failed to refresh document statuses:', error);
+    } finally {
+      setRefreshingStatus(false);
     }
   };
 
@@ -1245,8 +1252,9 @@ const Dashboard: React.FC = () => {
                     <Button
                       variant="outlined"
                       size="small"
-                      startIcon={<Refresh />}
+                      startIcon={refreshingStatus ? <CircularProgress size={16} /> : <Refresh />}
                       onClick={handleRefreshDocumentStatuses}
+                      disabled={refreshingStatus}
                       sx={{
                         borderColor: 'secondary.main',
                         color: 'secondary.main',
@@ -1256,7 +1264,7 @@ const Dashboard: React.FC = () => {
                         }
                       }}
                     >
-                      Refresh Status
+                      {refreshingStatus ? 'Refreshing...' : 'Refresh Status'}
                     </Button>
                   </Box>
                 </Box>
@@ -1804,12 +1812,17 @@ const Dashboard: React.FC = () => {
           onClose={() => setEmbeddedSigningOpen(false)}
           document={selectedDocument}
           onSigningComplete={async (envelopeId) => {
-            console.log('Document signed with envelope ID:', envelopeId);
-            setEmbeddedSigningOpen(false);
-            // Wait a moment for DocuSign to process, then refresh status
+            console.log('Document signing triggered with envelope ID:', envelopeId);
+            
+            // Immediately refresh document statuses
+            console.log('Refreshing document statuses...');
+            await handleRefreshDocumentStatuses();
+            
+            // Also wait a bit and refresh again to ensure DocuSign has processed
             setTimeout(async () => {
+              console.log('Secondary refresh of document statuses...');
               await handleRefreshDocumentStatuses();
-            }, 2000);
+            }, 5000);
           }}
         />
       )}

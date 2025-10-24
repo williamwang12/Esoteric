@@ -44,6 +44,7 @@ const EmbeddedSigning: React.FC<EmbeddedSigningProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [signingUrl, setSigningUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<'ready' | 'creating' | 'signing' | 'completed' | 'error'>('ready');
+  const [envelopeId, setEnvelopeId] = useState<string | null>(null);
 
   const handleStartSigning = async () => {
     try {
@@ -57,14 +58,12 @@ const EmbeddedSigning: React.FC<EmbeddedSigningProps> = ({
         // Get signing URL for existing envelope
         const response = await docuSignApi.getSigningUrl(document.docusign_envelope_id);
         url = response.signingUrl;
+        setEnvelopeId(document.docusign_envelope_id);
       } else {
         // Create new embedded envelope
         const response = await docuSignApi.createEmbeddedEnvelope(document.id, document.title);
         url = response.signingUrl;
-        
-        if (onSigningComplete) {
-          onSigningComplete(response.envelopeId);
-        }
+        setEnvelopeId(response.envelopeId);
       }
 
       setSigningUrl(url);
@@ -88,15 +87,25 @@ const EmbeddedSigning: React.FC<EmbeddedSigningProps> = ({
         'width=1024,height=768,scrollbars=yes,resizable=yes'
       );
 
-      // Poll for window closure to detect completion
+      // Close the dialog immediately after opening the signing window
+      onClose();
+      
+      // Call the onSigningComplete callback immediately to refresh status
+      if (onSigningComplete && envelopeId) {
+        onSigningComplete(envelopeId);
+      }
+
+      // Still monitor the window for actual completion (for logging purposes)
       const pollTimer = setInterval(() => {
         if (signingWindow?.closed) {
           clearInterval(pollTimer);
-          setStatus('completed');
-          // Give user time to see completion status
-          setTimeout(() => {
-            onClose();
-          }, 2000);
+          console.log('Signing window closed - document signing likely completed');
+          
+          // Trigger another status refresh when the window actually closes
+          if (onSigningComplete && envelopeId) {
+            console.log('Triggering additional status refresh after window closure');
+            onSigningComplete(envelopeId);
+          }
         }
       }, 1000);
     }
@@ -107,6 +116,7 @@ const EmbeddedSigning: React.FC<EmbeddedSigningProps> = ({
     setSigningUrl(null);
     setError(null);
     setLoading(false);
+    setEnvelopeId(null);
   };
 
   const handleClose = () => {
