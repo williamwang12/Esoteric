@@ -186,8 +186,11 @@ const Dashboard: React.FC = () => {
 
   const canSendForSigning = (document: any) => {
     // Check if document can be sent for signing (e.g., PDF files, certain categories)
-    return document.title.toLowerCase().endsWith('.pdf') && 
-           ['loan_agreement', 'contract', 'form'].includes(document.category.toLowerCase());
+    const filename = document.file_path || document.title;
+    const isPdf = filename.toLowerCase().endsWith('.pdf');
+    const isSignableCategory = ['loan_agreement', 'contract', 'form'].includes(document.category.toLowerCase());
+    
+    return isPdf && isSignableCategory;
   };
 
   const isDocumentSigned = (document: any) => {
@@ -207,7 +210,15 @@ const Dashboard: React.FC = () => {
   const documentCategories = Array.from(new Set(documents.map(doc => doc.category))).sort();
 
   // Get file type icon
-  const getFileIcon = (filename: string) => {
+  const getFileIcon = (document: any) => {
+    // First try to get extension from file_path if available
+    let filename = document.file_path || document.title;
+    
+    // Extract just the filename from the full path
+    if (filename.includes('/')) {
+      filename = filename.split('/').pop() || filename;
+    }
+    
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'pdf':
@@ -1336,7 +1347,7 @@ const Dashboard: React.FC = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center'
                               }}>
-                                {getFileIcon(doc.title)}
+                                {getFileIcon(doc)}
                               </Box>
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Typography 
