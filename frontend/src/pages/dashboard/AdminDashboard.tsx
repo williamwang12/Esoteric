@@ -54,7 +54,6 @@ import {
   Search,
   Clear,
   AccountBalanceWallet,
-  CalendarMonth,
   RequestPage,
   Computer,
   TableChart,
@@ -215,20 +214,9 @@ const AdminDashboard: React.FC = () => {
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
   const [loadingWithdrawalRequests, setLoadingWithdrawalRequests] = useState(false);
-  const [meetingRequests, setMeetingRequests] = useState<any[]>([]);
-  const [loadingMeetingRequests, setLoadingMeetingRequests] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Scheduling dialog state
-  const [schedulingDialogOpen, setSchedulingDialogOpen] = useState(false);
-  const [selectedMeetingRequest, setSelectedMeetingRequest] = useState<any>(null);
-  const [schedulingData, setSchedulingData] = useState({
-    scheduled_date: '',
-    scheduled_time: '',
-    meeting_link: '',
-    admin_notes: ''
-  });
   
   // Caching state
   const [userCache, setUserCache] = useState<Map<string, any>>(new Map());
@@ -247,10 +235,6 @@ const AdminDashboard: React.FC = () => {
     );
   }, [users, userSearchTerm]);
 
-  // Memoized pending meeting requests count for notification badge
-  const pendingMeetingCount = useMemo(() => {
-    return meetingRequests.filter(req => req.status === 'pending').length;
-  }, [meetingRequests]);
 
   // Memoized pending withdrawal requests count for notification badge
   const pendingWithdrawalCount = useMemo(() => {
@@ -404,26 +388,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchMeetingRequests = async () => {
-    try {
-      setLoadingMeetingRequests(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/meeting-requests`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch meeting requests');
-      }
-      const requests = await response.json();
-      setMeetingRequests(requests);
-    } catch (err) {
-      console.error('Meeting requests fetch error:', err);
-      setError('Failed to fetch meeting requests');
-    } finally {
-      setLoadingMeetingRequests(false);
-    }
-  };
 
   const fetchUserDetails = useCallback(async (userId: string, forceRefresh = false) => {
     try {
@@ -902,76 +866,11 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Open scheduling dialog
-  const handleScheduleClick = (request: any) => {
-    setSelectedMeetingRequest(request);
-    setSchedulingData({
-      scheduled_date: '',
-      scheduled_time: '',
-      meeting_link: '',
-      admin_notes: ''
-    });
-    setSchedulingDialogOpen(true);
-  };
-
-  // Handle scheduling submission
-  const handleScheduleSubmit = async () => {
-    if (!selectedMeetingRequest) return;
-    
-    if (!schedulingData.scheduled_date || !schedulingData.scheduled_time) {
-      setError('Please fill in both date and time');
-      return;
-    }
-
-    // Require Google Meet link for video meetings
-    if (selectedMeetingRequest.meeting_type === 'video' && !schedulingData.meeting_link) {
-      setError('Google Meet link is required for video meetings');
-      return;
-    }
-
-    await updateMeetingRequestStatus(selectedMeetingRequest.id, 'scheduled', schedulingData);
-    setSchedulingDialogOpen(false);
-    setSelectedMeetingRequest(null);
-  };
-
-  const updateMeetingRequestStatus = async (requestId: string, status: string, schedulingData?: any) => {
-    try {
-      const body: any = { status };
-      
-      // If scheduling, include date and time
-      if (status === 'scheduled' && schedulingData) {
-        body.scheduled_date = schedulingData.scheduled_date;
-        body.scheduled_time = schedulingData.scheduled_time;
-        body.meeting_link = schedulingData.meeting_link || '';
-        body.admin_notes = schedulingData.admin_notes || '';
-      }
-
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/admin/meeting-requests/${requestId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update meeting request');
-      }
-
-      // Refresh the meeting requests
-      await fetchMeetingRequests();
-    } catch (error) {
-      console.error('Update meeting request error:', error);
-      setError('Failed to update meeting request');
-    }
-  };
 
   useEffect(() => {
     fetchUsers();
     fetchVerificationRequests();
     fetchWithdrawalRequests();
-    fetchMeetingRequests();
   }, []);
 
   // Removed redundant useEffect - using useMemo for filtering instead
@@ -1122,56 +1021,34 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-2"
                 />
                 <Tab 
-                  icon={
-                    <Badge 
-                      badgeContent={pendingMeetingCount} 
-                      color="error"
-                      invisible={pendingMeetingCount === 0}
-                      sx={{
-                        '& .MuiBadge-badge': {
-                          backgroundColor: '#EF4444',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          fontSize: '0.75rem',
-                        }
-                      }}
-                    >
-                      <CalendarMonth />
-                    </Badge>
-                  } 
-                  label="Meetings" 
+                  icon={<TableChart />} 
+                  label="Excel Upload" 
                   id="admin-tab-3"
                   aria-controls="admin-tabpanel-3"
                 />
                 <Tab 
-                  icon={<TableChart />} 
-                  label="Excel Upload" 
+                  icon={<PersonAdd />} 
+                  label="Client Onboarding" 
                   id="admin-tab-4"
                   aria-controls="admin-tabpanel-4"
                 />
                 <Tab 
-                  icon={<PersonAdd />} 
-                  label="Client Onboarding" 
+                  icon={<SwapHoriz />} 
+                  label="Transaction Import" 
                   id="admin-tab-5"
                   aria-controls="admin-tabpanel-5"
                 />
                 <Tab 
-                  icon={<SwapHoriz />} 
-                  label="Transaction Import" 
+                  icon={<TrendingUp />} 
+                  label="Deposits" 
                   id="admin-tab-6"
                   aria-controls="admin-tabpanel-6"
                 />
                 <Tab 
-                  icon={<TrendingUp />} 
-                  label="Deposits" 
-                  id="admin-tab-7"
-                  aria-controls="admin-tabpanel-7"
-                />
-                <Tab 
                   icon={<Schedule />} 
                   label="Scheduling" 
-                  id="admin-tab-8"
-                  aria-controls="admin-tabpanel-8"
+                  id="admin-tab-7"
+                  aria-controls="admin-tabpanel-7"
                 />
               </Tabs>
             </Box>
@@ -2243,308 +2120,28 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </TabPanel>
 
-            {/* Meetings Tab */}
-            <TabPanel value={tabValue} index={3}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                  Meetings Management
-                </Typography>
-                <Button
-                  startIcon={<CalendarMonth />}
-                  onClick={fetchMeetingRequests}
-                  disabled={loadingMeetingRequests}
-                  variant="contained"
-                >
-                  Refresh
-                </Button>
-              </Box>
-
-              {loadingMeetingRequests ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                  <CircularProgress size={60} />
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  
-                  {/* Pending Meeting Requests Section */}
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                        <RequestPage sx={{ color: 'warning.main', fontSize: 28 }} />
-                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                          Pending Requests ({pendingMeetingCount})
-                        </Typography>
-                      </Box>
-                      
-                      {pendingMeetingCount === 0 ? (
-                        <Box sx={{ 
-                          textAlign: 'center', 
-                          py: 4,
-                          background: 'rgba(245, 158, 11, 0.05)',
-                          borderRadius: 2,
-                          border: '1px dashed rgba(245, 158, 11, 0.3)'
-                        }}>
-                          <RequestPage sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
-                          <Typography variant="h6" color="text.secondary">
-                            No pending meeting requests
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            New meeting requests will appear here
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <TableContainer component={Paper} variant="outlined">
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>User</TableCell>
-                                <TableCell>Purpose</TableCell>
-                                <TableCell>Preferred Date/Time</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Priority</TableCell>
-                                <TableCell>Actions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {meetingRequests.filter(req => req.status === 'pending').map((request) => (
-                                <TableRow key={request.id}>
-                                  <TableCell>
-                                    <Box>
-                                      <Typography variant="body2" fontWeight="medium">
-                                        {request.first_name} {request.last_name}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        {request.email}
-                                      </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2">
-                                      {request.purpose}
-                                    </Typography>
-                                    {request.topics && (
-                                      <Typography variant="caption" color="text.secondary">
-                                        Topics: {request.topics}
-                                      </Typography>
-                                    )}
-                                    {request.notes && (
-                                      <Typography variant="caption" display="block" color="text.secondary">
-                                        Notes: {request.notes}
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2">
-                                      {new Date(request.preferred_date).toLocaleDateString()}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {request.preferred_time}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip 
-                                      label={request.meeting_type.replace('_', ' ').toUpperCase()} 
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip 
-                                      label={request.urgency.toUpperCase()} 
-                                      size="small"
-                                      color={
-                                        request.urgency === 'urgent' ? 'error' : 
-                                        request.urgency === 'high' ? 'warning' : 
-                                        request.urgency === 'normal' ? 'primary' : 'default'
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
-                                      <Button
-                                        size="small"
-                                        variant="contained"
-                                        color="success"
-                                        startIcon={<CheckCircle />}
-                                        onClick={() => handleScheduleClick(request)}
-                                      >
-                                        Schedule
-                                      </Button>
-                                      <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="error"
-                                        startIcon={<CancelIcon />}
-                                        onClick={() => updateMeetingRequestStatus(request.id, 'cancelled')}
-                                      >
-                                        Decline
-                                      </Button>
-                                    </Box>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Scheduled Meetings Section */}
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                        <CheckCircle sx={{ color: 'success.main', fontSize: 28 }} />
-                        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                          Scheduled Meetings ({meetingRequests.filter(req => req.status === 'scheduled').length})
-                        </Typography>
-                      </Box>
-                      
-                      {meetingRequests.filter(req => req.status === 'scheduled').length === 0 ? (
-                        <Box sx={{ 
-                          textAlign: 'center', 
-                          py: 4,
-                          background: 'rgba(34, 197, 94, 0.05)',
-                          borderRadius: 2,
-                          border: '1px dashed rgba(34, 197, 94, 0.3)'
-                        }}>
-                          <CheckCircle sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
-                          <Typography variant="h6" color="text.secondary">
-                            No scheduled meetings
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Scheduled meetings will appear here
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <TableContainer component={Paper} variant="outlined">
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>User</TableCell>
-                                <TableCell>Purpose</TableCell>
-                                <TableCell>Meeting Details</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Meeting Link</TableCell>
-                                <TableCell>Actions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {meetingRequests.filter(req => req.status === 'scheduled').map((request) => (
-                                <TableRow key={request.id}>
-                                  <TableCell>
-                                    <Box>
-                                      <Typography variant="body2" fontWeight="medium">
-                                        {request.first_name} {request.last_name}
-                                      </Typography>
-                                      <Typography variant="caption" color="text.secondary">
-                                        {request.email}
-                                      </Typography>
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2">
-                                      {request.purpose}
-                                    </Typography>
-                                    {request.topics && (
-                                      <Typography variant="caption" color="text.secondary">
-                                        Topics: {request.topics}
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2" fontWeight="medium" color="success.main">
-                                      {request.scheduled_date ? 
-                                        new Date(request.scheduled_date).toLocaleDateString() :
-                                        new Date(request.preferred_date).toLocaleDateString()
-                                      }
-                                    </Typography>
-                                    <Typography variant="caption" color="success.main">
-                                      {request.scheduled_time || request.preferred_time}
-                                    </Typography>
-                                    {request.admin_notes && (
-                                      <Typography variant="caption" display="block" color="text.secondary">
-                                        Notes: {request.admin_notes}
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip 
-                                      label={request.meeting_type.replace('_', ' ').toUpperCase()} 
-                                      size="small"
-                                      variant="outlined"
-                                      color="success"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    {request.meeting_link ? (
-                                      <Button
-                                        size="small"
-                                        variant="text"
-                                        color="primary"
-                                        onClick={() => window.open(request.meeting_link, '_blank')}
-                                      >
-                                        Join Meeting
-                                      </Button>
-                                    ) : (
-                                      <Typography variant="caption" color="text.secondary">
-                                        No link provided
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
-                                      <Button
-                                        size="small"
-                                        variant="contained"
-                                        color="primary"
-                                        onClick={() => updateMeetingRequestStatus(request.id, 'completed')}
-                                      >
-                                        Mark Complete
-                                      </Button>
-                                      <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="error"
-                                        onClick={() => updateMeetingRequestStatus(request.id, 'cancelled')}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </Box>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Box>
-              )}
-            </TabPanel>
 
             {/* Excel Upload Tab */}
-            <TabPanel value={tabValue} index={4}>
+            <TabPanel value={tabValue} index={3}>
               <ExcelUpload onUploadComplete={() => fetchUsers(true)} />
             </TabPanel>
 
             {/* Client Onboarding Tab */}
-            <TabPanel value={tabValue} index={5}>
+            <TabPanel value={tabValue} index={4}>
               <ClientOnboarding />
             </TabPanel>
 
             {/* Transaction Import Tab */}
-            <TabPanel value={tabValue} index={6}>
+            <TabPanel value={tabValue} index={5}>
               <TransactionImport />
             </TabPanel>
             {/* Deposits Tab */}
-            <TabPanel value={tabValue} index={7}>
+            <TabPanel value={tabValue} index={6}>
               <YieldDeposits />
             </TabPanel>
 
             {/* Calendly Scheduling Tab */}
-            <TabPanel value={tabValue} index={8}>
+            <TabPanel value={tabValue} index={7}>
               <CalendlyDashboard />
             </TabPanel>
 
@@ -3356,162 +2953,6 @@ const AdminDashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Scheduling Dialog */}
-      <Dialog
-        open={schedulingDialogOpen}
-        onClose={() => setSchedulingDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: '#1f2937',
-            border: '1px solid',
-            borderColor: 'primary.main',
-            borderRadius: 3,
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              Schedule Meeting
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Set date and time for the consultation
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ pt: 3 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {/* Preferred Date/Time Info */}
-            {selectedMeetingRequest && (
-              <Box sx={{ 
-                p: 2, 
-                background: 'rgba(255, 255, 255, 0.05)', 
-                borderRadius: 2,
-                border: '1px solid rgba(255, 255, 255, 0.1)'
-              }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: 'white' }}>
-                  Client's Preferred Schedule
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'white' }}>
-                  <strong>Preferred Date:</strong> {new Date(selectedMeetingRequest.preferred_date).toLocaleDateString()}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>
-                  <strong>Preferred Time:</strong> {selectedMeetingRequest.preferred_time}
-                </Typography>
-                {selectedMeetingRequest.purpose && (
-                  <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>
-                    <strong>Purpose:</strong> {selectedMeetingRequest.purpose}
-                  </Typography>
-                )}
-              </Box>
-            )}
-
-            <TextField
-              label="Scheduled Date"
-              type="date"
-              value={schedulingData.scheduled_date}
-              onChange={(e) => setSchedulingData(prev => ({ ...prev, scheduled_date: e.target.value }))}
-              required
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ mt: 1 }}
-              inputProps={{
-                min: new Date().toISOString().split('T')[0]
-              }}
-            />
-            <TextField
-              label="Scheduled Time"
-              type="time"
-              value={schedulingData.scheduled_time}
-              onChange={(e) => setSchedulingData(prev => ({ ...prev, scheduled_time: e.target.value }))}
-              required
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
-            {/* Meeting Type Specific Fields */}
-            {selectedMeetingRequest?.meeting_type === 'video' && (
-              <Box>
-                <TextField
-                  label="Google Meet Link"
-                  value={schedulingData.meeting_link}
-                  onChange={(e) => setSchedulingData(prev => ({ ...prev, meeting_link: e.target.value }))}
-                  fullWidth
-                  required
-                  placeholder="https://meet.google.com/your-meeting-code"
-                  helperText="Create a Google Meet room and paste the link here (required)"
-                  error={!schedulingData.meeting_link && !!schedulingData.scheduled_date && !!schedulingData.scheduled_time}
-                />
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  <strong>How to create:</strong> Go to{' '}
-                  <a 
-                    href="https://meet.google.com/new" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ color: '#4285F4' }}
-                  >
-                    meet.google.com/new
-                  </a>
-                  , create a meeting, and copy the link here.
-                </Typography>
-              </Box>
-            )}
-
-            <TextField
-              label="Admin Notes"
-              value={schedulingData.admin_notes}
-              onChange={(e) => setSchedulingData(prev => ({ ...prev, admin_notes: e.target.value }))}
-              multiline
-              rows={3}
-              fullWidth
-              placeholder="Optional notes about the meeting"
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 2, gap: 2 }}>
-          <Button 
-            onClick={() => setSchedulingDialogOpen(false)}
-            variant="contained"
-            sx={{ 
-              minWidth: 100,
-              background: 'linear-gradient(135deg, #6B7280, #4B5563)',
-              color: 'white',
-              fontWeight: 'bold',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4B5563, #374151)',
-                boxShadow: '0 6px 12px rgba(107, 114, 128, 0.4)',
-              },
-              boxShadow: '0 3px 8px rgba(107, 114, 128, 0.3)',
-            }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleScheduleSubmit}
-            variant="contained"
-            disabled={
-              !schedulingData.scheduled_date || 
-              !schedulingData.scheduled_time || 
-              (selectedMeetingRequest?.meeting_type === 'video' && !schedulingData.meeting_link)
-            }
-            sx={{ 
-              minWidth: 150,
-              background: 'linear-gradient(135deg, #22C55E, #16A34A)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #16A34A, #15803D)',
-              },
-              '&:disabled': {
-                background: '#6B7280',
-                color: '#9CA3AF'
-              }
-            }}
-            startIcon={<CheckCircle />}
-          >
-            Schedule Meeting
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Success/Error Snackbar */}
       <Snackbar
