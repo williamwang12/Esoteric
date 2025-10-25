@@ -47,7 +47,10 @@ import {
   Visibility,
   Edit,
   CheckCircle,
-  Refresh
+  Refresh,
+  ShowChart,
+  DateRange,
+  CalendarToday
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -118,7 +121,7 @@ const Dashboard: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false, false, false]);
+  const [cardAnimations, setCardAnimations] = useState<boolean[]>([false, false, false, false, false, false, false, false, false]);
   const [withdrawalDialogOpen, setWithdrawalDialogOpen] = useState(false);
   const [withdrawalDetailsOpen, setWithdrawalDetailsOpen] = useState(false);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
@@ -306,7 +309,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     // Animate cards sequentially when component mounts
-    const timeouts = [0, 1, 2, 3, 4, 5].map((index) => 
+    const timeouts = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((index) => 
       setTimeout(() => {
         setCardAnimations(prev => {
           const newAnimations = [...prev];
@@ -997,179 +1000,228 @@ const Dashboard: React.FC = () => {
                     </CardContent>
                   </Card>
                 </Fade>
-              </Box>
 
-              {/* Quick Actions Section */}
-              <Fade in={true} timeout={2000}>
-                <Card sx={{
-                  background: 'rgba(31, 41, 55, 0.6)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(111, 92, 242, 0.3)',
-                  borderRadius: '20px',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-                  mt: 4,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '1px',
-                    background: 'linear-gradient(90deg, transparent, rgba(111, 92, 242, 0.6), transparent)',
-                  },
-                }}>
-                  <CardContent sx={{ p: 4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                      <RequestPage sx={{ fontSize: 28, color: 'primary.main' }} />
-                      <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                        Account Actions
-                      </Typography>
-                    </Box>
-                    <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                      Manage your account with quick actions for withdrawals and consultations
-                    </Typography>
+                {/* Withdrawals Card */}
+                <Fade in={cardAnimations[6]} timeout={2000}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
+                    },
+                  }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                        <AccountBalanceWallet sx={{ fontSize: 28, color: 'primary.main' }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                          Withdrawals
+                        </Typography>
+                      </Box>
                     
-                    {/* Stacked Blocks */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {/* Calendly Meetings Integration */}
-                      <CalendlyBooking showAsCard={true} showHeader={true} />
+                    {(() => {
+                      // Get the most recent withdrawal request
+                      const latestWithdrawal = withdrawalRequests
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                      
+                      // Check if there's an active request (pending or approved)
+                      const hasActiveRequest = latestWithdrawal && 
+                        (latestWithdrawal.status === 'pending' || latestWithdrawal.status === 'approved');
 
-                      {/* Withdrawals Block */}
-                      <Card sx={{
-                        background: 'rgba(31, 41, 55, 0.6)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(111, 92, 242, 0.3)',
-                        borderRadius: '16px',
-                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-                        height: 'fit-content'
-                      }}>
-                        <CardContent sx={{ p: 4 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                            <AccountBalanceWallet sx={{ fontSize: 28, color: 'primary.main' }} />
-                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                              Withdrawals
+                      if (!hasActiveRequest) {
+                        // Show request button
+                        return (
+                          <>
+                            <Button
+                              variant="contained"
+                              size="large"
+                              fullWidth
+                              startIcon={<AccountBalanceWallet />}
+                              onClick={() => setWithdrawalDialogOpen(true)}
+                              sx={{
+                                py: 2.5,
+                                px: 3,
+                                mb: 3,
+                                background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+                                color: 'white',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                borderRadius: '16px',
+                                fontWeight: 700,
+                                fontSize: '1.1rem',
+                                textTransform: 'none',
+                                letterSpacing: '0.025em',
+                                '&:hover': {
+                                  background: 'linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)',
+                                  boxShadow: '0 12px 24px rgba(59, 130, 246, 0.4)',
+                                  transform: 'translateY(-3px)',
+                                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                                },
+                                boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)',
+                                transition: 'all 0.3s ease-in-out',
+                              }}
+                            >
+                              Request Withdrawal
+                            </Button>
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
+                              Submit a withdrawal request to access your funds
                             </Typography>
-                          </Box>
-                          
-                          {(() => {
-                            // Get the most recent withdrawal request
-                            const latestWithdrawal = withdrawalRequests
-                              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-                            
-                            // Check if there's an active request (pending or approved)
-                            const hasActiveRequest = latestWithdrawal && 
-                              (latestWithdrawal.status === 'pending' || latestWithdrawal.status === 'approved');
+                          </>
+                        );
+                      } else if (latestWithdrawal.status === 'pending') {
+                        // Show pending status
+                        return (
+                          <>
+                            <Card sx={{
+                              py: 2.5,
+                              px: 3,
+                              mb: 3,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%)',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              borderRadius: '16px',
+                              textAlign: 'center'
+                            }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#F59E0B' }}>
+                                Withdrawal Request Pending
+                              </Typography>
+                            </Card>
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
+                              Your request is being reviewed by our team
+                            </Typography>
+                          </>
+                        );
+                      } else if (latestWithdrawal.status === 'approved') {
+                        // Show approved/processing status
+                        return (
+                          <>
+                            <Card sx={{
+                              py: 2.5,
+                              px: 3,
+                              mb: 3,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.05) 100%)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              borderRadius: '16px',
+                              textAlign: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease-in-out',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)',
+                                border: '1px solid rgba(16, 185, 129, 0.4)',
+                              }
+                            }}
+                            onClick={() => setWithdrawalDetailsOpen(true)}
+                            >
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#10B981' }}>
+                                Withdrawal Request Approved
+                              </Typography>
+                            </Card>
+                            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
+                              Click to view withdrawal details
+                            </Typography>
+                          </>
+                        );
+                      }
+                      
+                      return null;
+                    })()}
+                    </CardContent>
+                  </Card>
+                </Fade>
 
-                            if (!hasActiveRequest) {
-                              // Show request button
-                              return (
-                                <>
-                                  <Button
-                                    variant="contained"
-                                    size="large"
-                                    fullWidth
-                                    startIcon={<AccountBalanceWallet />}
-                                    onClick={() => setWithdrawalDialogOpen(true)}
-                                    sx={{
-                                      py: 2.5,
-                                      px: 3,
-                                      mb: 3,
-                                      background: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
-                                      color: 'white',
-                                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                                      borderRadius: '16px',
-                                      fontWeight: 700,
-                                      fontSize: '1.1rem',
-                                      textTransform: 'none',
-                                      letterSpacing: '0.025em',
-                                      '&:hover': {
-                                        background: 'linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%)',
-                                        boxShadow: '0 12px 24px rgba(59, 130, 246, 0.4)',
-                                        transform: 'translateY(-3px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.4)',
-                                      },
-                                      boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)',
-                                      transition: 'all 0.3s ease-in-out',
-                                    }}
-                                  >
-                                    Request Withdrawal
-                                  </Button>
-                                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                                    Submit a withdrawal request to access your funds
-                                  </Typography>
-                                </>
-                              );
-                            } else if (latestWithdrawal.status === 'pending') {
-                              // Show pending status
-                              return (
-                                <>
-                                  <Card sx={{
-                                    py: 2.5,
-                                    px: 3,
-                                    mb: 3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.05) 100%)',
-                                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                                    borderRadius: '16px',
-                                    textAlign: 'center'
-                                  }}>
-                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#F59E0B' }}>
-                                      Withdrawal Request Pending
-                                    </Typography>
-                                  </Card>
-                                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                                    Your request is being reviewed by our team
-                                  </Typography>
-                                </>
-                              );
-                            } else if (latestWithdrawal.status === 'approved') {
-                              // Show approved/processing status
-                              return (
-                                <>
-                                  <Card sx={{
-                                    py: 2.5,
-                                    px: 3,
-                                    mb: 3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.05) 100%)',
-                                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                                    borderRadius: '16px',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                      transform: 'translateY(-1px)',
-                                      boxShadow: '0 8px 16px rgba(16, 185, 129, 0.2)',
-                                      border: '1px solid rgba(16, 185, 129, 0.4)',
-                                    }
-                                  }}
-                                  onClick={() => setWithdrawalDetailsOpen(true)}
-                                  >
-                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#10B981' }}>
-                                      Withdrawal Request Approved
-                                    </Typography>
-                                  </Card>
-                                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                                    Click to view withdrawal details
-                                  </Typography>
-                                </>
-                              );
-                            }
-                            
-                            return null;
-                          })()}
-                        </CardContent>
-                      </Card>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Fade>
+                {/* Monthly Growth Rate Card */}
+                <Fade in={cardAnimations[7]} timeout={2200}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
+                    },
+                  }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <ShowChart sx={{ fontSize: 32, mr: 2, color: '#10B981' }} />
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
+                          Monthly Growth Rate
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" component="div" color="success.main" sx={{ fontWeight: 800 }}>
+                        {(() => {
+                          const currentBalance = parseFloat(loanData.current_balance || '0');
+                          const initialBalance = parseFloat(loanData.initial_amount || '0');
+                          const monthsElapsed = loanData.loan_start_date ? 
+                            Math.max(1, Math.floor((new Date().getTime() - new Date(loanData.loan_start_date).getTime()) / (1000 * 60 * 60 * 24 * 30))) : 1;
+                          const totalGrowthRate = currentBalance > 0 && initialBalance > 0 ? 
+                            ((currentBalance - initialBalance) / initialBalance) * 100 : 0;
+                          const monthlyRate = totalGrowthRate / monthsElapsed;
+                          return `${monthlyRate.toFixed(2)}%`;
+                        })()}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Average monthly return
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Fade>
+
+                {/* Days Since Start Card */}
+                <Fade in={cardAnimations[8]} timeout={2400}>
+                  <Card sx={{ 
+                    position: 'relative',
+                    background: 'rgba(31, 41, 55, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(111, 92, 242, 0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 20px 40px rgba(111, 92, 242, 0.2)',
+                      border: '1px solid rgba(111, 92, 242, 0.4)',
+                    },
+                  }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                        <DateRange sx={{ fontSize: 32, mr: 2, color: '#8B5CF6' }} />
+                        <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
+                          Investment Duration
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" component="div" sx={{ fontWeight: 800, color: '#8B5CF6' }}>
+                        {(() => {
+                          if (!loanData.loan_start_date) return '0';
+                          const startDate = new Date(loanData.loan_start_date);
+                          const today = new Date();
+                          const diffTime = Math.abs(today.getTime() - startDate.getTime());
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                          return diffDays;
+                        })()} days
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Since loan activation
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Fade>
+              </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
