@@ -56,6 +56,7 @@ import PortfolioDashboard from '../../components/charts/PortfolioDashboard';
 import AdvancedMetrics from '../../components/charts/AdvancedMetrics';
 import InteractiveLoanChart from '../../components/charts/InteractiveLoanChart';
 import TransactionHistory from '../../components/transactions/TransactionHistory';
+import ScheduleMeeting from '../../components/meeting/ScheduleMeeting';
 import AppNavigation from '../../components/common/AppNavigation';
 import WithdrawalRequestDialog from '../../components/dialogs/WithdrawalRequestDialog';
 import CalendlyBooking from '../../components/calendly/CalendlyBooking';
@@ -362,10 +363,11 @@ const Dashboard: React.FC = () => {
               }}
             >
               {tabValue === 0 && `Welcome back, ${user?.firstName}!`}
-              {tabValue === 1 && `Analytics Dashboard`}
-              {tabValue === 2 && `Transaction History`}
-              {tabValue === 3 && `Document Center`}
-              {tabValue === 4 && user?.role === 'admin' && `Admin Panel`}
+              {tabValue === 1 && `Meetings`}
+              {tabValue === 2 && `Analytics Dashboard`}
+              {tabValue === 3 && `Transaction History`}
+              {tabValue === 4 && `Document Center`}
+              {tabValue === 5 && user?.role === 'admin' && `Admin Panel`}
             </Typography>
             <Typography 
               variant="h6" 
@@ -381,10 +383,11 @@ const Dashboard: React.FC = () => {
               }}
             >
               {tabValue === 0 && `Here's an overview of your loan performance with Esoteric. Track your growth, manage your investments, and explore your financial journey.`}
-              {tabValue === 1 && `Analyze your investment performance with comprehensive charts, metrics, and insights to track your loan growth and returns over time.`}
-              {tabValue === 2 && `Review all your transaction history including loan disbursements, monthly payments, bonuses, and withdrawals with detailed records.`}
-              {tabValue === 3 && `Access and manage all your important loan documents, contracts, statements, and reports in one secure location.`}
-              {tabValue === 4 && user?.role === 'admin' && `Manage users, create loan accounts, verify customers, and oversee all administrative functions for the platform.`}
+              {tabValue === 1 && `Schedule meetings with our team to discuss your investment goals, account questions, and portfolio planning opportunities.`}
+              {tabValue === 2 && `Analyze your investment performance with comprehensive charts, metrics, and insights to track your loan growth and returns over time.`}
+              {tabValue === 3 && `Review all your transaction history including loan disbursements, monthly payments, bonuses, and withdrawals with detailed records.`}
+              {tabValue === 4 && `Access and manage all your important loan documents, contracts, statements, and reports in one secure location.`}
+              {tabValue === 5 && user?.role === 'admin' && `Manage users, create loan accounts, verify customers, and oversee all administrative functions for the platform.`}
             </Typography>
           </Box>
         </Fade>
@@ -562,8 +565,49 @@ const Dashboard: React.FC = () => {
               </Fade>
             </TabPanel>
 
-            {/* Analytics Tab - Preview */}
+            {/* Schedule Meeting Tab - Preview */}
             <TabPanel value={tabValue} index={1}>
+              <Fade in={true} timeout={1000}>
+                <Card sx={{
+                  background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
+                  border: '1px solid rgba(111, 92, 242, 0.3)',
+                  borderRadius: '20px',
+                  textAlign: 'center',
+                  p: 4,
+                }}>
+                  <CardContent>
+                    <Typography variant="h4" sx={{ 
+                      fontWeight: 800,
+                      mb: 3
+                    }}>
+                      Ready to Connect?
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4 }}>
+                      Schedule a meeting with our investment team to discuss your portfolio, 
+                      explore new opportunities, or get personalized guidance on your financial goals.
+                    </Typography>
+                    <Box sx={{ 
+                      mt: 4, 
+                      p: 3, 
+                      background: 'rgba(111, 92, 242, 0.1)', 
+                      borderRadius: '16px',
+                      border: '1px solid rgba(111, 92, 242, 0.3)',
+                    }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                        🚀 Get Expert Investment Guidance
+                      </Typography>
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                        Connect with Julia Toti for a 30-minute consultation to maximize your investment potential. 
+                        Perfect for discussing strategy, account management, or exploring new opportunities.
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Fade>
+            </TabPanel>
+
+            {/* Analytics Tab - Preview */}
+            <TabPanel value={tabValue} index={2}>
               <Fade in={true} timeout={1000}>
                 <Card sx={{
                   background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
@@ -608,7 +652,7 @@ const Dashboard: React.FC = () => {
             </TabPanel>
 
             {/* Transactions Tab - Preview */}
-            <TabPanel value={tabValue} index={2}>
+            <TabPanel value={tabValue} index={3}>
               <Fade in={true} timeout={1000}>
                 <Card sx={{
                   background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
@@ -663,7 +707,7 @@ const Dashboard: React.FC = () => {
             </TabPanel>
 
             {/* Documents Tab - Preview */}
-            <TabPanel value={tabValue} index={3}>
+            <TabPanel value={tabValue} index={4}>
               <Fade in={true} timeout={1000}>
                 <Card sx={{
                   background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
@@ -705,7 +749,7 @@ const Dashboard: React.FC = () => {
 
             {/* Admin Tab - Preview (only for admins) */}
             {isAdmin && (
-              <TabPanel value={tabValue} index={4}>
+              <TabPanel value={tabValue} index={5}>
                 <Fade in={true} timeout={1000}>
                   <Card sx={{
                     background: 'linear-gradient(135deg, #1F2937 0%, #111827 100%)',
@@ -1129,6 +1173,11 @@ const Dashboard: React.FC = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
+              {/* Schedule Meeting Tab */}
+              <ScheduleMeeting />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
               {/* Enhanced Analytics Tab */}
               {analyticsData ? (
                 <Fade in={!!analyticsData} timeout={1000}>
@@ -1227,12 +1276,12 @@ const Dashboard: React.FC = () => {
               )}
             </TabPanel>
 
-            <TabPanel value={tabValue} index={2}>
+            <TabPanel value={tabValue} index={3}>
               {/* Transactions Tab - Transaction History */}
               <TransactionHistory loanId={loanData.id.toString()} />
             </TabPanel>
 
-            <TabPanel value={tabValue} index={3}>
+            <TabPanel value={tabValue} index={4}>
               {/* Documents Tab */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Header */}
@@ -1491,7 +1540,7 @@ const Dashboard: React.FC = () => {
             </TabPanel>
 
             {isAdmin && (
-              <TabPanel value={tabValue} index={4}>
+              <TabPanel value={tabValue} index={5}>
                 {/* Admin Tab */}
                 <Card>
                   <CardContent>

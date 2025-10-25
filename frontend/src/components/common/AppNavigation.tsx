@@ -30,6 +30,7 @@ import {
   TrendingUp,
   History,
   Description,
+  CalendarToday,
   Menu as MenuIcon,
   Close,
 } from '@mui/icons-material';
@@ -66,7 +67,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
 
   // Handle main tab changes
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    if (newValue === 4 && user?.role === 'admin') {
+    if (newValue === 5 && user?.role === 'admin') {
       // Admin tab - navigate to admin page
       navigate('/admin');
     } else if (onTabChange) {
@@ -112,7 +113,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
 
   const handleMobileTabChange = (tabIndex: number) => {
     handleMobileMenuClose();
-    if (tabIndex === 4 && user?.role === 'admin') {
+    if (tabIndex === 5 && user?.role === 'admin') {
       navigate('/admin');
     } else if (onTabChange) {
       onTabChange(tabIndex);
@@ -123,10 +124,11 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
   
   const navigationItems = [
     { icon: <AccountBalance />, label: 'Overview', index: 0 },
-    { icon: <TrendingUp />, label: 'Analytics', index: 1 },
-    { icon: <History />, label: 'Transactions', index: 2 },
-    { icon: <Description />, label: 'Documents', index: 3 },
-    ...(user?.role === 'admin' ? [{ icon: <AdminPanelSettings />, label: 'Admin', index: 4 }] : [])
+    { icon: <CalendarToday />, label: 'Meetings', index: 1 },
+    { icon: <TrendingUp />, label: 'Analytics', index: 2 },
+    { icon: <History />, label: 'Transactions', index: 3 },
+    { icon: <Description />, label: 'Documents', index: 4 },
+    ...(user?.role === 'admin' ? [{ icon: <AdminPanelSettings />, label: 'Admin', index: 5 }] : [])
   ];
   
   return (
@@ -194,7 +196,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
 
               {/* Navigation Tabs */}
               <Tabs
-                value={isAdminPage ? (user?.role === 'admin' ? 4 : 0) : currentTab}
+                value={isAdminPage ? (user?.role === 'admin' ? 5 : 0) : currentTab}
                 onChange={handleTabChange}
                 sx={{
                   '& .MuiTab-root': {
@@ -419,7 +421,7 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
             {navigationItems.map((item) => (
               <ListItem key={item.index} disablePadding>
                 <ListItemButton
-                  selected={isAdminPage ? (item.index === 4) : (currentTab === item.index)}
+                  selected={isAdminPage ? (item.index === 5) : (currentTab === item.index)}
                   onClick={() => handleMobileTabChange(item.index)}
                   sx={{
                     py: { xs: 1, sm: 1.5 },
