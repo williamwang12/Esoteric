@@ -43,7 +43,7 @@ const ScheduleMeeting: React.FC = () => {
           return;
         }
         
-        const slots = await calendlyService.getNextAvailableSlots(7, 5);
+        const slots = await calendlyService.getNextAvailableSlots(4, 14);
         setAvailableSlots(slots);
       } catch (err) {
         console.error('Error fetching available slots:', err);
@@ -57,35 +57,21 @@ const ScheduleMeeting: React.FC = () => {
   }, []);
 
   const handleSlotClick = (slot: CalendlyAvailableTime) => {
-    // Open Calendly booking page for the specific time slot
-    window.open('https://calendly.com/julia-esotericenterprises/30min', '_blank', 'noopener,noreferrer');
+    // Format the date for Calendly URL parameter
+    const slotDate = new Date(slot.start_time);
+    const year = slotDate.getFullYear();
+    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+    const day = String(slotDate.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    // Open Calendly booking page with pre-selected date
+    const calendlyUrl = `https://calendly.com/julia-esotericenterprises/30min?date=${dateString}`;
+    window.open(calendlyUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <Fade in={true} timeout={1000}>
       <Box>
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Box sx={{
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-            borderRadius: '50%',
-            width: 80,
-            height: 80,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            mx: 'auto',
-            mb: 3,
-          }}>
-            <CalendarToday sx={{ fontSize: 40, color: 'white' }} />
-          </Box>
-          <Typography variant="h3" sx={{ fontWeight: 800, mb: 2 }}>
-            Schedule a Meeting
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Book a consultation with our team to discuss your investment goals and opportunities
-          </Typography>
-        </Box>
 
         {/* Next Available Time Slots */}
         <Card sx={{
@@ -125,14 +111,29 @@ const ScheduleMeeting: React.FC = () => {
                   mb: 2
                 }}>
                   {availableSlots.map((slot, index) => {
-                    const { time, dayOfWeek } = calendlyService.formatSlotTime(slot.start_time);
+                    const { date, time, dayOfWeek } = calendlyService.formatSlotTime(slot.start_time);
+                    const slotDate = new Date(slot.start_time);
+                    const today = new Date();
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    
+                    let dayLabel = dayOfWeek;
+                    if (slotDate.toDateString() === today.toDateString()) {
+                      dayLabel = 'Today';
+                    } else if (slotDate.toDateString() === tomorrow.toDateString()) {
+                      dayLabel = 'Tomorrow';
+                    }
+                    
                     return (
                       <Chip
                         key={index}
                         label={
                           <Box sx={{ textAlign: 'center' }}>
                             <Typography variant="caption" sx={{ fontWeight: 600, display: 'block' }}>
-                              {dayOfWeek}
+                              {dayLabel}
+                            </Typography>
+                            <Typography variant="caption" sx={{ display: 'block', fontSize: '0.65rem' }}>
+                              {slotDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </Typography>
                             <Typography variant="caption" sx={{ display: 'block' }}>
                               {time}
@@ -164,7 +165,7 @@ const ScheduleMeeting: React.FC = () => {
               </Box>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                No available times found in the next 7 days. Please check back later or use the booking form below.
+                No available times found in the next 4 days. Please check back later or use the booking form below.
               </Typography>
             )}
           </CardContent>
@@ -222,56 +223,15 @@ const ScheduleMeeting: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Meeting Details */}
+
+              {/* What to Prepare */}
               <Card sx={{
                 background: alpha(theme.palette.info.main, 0.05),
                 border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
                 borderRadius: '16px',
               }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <SupportAgent sx={{ color: 'info.main' }} />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Meeting Details
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTime sx={{ fontSize: 18, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        30 minutes duration
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <VideoCall sx={{ fontSize: 18, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        Zoom video call
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Person sx={{ fontSize: 18, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        With Julia Toti
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Schedule sx={{ fontSize: 18, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        Instant confirmation
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* What to Prepare */}
-              <Card sx={{
-                background: alpha(theme.palette.warning.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                borderRadius: '16px',
-              }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'warning.main' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'info.main' }}>
                     📋 Come Prepared
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

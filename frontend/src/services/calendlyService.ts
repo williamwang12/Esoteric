@@ -90,7 +90,7 @@ class CalendlyService {
     return this.makeRequest(`/event_type_available_times?${params.toString()}`);
   }
 
-  async getNextAvailableSlots(days: number = 7, limit: number = 5): Promise<CalendlyAvailableTime[]> {
+  async getNextAvailableSlots(days: number = 4, limit: number = 14): Promise<CalendlyAvailableTime[]> {
     try {
       // Get current user to find their event types
       const user = await this.getCurrentUser();
