@@ -68,7 +68,6 @@ import ExcelUpload from '../../components/admin/ExcelUpload';
 import ClientOnboarding from '../../components/admin/ClientOnboarding';
 import TransactionImport from '../../components/admin/TransactionImport';
 import YieldDeposits from '../../components/admin/YieldDeposits';
-import CalendlyDashboard from '../../components/admin/CalendlyDashboard';
 
 const FloatingOrb = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -1043,12 +1042,6 @@ const AdminDashboard: React.FC = () => {
                   label="Deposits" 
                   id="admin-tab-6"
                   aria-controls="admin-tabpanel-6"
-                />
-                <Tab 
-                  icon={<Schedule />} 
-                  label="Scheduling" 
-                  id="admin-tab-7"
-                  aria-controls="admin-tabpanel-7"
                 />
               </Tabs>
             </Box>
@@ -2140,10 +2133,6 @@ const AdminDashboard: React.FC = () => {
               <YieldDeposits />
             </TabPanel>
 
-            {/* Calendly Scheduling Tab */}
-            <TabPanel value={tabValue} index={7}>
-              <CalendlyDashboard />
-            </TabPanel>
 
             </>
             )}

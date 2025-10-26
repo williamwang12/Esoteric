@@ -181,7 +181,8 @@ const AppNavigation: React.FC<AppNavigationProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 3
+              gap: 3,
+              ml: { sm: 8, md: 12, lg: 20 } // Move content to the right with left margin
             }}>
               {/* Company Logo/Name */}
               <GradientText 
