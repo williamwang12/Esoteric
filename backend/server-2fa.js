@@ -405,7 +405,7 @@ app.get('/api/loans/:loanId/transactions', authenticateToken, async (req, res) =
 app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
     try {
         const { loanId } = req.params;
-        const { period = '12' } = req.query; // months
+        const { period = '24' } = req.query; // months
 
         // Verify the loan belongs to the user
         const loanCheck = await pool.query(
@@ -419,40 +419,39 @@ app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
 
         const loanAccount = loanCheck.rows[0];
 
-        // Get monthly aggregated data for the specified period
+        // First, ensure monthly balances are computed for this loan
+        try {
+            await computeMonthlyBalances(loanId);
+        } catch (computeError) {
+            console.warn('Failed to compute monthly balances, continuing with existing data:', computeError.message);
+        }
+
+        // Get monthly balance snapshots for the specified period
         const analyticsQuery = `
             SELECT 
-                DATE_TRUNC('month', transaction_date) as month,
-                SUM(CASE WHEN transaction_type = 'monthly_payment' THEN amount ELSE 0 END) as monthly_payments,
-                SUM(CASE WHEN transaction_type = 'bonus' THEN amount ELSE 0 END) as bonus_payments,
-                SUM(CASE WHEN transaction_type = 'withdrawal' THEN amount ELSE 0 END) as withdrawals,
-                COUNT(*) as transaction_count
-            FROM loan_transactions 
+                month_end_date,
+                ending_balance,
+                monthly_growth,
+                total_deposits,
+                total_withdrawals,
+                total_bonuses
+            FROM monthly_balances 
             WHERE loan_account_id = $1 
-                AND transaction_date >= NOW() - INTERVAL '${parseInt(period)} months'
-                AND transaction_type IN ('monthly_payment', 'bonus', 'withdrawal')
-            GROUP BY DATE_TRUNC('month', transaction_date)
-            ORDER BY month ASC
+                AND month_end_date >= NOW() - INTERVAL '${parseInt(period)} months'
+            ORDER BY month_end_date ASC
         `;
 
         const analyticsResult = await pool.query(analyticsQuery, [loanId]);
 
-        // Calculate running balance over time
-        let runningBalance = parseFloat(loanAccount.principal_amount);
+        // Build balance history from monthly snapshots
         const balanceHistory = analyticsResult.rows.map(row => {
-            const monthlyPayment = parseFloat(row.monthly_payments || 0);
-            const bonusPayment = parseFloat(row.bonus_payments || 0);
-            const withdrawal = parseFloat(row.withdrawals || 0);
-            
-            runningBalance += monthlyPayment + bonusPayment + withdrawal;
-            
             return {
-                month: row.month,
-                balance: runningBalance,
-                monthlyPayment,
-                bonusPayment,
-                withdrawal: Math.abs(withdrawal),
-                netGrowth: monthlyPayment + bonusPayment + withdrawal
+                month: row.month_end_date,
+                balance: parseFloat(row.ending_balance),
+                monthlyPayment: Math.max(0, parseFloat(row.monthly_growth || 0)), // Show growth as payment
+                bonusPayment: parseFloat(row.total_bonuses || 0),
+                withdrawal: parseFloat(row.total_withdrawals || 0),
+                netGrowth: parseFloat(row.monthly_growth || 0)
             };
         });
 
@@ -470,6 +469,154 @@ app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Loan analytics error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Function to compute and store monthly balance snapshots
+async function computeMonthlyBalances(loanAccountId) {
+    try {
+        // Get loan account details
+        const loanResult = await pool.query('SELECT * FROM loan_accounts WHERE id = $1', [loanAccountId]);
+        if (loanResult.rows.length === 0) {
+            throw new Error('Loan account not found');
+        }
+        
+        const loanAccount = loanResult.rows[0];
+        const startingBalance = parseFloat(loanAccount.principal_amount);
+        
+        // Get all transactions ordered by date
+        const transactionsResult = await pool.query(`
+            SELECT transaction_date, transaction_type, amount, description
+            FROM loan_transactions 
+            WHERE loan_account_id = $1 
+            ORDER BY transaction_date ASC, id ASC
+        `, [loanAccountId]);
+        
+        const transactions = transactionsResult.rows;
+        
+        // Build monthly snapshots
+        let runningBalance = startingBalance;
+        const monthlyData = new Map();
+        
+        // Process each transaction
+        for (const transaction of transactions) {
+            const transactionDate = new Date(transaction.transaction_date);
+            const monthKey = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`;
+            
+            // Initialize month data if not exists
+            if (!monthlyData.has(monthKey)) {
+                monthlyData.set(monthKey, {
+                    monthEndDate: new Date(transactionDate.getFullYear(), transactionDate.getMonth() + 1, 0), // Last day of month
+                    startingBalance: runningBalance,
+                    deposits: 0,
+                    withdrawals: 0,
+                    bonuses: 0,
+                    payments: 0
+                });
+            }
+            
+            const monthData = monthlyData.get(monthKey);
+            const amount = parseFloat(transaction.amount || 0);
+            
+            // Categorize transaction and update running balance
+            switch (transaction.transaction_type) {
+                case 'loan':
+                case 'yield_deposit':
+                    monthData.deposits += amount;
+                    runningBalance += amount;
+                    break;
+                case 'deposit_deletion':
+                    monthData.deposits += amount; // Could be negative
+                    runningBalance += amount;
+                    break;
+                case 'withdrawal':
+                    monthData.withdrawals += Math.abs(amount);
+                    runningBalance -= Math.abs(amount);
+                    break;
+                case 'bonus':
+                    monthData.bonuses += amount;
+                    runningBalance += amount;
+                    break;
+                case 'monthly_payment':
+                case 'yield_payment':
+                case 'daily_yield':
+                    monthData.payments += amount;
+                    runningBalance += amount;
+                    break;
+                case 'adjustment_increase':
+                    runningBalance += amount;
+                    break;
+                case 'adjustment_decrease':
+                    runningBalance -= amount;
+                    break;
+            }
+            
+            // Update ending balance for this month
+            monthData.endingBalance = runningBalance;
+        }
+        
+        // Clear existing monthly balance data for this loan
+        await pool.query('DELETE FROM monthly_balances WHERE loan_account_id = $1', [loanAccountId]);
+        
+        // Insert computed monthly balances
+        for (const [monthKey, data] of monthlyData) {
+            const monthlyGrowth = data.endingBalance - data.startingBalance;
+            
+            await pool.query(`
+                INSERT INTO monthly_balances 
+                (loan_account_id, month_end_date, ending_balance, monthly_growth, total_deposits, total_withdrawals, total_bonuses)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (loan_account_id, month_end_date) 
+                DO UPDATE SET 
+                    ending_balance = EXCLUDED.ending_balance,
+                    monthly_growth = EXCLUDED.monthly_growth,
+                    total_deposits = EXCLUDED.total_deposits,
+                    total_withdrawals = EXCLUDED.total_withdrawals,
+                    total_bonuses = EXCLUDED.total_bonuses
+            `, [
+                loanAccountId,
+                data.monthEndDate,
+                data.endingBalance,
+                monthlyGrowth,
+                data.deposits,
+                data.withdrawals,
+                data.bonuses
+            ]);
+        }
+        
+        console.log(`Computed ${monthlyData.size} monthly balance snapshots for loan ${loanAccountId}`);
+        return monthlyData.size;
+        
+    } catch (error) {
+        console.error('Error computing monthly balances:', error);
+        throw error;
+    }
+}
+
+// Endpoint to recompute monthly balances for a loan
+app.post('/api/loans/:loanId/recompute-balances', authenticateToken, async (req, res) => {
+    try {
+        const { loanId } = req.params;
+        
+        // Verify the loan belongs to the user
+        const loanCheck = await pool.query(
+            'SELECT * FROM loan_accounts WHERE id = $1 AND user_id = $2',
+            [loanId, req.user.userId]
+        );
+        
+        if (loanCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'Loan account not found' });
+        }
+        
+        const monthCount = await computeMonthlyBalances(loanId);
+        res.json({ 
+            message: 'Monthly balances recomputed successfully',
+            monthsProcessed: monthCount
+        });
+        
+    } catch (error) {
+        console.error('Recompute balances error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

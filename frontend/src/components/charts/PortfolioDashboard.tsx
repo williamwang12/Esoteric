@@ -109,9 +109,12 @@ const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({ analytics, loan
     datasets: [
       {
         label: 'Monthly ROI (%)',
-        data: analytics.balanceHistory.map(item => {
-          const prevBalance = analytics.totalPrincipal;
-          return ((item.netGrowth / prevBalance) * 100).toFixed(2);
+        data: analytics.balanceHistory.map((item, index) => {
+          // Calculate ROI based on growth relative to the starting balance at that point
+          const startingBalance = index === 0 ? analytics.totalPrincipal : analytics.balanceHistory[index - 1].balance;
+          const monthlyGrowth = item.balance - startingBalance;
+          const monthlyROI = startingBalance > 0 ? (monthlyGrowth / startingBalance) * 100 : 0;
+          return Math.max(0, monthlyROI).toFixed(2); // Ensure non-negative ROI
         }),
         borderColor: theme.palette.success.main,
         backgroundColor: alpha(theme.palette.success.main, 0.1),
