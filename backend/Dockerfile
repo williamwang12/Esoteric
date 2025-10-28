@@ -13,16 +13,19 @@ RUN npm ci --only=production
 # Copy application code
 COPY . .
 
+# Create uploads directory
+RUN mkdir -p uploads
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN adduser -S backend -u 1001
 
 # Change ownership of the app directory
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+RUN chown -R backend:nodejs /app
+USER backend
 
 # Expose port
-EXPOSE 8080
+EXPOSE 5002
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

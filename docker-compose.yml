@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: esoteric-postgres
+    environment:
+      POSTGRES_DB: esoteric_loans
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/fresh-schema.sql:/docker-entrypoint-initdb.d/01-fresh-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - esoteric-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: esoteric-backend
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=esoteric_loans
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-here}
+      - JWT_EXPIRES_IN=7d
+      - PORT=5002
+      - FRONTEND_URL=http://localhost:3000
+      - CALENDLY_API_TOKEN=${CALENDLY_API_TOKEN:-}
+      - CALENDLY_USER_URI=${CALENDLY_USER_URI:-}
+      - CALENDLY_API_BASE_URL=https://api.calendly.com
+      - DOCUSIGN_INTEGRATION_KEY=36199215-2892-4e91-94e7-bc7aa3ce0e50
+      - DOCUSIGN_CLIENT_SECRET=39110a4d-81f4-4867-ace5-572ef64d0dea
+      - DOCUSIGN_USER_ID=33a9927e-c89f-4f1c-a5f0-7e3bdbe6043e
+      - DOCUSIGN_ACCOUNT_ID=43132555
+      - DOCUSIGN_PRIVATE_KEY_PATH=./keys/docusign_private_key.pem
+      - DOCUSIGN_ENVIRONMENT=demo
+      - DOCUSIGN_REDIRECT_URI=https://developers.docusign.com/platform/auth/consent
+    ports:
+      - "5003:5002"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - esoteric-network
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:5003/api
+        - REACT_APP_CALENDLY_ACCESS_TOKEN=eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzU4Mjk5Njg2LCJqdGkiOiIxOTU1YzZkYy01ZGQyLTRkYWItOTA2NS05NmE3MTBlZjY1Y2IiLCJ1c2VyX3V1aWQiOiIxN2E3NWExYi1kYmJmLTQyNTYtYWUzNS03YThjZGJiNDgyZmIifQ.BOVwQVy3w7P2CVMPrD_x84f5sQ0GPubJftbNosHpNfalWwZy4f0_A8HczYbyqTvAgY3PJh-Wef3_cYFgfZBLLA
+    container_name: esoteric-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - esoteric-network
+
+volumes:
+  postgres_data:
+
+networks:
+  esoteric-network:
+    driver: bridge

@@ -1,0 +1,23 @@
+# Development overrides for docker-compose
+# This file is automatically loaded and overrides docker-compose.yml settings
+
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # Mount source code for development (hot reload)
+      - ./backend:/app
+      - /app/node_modules
+      # Keep uploads persistent
+      - ./backend/uploads:/app/uploads
+    command: ["node", "server-2fa.js"]
+
+  postgres:
+    ports:
+      - "5432:5432"
+    # Enable for debugging
+    # volumes:
+    #   - ./logs:/var/log/postgresql

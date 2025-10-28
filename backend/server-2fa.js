@@ -32,20 +32,9 @@ app.locals.pool = pool;
 
 // Security middleware
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'"],
-            fontSrc: ["'self'"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
-        },
-    },
-    crossOriginEmbedderPolicy: false // Allow file uploads
+    contentSecurityPolicy: false, // Disable CSP completely to avoid HTTPS redirects
+    crossOriginEmbedderPolicy: false,
+    hsts: false // Disable HTTPS strict transport security
 }));
 
 // CORS middleware
