@@ -27,7 +27,7 @@ router.post('/login', [
         // Get user with 2FA status
         const result = await pool.query(`
             SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.requires_2fa,
-                   u2fa.is_enabled as has_2fa_enabled
+                   u2fa.enabled as has_2fa_enabled
             FROM users u
             LEFT JOIN user_2fa u2fa ON u.id = u2fa.user_id
             WHERE u.email = $1
@@ -164,7 +164,7 @@ router.post('/complete-2fa-login', [
         
         const userResult = await pool.query(`
             SELECT secret, backup_codes FROM user_2fa 
-            WHERE user_id = $1 AND is_enabled = true
+            WHERE user_id = $1 AND enabled = true
         `, [decoded.userId]);
 
         if (userResult.rows.length === 0) {

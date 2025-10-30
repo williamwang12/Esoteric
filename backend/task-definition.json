@@ -12,7 +12,7 @@
   "containerDefinitions": [
     {
       "name": "esoteric-backend",
-      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v10",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v11",
       "essential": true,
       "portMappings": [
         {
@@ -32,6 +32,10 @@
         {
           "name": "DATABASE_URL",
           "value": "postgresql://dbadmin:EsotericDB2025%23Secure@esoteric-rds-db.cg38ykumokco.us-east-1.rds.amazonaws.com:5432/esoteric_loans"
+        },
+        {
+          "name": "JWT_SECRET",
+          "value": "vLIiV8Wc4zduhXH0tuVhWWJhs7W8stv1Dc3Mks/YCGo="
         }
       ],
       "logConfiguration": {
