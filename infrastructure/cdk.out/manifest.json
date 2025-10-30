@@ -1,0 +1,527 @@
+{
+  "version": "34.0.0",
+  "artifacts": {
+    "EsotericStack-staging.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "EsotericStack-staging.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "EsotericStack-staging": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://484069698162/us-east-1",
+      "properties": {
+        "templateFile": "EsotericStack-staging.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "Environment": "staging",
+          "ManagedBy": "CDK",
+          "Project": "Esoteric"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::484069698162:role/cdk-hnb659fds-deploy-role-484069698162-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::484069698162:role/cdk-hnb659fds-cfn-exec-role-484069698162-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-484069698162-us-east-1/5054a36d3de28625f7a4a86acec7e86fa6ca718cba314bb6c57382197132a25b.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "EsotericStack-staging.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::484069698162:role/cdk-hnb659fds-lookup-role-484069698162-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "EsotericStack-staging.assets"
+      ],
+      "metadata": {
+        "/EsotericStack-staging": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "Environment",
+                "Value": "staging"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "CDK"
+              },
+              {
+                "Key": "Project",
+                "Value": "Esoteric"
+              }
+            ]
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcBB996EEA"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet1SubnetD14E60EE"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet1RouteTable08CB800A"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet1RouteTableAssociation74FA0C52"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet1DefaultRoute3994A47D"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet1/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet1EIPB931EA1C"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet1/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet1NATGatewayE144933A"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet2Subnet9C7EC504"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet2RouteTable30F0631B"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet2RouteTableAssociation6C739F83"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet2DefaultRoute2031A157"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet2/EIP": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet2EIPFD566740"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/publicSubnet2/NATGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcpublicSubnet2NATGateway942018C2"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet1Subnet223A3622"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet1RouteTable56D13DFA"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet1RouteTableAssociation96219565"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet1/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet1DefaultRouteCF3C4052"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet2Subnet1FCA691B"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet2RouteTable92B8CBE2"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet2RouteTableAssociationC65A2573"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/privateSubnet2/DefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcprivateSubnet2DefaultRouteC41D14C3"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/databaseSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcdatabaseSubnet1Subnet272FC940"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/databaseSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcdatabaseSubnet1RouteTable05C9B6BF"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/databaseSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcdatabaseSubnet1RouteTableAssociationD6C2064D"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/databaseSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcdatabaseSubnet2Subnet96037245"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/databaseSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcdatabaseSubnet2RouteTable02378B4A"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/databaseSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcdatabaseSubnet2RouteTableAssociationB5D1A1E2"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/IGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcIGW01F1E46B"
+          }
+        ],
+        "/EsotericStack-staging/EsotericVpc/VPCGW": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericVpcVPCGWA0D116E2"
+          }
+        ],
+        "/EsotericStack-staging/DatabaseSecret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecret86DBB7B3"
+          }
+        ],
+        "/EsotericStack-staging/DatabaseSecret/Attachment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecretAttachment9A63A3D4"
+          }
+        ],
+        "/EsotericStack-staging/AppSecrets/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AppSecretsA1997F2A"
+          }
+        ],
+        "/EsotericStack-staging/DatabaseSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroup7319C0F6"
+          }
+        ],
+        "/EsotericStack-staging/DatabaseSecurityGroup/from EsotericStackstagingEcsSecurityGroup7EDDB383:5432": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseSecurityGroupfromEsotericStackstagingEcsSecurityGroup7EDDB38354324436DE87"
+          }
+        ],
+        "/EsotericStack-staging/PostgreSQLDatabase/SubnetGroup/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PostgreSQLDatabaseSubnetGroupACDBDBEF"
+          }
+        ],
+        "/EsotericStack-staging/PostgreSQLDatabase/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PostgreSQLDatabase03FC658A"
+          }
+        ],
+        "/EsotericStack-staging/EsotericBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericBucketBE7D4EE0"
+          }
+        ],
+        "/EsotericStack-staging/EsotericBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericBucketPolicyEF6C9634"
+          }
+        ],
+        "/EsotericStack-staging/EsotericBucket/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericBucketAutoDeleteObjectsCustomResourceA7CD392F"
+          }
+        ],
+        "/EsotericStack-staging/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/EsotericStack-staging/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/EsotericStack-staging/EsotericDistribution/Origin1/S3Origin/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericDistributionOrigin1S3Origin25F7E52D"
+          }
+        ],
+        "/EsotericStack-staging/EsotericDistribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericDistributionAD9B8323"
+          }
+        ],
+        "/EsotericStack-staging/BackendRepository/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendRepository9B711290"
+          }
+        ],
+        "/EsotericStack-staging/EsotericCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EsotericClusterA2EE804F"
+          }
+        ],
+        "/EsotericStack-staging/EcsSecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EcsSecurityGroup44008BF1"
+          }
+        ],
+        "/EsotericStack-staging/BackendTaskDefinition/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefinitionTaskRoleE757CE00"
+          }
+        ],
+        "/EsotericStack-staging/BackendTaskDefinition/TaskRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefinitionTaskRoleDefaultPolicy06F692E2"
+          }
+        ],
+        "/EsotericStack-staging/BackendTaskDefinition/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefinitionEC224DE6"
+          }
+        ],
+        "/EsotericStack-staging/BackendTaskDefinition/backend": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "Proper policies need to be attached before pulling from ECR repository, or use 'fromEcrRepository'. [ack: @aws-cdk/aws-ecs:ecrImageRequiresPolicy]",
+            "trace": [
+              "Annotations.addMessage (/Users/williamwang/Esoteric/infrastructure/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1526)",
+              "Annotations.addWarningV2 (/Users/williamwang/Esoteric/infrastructure/node_modules/aws-cdk-lib/core/lib/annotations.js:1:825)",
+              "RepositoryImage.bind (/Users/williamwang/Esoteric/infrastructure/node_modules/aws-cdk-lib/aws-ecs/lib/images/repository.js:1:1306)",
+              "new ContainerDefinition (/Users/williamwang/Esoteric/infrastructure/node_modules/aws-cdk-lib/aws-ecs/lib/container-definition.js:1:3120)",
+              "FargateTaskDefinition.addContainer (/Users/williamwang/Esoteric/infrastructure/node_modules/aws-cdk-lib/aws-ecs/lib/base/task-definition.js:1:9865)",
+              "new EsotericStack (/Users/williamwang/Esoteric/infrastructure/lib/esoteric-stack.ts:200:38)",
+              "Object.<anonymous> (/Users/williamwang/Esoteric/infrastructure/bin/app.ts:14:1)",
+              "Module._compile (node:internal/modules/cjs/loader:1554:14)",
+              "Module.m._compile (/Users/williamwang/.npm/_npx/1bf7c3c15bf47d04/node_modules/ts-node/src/index.ts:1618:23)",
+              "node:internal/modules/cjs/loader:1706:10",
+              "Object.require.extensions.<computed> [as .ts] (/Users/williamwang/.npm/_npx/1bf7c3c15bf47d04/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1289:32)",
+              "Function._load (node:internal/modules/cjs/loader:1108:12)",
+              "TracingChannel.traceSync (node:diagnostics_channel:322:14)",
+              "wrapModuleLoad (node:internal/modules/cjs/loader:220:24)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)",
+              "phase4 (/Users/williamwang/.npm/_npx/1bf7c3c15bf47d04/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/williamwang/.npm/_npx/1bf7c3c15bf47d04/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/williamwang/.npm/_npx/1bf7c3c15bf47d04/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/williamwang/.npm/_npx/1bf7c3c15bf47d04/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1554:14)",
+              "Object.<anonymous> (node:internal/modules/cjs/loader:1706:10)",
+              "Module.load (node:internal/modules/cjs/loader:1289:32)",
+              "Function._load (node:internal/modules/cjs/loader:1108:12)",
+              "TracingChannel.traceSync (node:diagnostics_channel:322:14)",
+              "wrapModuleLoad (node:internal/modules/cjs/loader:220:24)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:170:5)",
+              "node:internal/main/run_main_module:36:49"
+            ]
+          }
+        ],
+        "/EsotericStack-staging/BackendTaskDefinition/ExecutionRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefinitionExecutionRoleDA72B768"
+          }
+        ],
+        "/EsotericStack-staging/BackendTaskDefinition/ExecutionRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendTaskDefinitionExecutionRoleDefaultPolicy0750C44A"
+          }
+        ],
+        "/EsotericStack-staging/BackendLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendLogGroupDA10F1B2"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/LB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceLB09608E98"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/LB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceLBSecurityGroup2B9BA648"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/LB/SecurityGroup/to EsotericStackstagingBackendServiceSecurityGroup259049F2:5002": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceLBSecurityGrouptoEsotericStackstagingBackendServiceSecurityGroup259049F25002C81DCD02"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/LB/PublicListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceLBPublicListener2FA7FC98"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/LB/PublicListener/ECSGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceLBPublicListenerECSGroupD43CD2AB"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/LoadBalancerDNS": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceLoadBalancerDNSE742582D"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/ServiceURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceServiceURLB1770053"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/Service/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendService2147DAF9"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/Service/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceSecurityGroup7599F85E"
+          }
+        ],
+        "/EsotericStack-staging/BackendService/Service/SecurityGroup/from EsotericStackstagingBackendServiceLBSecurityGroup01F67606:5002": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendServiceSecurityGroupfromEsotericStackstagingBackendServiceLBSecurityGroup01F6760650028C43BC7E"
+          }
+        ],
+        "/EsotericStack-staging/DatabaseEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DatabaseEndpoint"
+          }
+        ],
+        "/EsotericStack-staging/BackendRepositoryUri": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BackendRepositoryUri"
+          }
+        ],
+        "/EsotericStack-staging/S3BucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "S3BucketName"
+          }
+        ],
+        "/EsotericStack-staging/CloudFrontUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CloudFrontUrl"
+          }
+        ],
+        "/EsotericStack-staging/SecretsManagerArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SecretsManagerArn"
+          }
+        ],
+        "/EsotericStack-staging/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/EsotericStack-staging/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/EsotericStack-staging/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "EsotericStack-staging"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  }
+}

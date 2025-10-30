@@ -1,0 +1,32 @@
+{
+  "name": "esoteric-infrastructure",
+  "version": "0.1.0",
+  "description": "AWS CDK infrastructure for Esoteric loan management platform",
+  "bin": {
+    "esoteric-infrastructure": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy": "npm run build && cdk deploy",
+    "deploy:staging": "npm run build && cdk deploy EsotericStack-staging",
+    "deploy:production": "npm run build && cdk deploy EsotericStack-production",
+    "destroy": "cdk destroy",
+    "diff": "cdk diff",
+    "synth": "cdk synth"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.4.0",
+    "@types/node": "20.1.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "aws-cdk": "2.100.0",
+    "typescript": "~5.1.6"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.100.0",
+    "constructs": "^10.0.0"
+  }
+}

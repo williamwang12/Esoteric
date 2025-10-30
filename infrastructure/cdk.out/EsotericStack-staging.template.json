@@ -1,0 +1,1917 @@
+{
+ "Description": "Esoteric Loan Management Platform - staging",
+ "Resources": {
+  "EsotericVpcBB996EEA": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/Resource"
+   }
+  },
+  "EsotericVpcpublicSubnet1SubnetD14E60EE": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet1/Subnet"
+   }
+  },
+  "EsotericVpcpublicSubnet1RouteTable08CB800A": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet1/RouteTable"
+   }
+  },
+  "EsotericVpcpublicSubnet1RouteTableAssociation74FA0C52": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "EsotericVpcpublicSubnet1RouteTable08CB800A"
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcpublicSubnet1SubnetD14E60EE"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet1/RouteTableAssociation"
+   }
+  },
+  "EsotericVpcpublicSubnet1DefaultRoute3994A47D": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "EsotericVpcIGW01F1E46B"
+    },
+    "RouteTableId": {
+     "Ref": "EsotericVpcpublicSubnet1RouteTable08CB800A"
+    }
+   },
+   "DependsOn": [
+    "EsotericVpcVPCGWA0D116E2"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet1/DefaultRoute"
+   }
+  },
+  "EsotericVpcpublicSubnet1EIPB931EA1C": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet1/EIP"
+   }
+  },
+  "EsotericVpcpublicSubnet1NATGatewayE144933A": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "EsotericVpcpublicSubnet1EIPB931EA1C",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcpublicSubnet1SubnetD14E60EE"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet1"
+     }
+    ]
+   },
+   "DependsOn": [
+    "EsotericVpcpublicSubnet1DefaultRoute3994A47D",
+    "EsotericVpcpublicSubnet1RouteTableAssociation74FA0C52"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet1/NATGateway"
+   }
+  },
+  "EsotericVpcpublicSubnet2Subnet9C7EC504": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "public"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Public"
+     },
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet2/Subnet"
+   }
+  },
+  "EsotericVpcpublicSubnet2RouteTable30F0631B": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet2/RouteTable"
+   }
+  },
+  "EsotericVpcpublicSubnet2RouteTableAssociation6C739F83": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "EsotericVpcpublicSubnet2RouteTable30F0631B"
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcpublicSubnet2Subnet9C7EC504"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet2/RouteTableAssociation"
+   }
+  },
+  "EsotericVpcpublicSubnet2DefaultRoute2031A157": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "EsotericVpcIGW01F1E46B"
+    },
+    "RouteTableId": {
+     "Ref": "EsotericVpcpublicSubnet2RouteTable30F0631B"
+    }
+   },
+   "DependsOn": [
+    "EsotericVpcVPCGWA0D116E2"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet2/DefaultRoute"
+   }
+  },
+  "EsotericVpcpublicSubnet2EIPFD566740": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet2"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet2/EIP"
+   }
+  },
+  "EsotericVpcpublicSubnet2NATGateway942018C2": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "EsotericVpcpublicSubnet2EIPFD566740",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcpublicSubnet2Subnet9C7EC504"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/publicSubnet2"
+     }
+    ]
+   },
+   "DependsOn": [
+    "EsotericVpcpublicSubnet2DefaultRoute2031A157",
+    "EsotericVpcpublicSubnet2RouteTableAssociation6C739F83"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/publicSubnet2/NATGateway"
+   }
+  },
+  "EsotericVpcprivateSubnet1Subnet223A3622": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/privateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet1/Subnet"
+   }
+  },
+  "EsotericVpcprivateSubnet1RouteTable56D13DFA": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/privateSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet1/RouteTable"
+   }
+  },
+  "EsotericVpcprivateSubnet1RouteTableAssociation96219565": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "EsotericVpcprivateSubnet1RouteTable56D13DFA"
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcprivateSubnet1Subnet223A3622"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet1/RouteTableAssociation"
+   }
+  },
+  "EsotericVpcprivateSubnet1DefaultRouteCF3C4052": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "EsotericVpcpublicSubnet1NATGatewayE144933A"
+    },
+    "RouteTableId": {
+     "Ref": "EsotericVpcprivateSubnet1RouteTable56D13DFA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet1/DefaultRoute"
+   }
+  },
+  "EsotericVpcprivateSubnet2Subnet1FCA691B": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.3.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "private"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Private"
+     },
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/privateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet2/Subnet"
+   }
+  },
+  "EsotericVpcprivateSubnet2RouteTable92B8CBE2": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/privateSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet2/RouteTable"
+   }
+  },
+  "EsotericVpcprivateSubnet2RouteTableAssociationC65A2573": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "EsotericVpcprivateSubnet2RouteTable92B8CBE2"
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcprivateSubnet2Subnet1FCA691B"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet2/RouteTableAssociation"
+   }
+  },
+  "EsotericVpcprivateSubnet2DefaultRouteC41D14C3": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "EsotericVpcpublicSubnet2NATGateway942018C2"
+    },
+    "RouteTableId": {
+     "Ref": "EsotericVpcprivateSubnet2RouteTable92B8CBE2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/privateSubnet2/DefaultRoute"
+   }
+  },
+  "EsotericVpcdatabaseSubnet1Subnet272FC940": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "CidrBlock": "10.0.4.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "database"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/databaseSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/databaseSubnet1/Subnet"
+   }
+  },
+  "EsotericVpcdatabaseSubnet1RouteTable05C9B6BF": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/databaseSubnet1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/databaseSubnet1/RouteTable"
+   }
+  },
+  "EsotericVpcdatabaseSubnet1RouteTableAssociationD6C2064D": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "EsotericVpcdatabaseSubnet1RouteTable05C9B6BF"
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcdatabaseSubnet1Subnet272FC940"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/databaseSubnet1/RouteTableAssociation"
+   }
+  },
+  "EsotericVpcdatabaseSubnet2Subnet96037245": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": "us-east-1b",
+    "CidrBlock": "10.0.5.0/24",
+    "MapPublicIpOnLaunch": false,
+    "Tags": [
+     {
+      "Key": "aws-cdk:subnet-name",
+      "Value": "database"
+     },
+     {
+      "Key": "aws-cdk:subnet-type",
+      "Value": "Isolated"
+     },
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/databaseSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/databaseSubnet2/Subnet"
+   }
+  },
+  "EsotericVpcdatabaseSubnet2RouteTable02378B4A": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc/databaseSubnet2"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/databaseSubnet2/RouteTable"
+   }
+  },
+  "EsotericVpcdatabaseSubnet2RouteTableAssociationB5D1A1E2": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "EsotericVpcdatabaseSubnet2RouteTable02378B4A"
+    },
+    "SubnetId": {
+     "Ref": "EsotericVpcdatabaseSubnet2Subnet96037245"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/databaseSubnet2/RouteTableAssociation"
+   }
+  },
+  "EsotericVpcIGW01F1E46B": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "EsotericStack-staging/EsotericVpc"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/IGW"
+   }
+  },
+  "EsotericVpcVPCGWA0D116E2": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "EsotericVpcIGW01F1E46B"
+    },
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericVpc/VPCGW"
+   }
+  },
+  "DatabaseSecret86DBB7B3": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Generated by the CDK for stack: ",
+       {
+        "Ref": "AWS::StackName"
+       }
+      ]
+     ]
+    },
+    "GenerateSecretString": {
+     "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+     "GenerateStringKey": "password",
+     "PasswordLength": 30,
+     "SecretStringTemplate": "{\"username\":\"postgres\"}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/DatabaseSecret/Resource"
+   }
+  },
+  "DatabaseSecretAttachment9A63A3D4": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "DatabaseSecret86DBB7B3"
+    },
+    "TargetId": {
+     "Ref": "PostgreSQLDatabase03FC658A"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/DatabaseSecret/Attachment/Resource"
+   }
+  },
+  "AppSecretsA1997F2A": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": "Application environment variables",
+    "GenerateSecretString": {
+     "ExcludeCharacters": "\"@/\\'",
+     "GenerateStringKey": "JWT_SECRET",
+     "SecretStringTemplate": "{\"NODE_ENV\":\"staging\",\"PORT\":\"5002\",\"JWT_EXPIRES_IN\":\"7d\",\"CALENDLY_API_TOKEN\":\"eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzU4Mjk5Njg2LCJqdGkiOiIxOTU1YzZkYy01ZGQyLTRkYWItOTA2NS05NmE3MTBlZjY1Y2IiLCJ1c2VyX3V1aWQiOiIxN2E3NWExYi1kYmJmLTQyNTYtYWUzNS03YThjZGJiNDgyZmIifQ.BOVwQVy3w7P2CVMPrD_x84f5sQ0GPubJftbNosHpNfalWwZy4f0_A8HczYbyqTvAgY3PJh-Wef3_cYFgfZBLLA\",\"CALENDLY_USER_URI\":\"https://api.calendly.com/users/17a75a1b-dbbf-4256-ae35-7a8cdbb482fb\",\"CALENDLY_API_BASE_URL\":\"https://api.calendly.com\",\"DOCUSIGN_INTEGRATION_KEY\":\"36199215-2892-4e91-94e7-bc7aa3ce0e50\",\"DOCUSIGN_CLIENT_SECRET\":\"39110a4d-81f4-4867-ace5-572ef64d0dea\",\"DOCUSIGN_USER_ID\":\"33a9927e-c89f-4f1c-a5f0-7e3bdbe6043e\",\"DOCUSIGN_ACCOUNT_ID\":\"43132555\",\"DOCUSIGN_PRIVATE_KEY_PATH\":\"./keys/docusign_private_key.pem\",\"DOCUSIGN_ENVIRONMENT\":\"demo\",\"DOCUSIGN_REDIRECT_URI\":\"https://developers.docusign.com/platform/auth/consent\"}"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/AppSecrets/Resource"
+   }
+  },
+  "DatabaseSecurityGroup7319C0F6": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for PostgreSQL database",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/DatabaseSecurityGroup/Resource"
+   }
+  },
+  "DatabaseSecurityGroupfromEsotericStackstagingEcsSecurityGroup7EDDB38354324436DE87": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow ECS access to PostgreSQL",
+    "FromPort": 5432,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "DatabaseSecurityGroup7319C0F6",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "EcsSecurityGroup44008BF1",
+      "GroupId"
+     ]
+    },
+    "ToPort": 5432
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/DatabaseSecurityGroup/from EsotericStackstagingEcsSecurityGroup7EDDB383:5432"
+   }
+  },
+  "PostgreSQLDatabaseSubnetGroupACDBDBEF": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Subnet group for PostgreSQLDatabase database",
+    "SubnetIds": [
+     {
+      "Ref": "EsotericVpcdatabaseSubnet1Subnet272FC940"
+     },
+     {
+      "Ref": "EsotericVpcdatabaseSubnet2Subnet96037245"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/PostgreSQLDatabase/SubnetGroup/Default"
+   }
+  },
+  "PostgreSQLDatabase03FC658A": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "100",
+    "BackupRetentionPeriod": 7,
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBName": "esoteric_loans",
+    "DBSubnetGroupName": {
+     "Ref": "PostgreSQLDatabaseSubnetGroupACDBDBEF"
+    },
+    "DeleteAutomatedBackups": true,
+    "DeletionProtection": false,
+    "Engine": "postgres",
+    "EngineVersion": "15.14",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DatabaseSecret86DBB7B3"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "DatabaseSecret86DBB7B3"
+       },
+       ":SecretString:username::}}"
+      ]
+     ]
+    },
+    "MultiAZ": false,
+    "PreferredBackupWindow": "03:00-04:00",
+    "PreferredMaintenanceWindow": "sun:04:00-sun:05:00",
+    "PubliclyAccessible": false,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "DatabaseSecurityGroup7319C0F6",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/PostgreSQLDatabase/Resource"
+   }
+  },
+  "EsotericBucketBE7D4EE0": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": {
+     "Fn::Join": [
+      "",
+      [
+       "esoteric-staging-bucket-",
+       {
+        "Ref": "AWS::AccountId"
+       }
+      ]
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:auto-delete-objects",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericBucket/Resource"
+   }
+  },
+  "EsotericBucketPolicyEF6C9634": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "EsotericBucketBE7D4EE0"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:PutBucketPolicy",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::GetAtt": [
+          "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+          "Arn"
+         ]
+        }
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "EsotericBucketBE7D4EE0",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "EsotericBucketBE7D4EE0",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Effect": "Allow",
+       "Principal": {
+        "CanonicalUser": {
+         "Fn::GetAtt": [
+          "EsotericDistributionOrigin1S3Origin25F7E52D",
+          "S3CanonicalUserId"
+         ]
+        }
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "EsotericBucketBE7D4EE0",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericBucket/Policy/Resource"
+   }
+  },
+  "EsotericBucketAutoDeleteObjectsCustomResourceA7CD392F": {
+   "Type": "Custom::S3AutoDeleteObjects",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F",
+      "Arn"
+     ]
+    },
+    "BucketName": {
+     "Ref": "EsotericBucketBE7D4EE0"
+    }
+   },
+   "DependsOn": [
+    "EsotericBucketPolicyEF6C9634"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericBucket/AutoDeleteObjectsCustomResource/Default"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Version": "2012-10-17",
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ]
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role"
+   }
+  },
+  "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-484069698162-us-east-1",
+     "S3Key": "b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6.zip"
+    },
+    "Timeout": 900,
+    "MemorySize": 128,
+    "Handler": "index.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Lambda function for auto-deleting objects in ",
+       {
+        "Ref": "EsotericBucketBE7D4EE0"
+       },
+       " S3 bucket."
+      ]
+     ]
+    }
+   },
+   "DependsOn": [
+    "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler",
+    "aws:asset:path": "asset.b7f33614a69548d6bafe224d751a7ef238cde19097415e553fe8b63a4c8fd8a6",
+    "aws:asset:property": "Code"
+   }
+  },
+  "EsotericDistributionOrigin1S3Origin25F7E52D": {
+   "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+   "Properties": {
+    "CloudFrontOriginAccessIdentityConfig": {
+     "Comment": "Identity for EsotericStackstagingEsotericDistributionOrigin1224809E0"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericDistribution/Origin1/S3Origin/Resource"
+   }
+  },
+  "EsotericDistributionAD9B8323": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "CustomErrorResponses": [
+      {
+       "ErrorCode": 404,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      }
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "EsotericStackstagingEsotericDistributionOrigin1224809E0",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "EsotericBucketBE7D4EE0",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "EsotericStackstagingEsotericDistributionOrigin1224809E0",
+       "S3OriginConfig": {
+        "OriginAccessIdentity": {
+         "Fn::Join": [
+          "",
+          [
+           "origin-access-identity/cloudfront/",
+           {
+            "Ref": "EsotericDistributionOrigin1S3Origin25F7E52D"
+           }
+          ]
+         ]
+        }
+       }
+      }
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericDistribution/Resource"
+   }
+  },
+  "BackendRepository9B711290": {
+   "Type": "AWS::ECR::Repository",
+   "Properties": {
+    "ImageScanningConfiguration": {
+     "ScanOnPush": true
+    },
+    "LifecyclePolicy": {
+     "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"selection\":{\"tagStatus\":\"any\",\"countType\":\"imageCountMoreThan\",\"countNumber\":10},\"action\":{\"type\":\"expire\"}}]}"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendRepository/Resource"
+   }
+  },
+  "EsotericClusterA2EE804F": {
+   "Type": "AWS::ECS::Cluster",
+   "Properties": {
+    "ClusterName": "esoteric-staging-cluster",
+    "ClusterSettings": [
+     {
+      "Name": "containerInsights",
+      "Value": "enabled"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EsotericCluster/Resource"
+   }
+  },
+  "EcsSecurityGroup44008BF1": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for ECS tasks",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/EcsSecurityGroup/Resource"
+   }
+  },
+  "BackendTaskDefinitionTaskRoleE757CE00": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendTaskDefinition/TaskRole/Resource"
+   }
+  },
+  "BackendTaskDefinitionTaskRoleDefaultPolicy06F692E2": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetObject*",
+        "s3:GetBucket*",
+        "s3:List*",
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "EsotericBucketBE7D4EE0",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "EsotericBucketBE7D4EE0",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "AppSecretsA1997F2A"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DatabaseSecret86DBB7B3"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "BackendTaskDefinitionTaskRoleDefaultPolicy06F692E2",
+    "Roles": [
+     {
+      "Ref": "BackendTaskDefinitionTaskRoleE757CE00"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendTaskDefinition/TaskRole/DefaultPolicy/Resource"
+   }
+  },
+  "BackendTaskDefinitionEC224DE6": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "DB_HOST",
+        "Value": {
+         "Fn::GetAtt": [
+          "PostgreSQLDatabase03FC658A",
+          "Endpoint.Address"
+         ]
+        }
+       },
+       {
+        "Name": "DB_PORT",
+        "Value": "5432"
+       },
+       {
+        "Name": "DB_NAME",
+        "Value": "esoteric_loans"
+       },
+       {
+        "Name": "DB_USER",
+        "Value": "postgres"
+       }
+      ],
+      "Essential": true,
+      "Image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/esoteric-backend:latest",
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "BackendLogGroupDA10F1B2"
+        },
+        "awslogs-stream-prefix": "backend",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "backend",
+      "PortMappings": [
+       {
+        "ContainerPort": 5002,
+        "Protocol": "tcp"
+       }
+      ],
+      "Secrets": [
+       {
+        "Name": "DB_PASSWORD",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "DatabaseSecret86DBB7B3"
+           },
+           ":password::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "JWT_SECRET",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":JWT_SECRET::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "NODE_ENV",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":NODE_ENV::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "PORT",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":PORT::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "JWT_EXPIRES_IN",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":JWT_EXPIRES_IN::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "CALENDLY_API_TOKEN",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":CALENDLY_API_TOKEN::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "CALENDLY_USER_URI",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":CALENDLY_USER_URI::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "CALENDLY_API_BASE_URL",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":CALENDLY_API_BASE_URL::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_INTEGRATION_KEY",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_INTEGRATION_KEY::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_CLIENT_SECRET",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_CLIENT_SECRET::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_USER_ID",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_USER_ID::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_ACCOUNT_ID",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_ACCOUNT_ID::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_PRIVATE_KEY_PATH",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_PRIVATE_KEY_PATH::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_ENVIRONMENT",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_ENVIRONMENT::"
+          ]
+         ]
+        }
+       },
+       {
+        "Name": "DOCUSIGN_REDIRECT_URI",
+        "ValueFrom": {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Ref": "AppSecretsA1997F2A"
+           },
+           ":DOCUSIGN_REDIRECT_URI::"
+          ]
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "Cpu": "512",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "BackendTaskDefinitionExecutionRoleDA72B768",
+      "Arn"
+     ]
+    },
+    "Family": "EsotericStackstagingBackendTaskDefinition0572FA58",
+    "Memory": "1024",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "BackendTaskDefinitionTaskRoleE757CE00",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendTaskDefinition/Resource"
+   }
+  },
+  "BackendTaskDefinitionExecutionRoleDA72B768": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendTaskDefinition/ExecutionRole/Resource"
+   }
+  },
+  "BackendTaskDefinitionExecutionRoleDefaultPolicy0750C44A": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "BackendLogGroupDA10F1B2",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "DatabaseSecret86DBB7B3"
+       }
+      },
+      {
+       "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "AppSecretsA1997F2A"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "BackendTaskDefinitionExecutionRoleDefaultPolicy0750C44A",
+    "Roles": [
+     {
+      "Ref": "BackendTaskDefinitionExecutionRoleDA72B768"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendTaskDefinition/ExecutionRole/DefaultPolicy/Resource"
+   }
+  },
+  "BackendLogGroupDA10F1B2": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": "/aws/ecs/esoteric-staging-backend",
+    "RetentionInDays": 7
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendLogGroup/Resource"
+   }
+  },
+  "BackendServiceLB09608E98": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internet-facing",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "BackendServiceLBSecurityGroup2B9BA648",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Ref": "EsotericVpcpublicSubnet1SubnetD14E60EE"
+     },
+     {
+      "Ref": "EsotericVpcpublicSubnet2Subnet9C7EC504"
+     }
+    ],
+    "Type": "application"
+   },
+   "DependsOn": [
+    "EsotericVpcpublicSubnet1DefaultRoute3994A47D",
+    "EsotericVpcpublicSubnet1RouteTableAssociation74FA0C52",
+    "EsotericVpcpublicSubnet2DefaultRoute2031A157",
+    "EsotericVpcpublicSubnet2RouteTableAssociation6C739F83"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/LB/Resource"
+   }
+  },
+  "BackendServiceLBSecurityGroup2B9BA648": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB EsotericStackstagingBackendServiceLB5ECF25BE",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/LB/SecurityGroup/Resource"
+   }
+  },
+  "BackendServiceLBSecurityGrouptoEsotericStackstagingBackendServiceSecurityGroup259049F25002C81DCD02": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "BackendServiceSecurityGroup7599F85E",
+      "GroupId"
+     ]
+    },
+    "FromPort": 5002,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "BackendServiceLBSecurityGroup2B9BA648",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 5002
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/LB/SecurityGroup/to EsotericStackstagingBackendServiceSecurityGroup259049F2:5002"
+   }
+  },
+  "BackendServiceLBPublicListener2FA7FC98": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "BackendServiceLBPublicListenerECSGroupD43CD2AB"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "BackendServiceLB09608E98"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/LB/PublicListener/Resource"
+   }
+  },
+  "BackendServiceLBPublicListenerECSGroupD43CD2AB": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "Port": 80,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/LB/PublicListener/ECSGroup/Resource"
+   }
+  },
+  "BackendService2147DAF9": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "EsotericClusterA2EE804F"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "DesiredCount": 1,
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "backend",
+      "ContainerPort": 5002,
+      "TargetGroupArn": {
+       "Ref": "BackendServiceLBPublicListenerECSGroupD43CD2AB"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "BackendServiceSecurityGroup7599F85E",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Ref": "EsotericVpcprivateSubnet1Subnet223A3622"
+       },
+       {
+        "Ref": "EsotericVpcprivateSubnet2Subnet1FCA691B"
+       }
+      ]
+     }
+    },
+    "ServiceName": "esoteric-staging-backend-service",
+    "TaskDefinition": {
+     "Ref": "BackendTaskDefinitionEC224DE6"
+    }
+   },
+   "DependsOn": [
+    "BackendServiceLBPublicListenerECSGroupD43CD2AB",
+    "BackendServiceLBPublicListener2FA7FC98",
+    "BackendTaskDefinitionTaskRoleDefaultPolicy06F692E2",
+    "BackendTaskDefinitionTaskRoleE757CE00"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/Service/Service"
+   }
+  },
+  "BackendServiceSecurityGroup7599F85E": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "EsotericStack-staging/BackendService/Service/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Ref": "EsotericVpcBB996EEA"
+    }
+   },
+   "DependsOn": [
+    "BackendTaskDefinitionTaskRoleDefaultPolicy06F692E2",
+    "BackendTaskDefinitionTaskRoleE757CE00"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/Service/SecurityGroup/Resource"
+   }
+  },
+  "BackendServiceSecurityGroupfromEsotericStackstagingBackendServiceLBSecurityGroup01F6760650028C43BC7E": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 5002,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "BackendServiceSecurityGroup7599F85E",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "BackendServiceLBSecurityGroup2B9BA648",
+      "GroupId"
+     ]
+    },
+    "ToPort": 5002
+   },
+   "DependsOn": [
+    "BackendTaskDefinitionTaskRoleDefaultPolicy06F692E2",
+    "BackendTaskDefinitionTaskRoleE757CE00"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/BackendService/Service/SecurityGroup/from EsotericStackstagingBackendServiceLBSecurityGroup01F67606:5002"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr6rWprtB3JpiwDFasRFXwtaZjw2jmSIVILA8L8PsuLYaLo98fDw8CKKc/0wm+nZHZz43pT7+5oK3eYCZq/gxB8tmrlu3xujVjv7nq1UFoqaTB4KixK5EW1dEHyDosaRH7kFszMEQs5exRE8brJofoM8g+AJzirzdATBsfDGCnqLV0Ga5OItRMD8OaAVlaMJnuT87F1o+hn+S2xs5ZH5hn/s6U75knW7BoECGHM0HkUN7saygDWo0pTXBuvlDTFIO8V9DT6AhQq9blPjWDaZN/AVyuRBV8FNJNGd4p+6XQazT4u6oGQyV5M5j3TyO2VqF8qdd1Z0uyYWT0Xof+XVU0V2YQwyb0q0QtKnr2LCU0z4l2JaplNovG632Dgmcb4XjF4Ms25XdWBBn8on+AS+gngsvF/jjiwNp/KVcVaALPoJd8nN0R/JpPNLsFMEB91uXTrK3o6LGVZSu4p1++Kq67cNuB/3owGJF8h60TQ1mf6IXxyUS6jjz5Zf2mMNLGRqB2XRK8hWx7luv8/2qd/En+qIBe1FM+BJPB3GdeyJ23Vqi+yCj/sILO4wuvFDvg1l3h2pjC2YUXKBimwV9a9BmiCdsq5E/ck/jvO5fvilZ3efTHTvgxU6oN4m+xcRahewUwQAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "EsotericStack-staging/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "BackendServiceLoadBalancerDNSE742582D": {
+   "Value": {
+    "Fn::GetAtt": [
+     "BackendServiceLB09608E98",
+     "DNSName"
+    ]
+   }
+  },
+  "BackendServiceServiceURLB1770053": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "http://",
+      {
+       "Fn::GetAtt": [
+        "BackendServiceLB09608E98",
+        "DNSName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "DatabaseEndpoint": {
+   "Description": "RDS PostgreSQL endpoint",
+   "Value": {
+    "Fn::GetAtt": [
+     "PostgreSQLDatabase03FC658A",
+     "Endpoint.Address"
+    ]
+   }
+  },
+  "BackendRepositoryUri": {
+   "Description": "ECR Backend Repository URI",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Fn::Select": [
+        4,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "BackendRepository9B711290",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".dkr.ecr.",
+      {
+       "Fn::Select": [
+        3,
+        {
+         "Fn::Split": [
+          ":",
+          {
+           "Fn::GetAtt": [
+            "BackendRepository9B711290",
+            "Arn"
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      ".",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "BackendRepository9B711290"
+      }
+     ]
+    ]
+   }
+  },
+  "S3BucketName": {
+   "Description": "S3 Bucket for file storage",
+   "Value": {
+    "Ref": "EsotericBucketBE7D4EE0"
+   }
+  },
+  "CloudFrontUrl": {
+   "Description": "CloudFront distribution URL for frontend",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Fn::GetAtt": [
+        "EsotericDistributionAD9B8323",
+        "DomainName"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "SecretsManagerArn": {
+   "Description": "Secrets Manager ARN for application secrets",
+   "Value": {
+    "Ref": "AppSecretsA1997F2A"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

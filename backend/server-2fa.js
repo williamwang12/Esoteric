@@ -6,7 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { Pool } = require('pg');
 const fs = require('fs');
@@ -39,13 +39,8 @@ app.use(helmet({
 
 // CORS middleware
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:3001', 
-        'http://esoteric-frontend-1760420958.s3-website-us-east-1.amazonaws.com',
-        'http://esoteric-frontend-1760847352.s3-website-us-east-1.amazonaws.com'
-    ],
-    credentials: true
+  origin: true,
+  credentials: true
 }));
 
 // Body parsing middleware
@@ -63,21 +58,24 @@ const meetingService = require('./services/meetingService');
 app.use('/api/', generalRateLimit); // General rate limit for all API endpoints
 
 // HTTPS enforcement middleware (production only)
-if (process.env.NODE_ENV === 'production') {
-    app.use((req, res, next) => {
-        if (req.header('x-forwarded-proto') !== 'https') {
-            res.redirect(`https://${req.header('host')}${req.url}`);
-        } else {
-            next();
-        }
-    });
-}
+// if (process.env.NODE_ENV === 'production') {
+//     app.use((req, res, next) => {
+//         if (req.header('x-forwarded-proto') !== 'https') {
+//             res.redirect(`https://${req.header('host')}${req.url}`);
+//         } else {
+//             next();
+//         }
+//     });
+// }
 
 // Apply session cleanup
 app.use(cleanupExpiredSessions);
 
 // Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
+// In Lambda, use /tmp directory as it's the only writable location
+const uploadsDir = process.env.NODE_ENV === 'production' 
+    ? '/tmp/uploads' 
+    : path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -4855,3 +4853,22 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 module.exports = app;
+// Simple DB test endpoint
+app.get('/api/dbtest', async (req, res) => {
+    try {
+        console.log('Testing database connection...');
+        const result = await pool.query('SELECT NOW() as time, version() as version');
+        console.log('Database query successful:', result.rows[0]);
+        res.json({
+            status: 'success',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Database error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: error.message,
+            stack: error.stack
+        });
+    }
+});

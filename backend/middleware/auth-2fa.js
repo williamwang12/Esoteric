@@ -100,22 +100,27 @@ const authenticateBasicToken = (req, res, next) => {
  * Session cleanup middleware - removes expired sessions
  */
 const cleanupExpiredSessions = async (req, res, next) => {
-    try {
-        const { pool } = req.app.locals;
-        
-        // Run cleanup periodically (every 100th request)
-        if (Math.random() < 0.01) {
-            await pool.query('DELETE FROM user_sessions WHERE expires_at < NOW()');
-            await pool.query(
-                'DELETE FROM user_2fa_attempts WHERE attempted_at < NOW() - INTERVAL \'24 hours\''
-            );
-        }
-        
-        next();
-    } catch (error) {
-        console.error('Session cleanup error:', error);
-        next(); // Don't fail the request if cleanup fails
-    }
+  try {
+      const { pool } = req.app.locals;
+      
+      // Skip if pool not available
+      if (!pool) {
+          return next();
+      }
+      
+      // Run cleanup periodically (every 100th request)
+      if (Math.random() < 0.01) {
+          await pool.query('DELETE FROM user_sessions WHERE expires_at < NOW()');
+          await pool.query(
+              'DELETE FROM user_2fa_attempts WHERE attempted_at < NOW() - INTERVAL \'24 hours\''
+          );
+      }
+      
+      next();
+  } catch (error) {
+      console.error('Session cleanup error:', error);
+      next(); // Continue even if cleanup fails
+  }
 };
 
 module.exports = {

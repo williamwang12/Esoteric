@@ -1,0 +1,48 @@
+{
+  "family": "esoteric-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "arn:aws:iam::484069698162:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "esoteric-backend",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v10",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "PORT",
+          "value": "8080"
+        },
+        {
+          "name": "DATABASE_URL",
+          "value": "postgresql://dbadmin:EsotericDB2025%23Secure@esoteric-rds-db.cg38ykumokco.us-east-1.rds.amazonaws.com:5432/esoteric_loans"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/esoteric-backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}

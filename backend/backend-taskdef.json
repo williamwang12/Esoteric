@@ -1,0 +1,43 @@
+{
+  "family": "backend-taskdef",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::484069698162:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/esoteric-backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 5002,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT", "value": "5002" },
+        { "name": "DB_HOST", "value": "ls-596ef0a6e1dd569cfd77d5fb911f7489d6e22052.cs9sqwi0mcnw.us-east-1.rds.amazonaws.com" },
+        { "name": "DB_PORT", "value": "5432" },
+        { "name": "DB_USER", "value": "postgres" },
+        { "name": "DB_PASSWORD", "value": "EsotericDB2024!" },
+        { "name": "DB_NAME", "value": "esoteric_loans" },
+        { "name": "DB_POOL_MIN", "value": "0" },
+        { "name": "DB_POOL_MAX", "value": "10" },
+        { "name": "JWT_SECRET", "value": "your-super-secret-jwt-key-production-2024" },
+        { "name": "JWT_EXPIRES_IN", "value": "7d" },
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "GRACEFUL_DB", "value": "true" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/backend",
+          "awslogs-region": "us-west-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
