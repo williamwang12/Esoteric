@@ -19,7 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Trust proxy for load balancer
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // Database connection
 const pool = new Pool({

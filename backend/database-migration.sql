@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS user_2fa (
     secret VARCHAR(255) NOT NULL,
     backup_codes TEXT[],
     enabled BOOLEAN DEFAULT FALSE,
+    is_enabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_used TIMESTAMP,
     qr_code_shown_at TIMESTAMP
@@ -65,7 +66,6 @@ CREATE TABLE IF NOT EXISTS loan_transactions (
     loan_account_id INTEGER REFERENCES loan_accounts(id) ON DELETE CASCADE,
     transaction_type VARCHAR(20) NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
-    balance_after DECIMAL(15,2) NOT NULL,
     transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -155,6 +155,7 @@ CREATE TABLE IF NOT EXISTS account_verification_requests (
     admin_notes TEXT,
     reviewed_by INTEGER REFERENCES users(id),
     reviewed_at TIMESTAMP,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -192,6 +193,7 @@ CREATE TABLE IF NOT EXISTS monthly_balances (
     ending_balance DECIMAL(15,2) NOT NULL,
     total_deposits DECIMAL(15,2) DEFAULT 0.00,
     total_withdrawals DECIMAL(15,2) DEFAULT 0.00,
+    monthly_rate DECIMAL(5,4),
     yield_earned DECIMAL(15,2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(loan_account_id, year, month)
