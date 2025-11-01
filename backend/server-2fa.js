@@ -73,9 +73,7 @@ app.use(cleanupExpiredSessions);
 
 // Create uploads directory if it doesn't exist
 // In Lambda, use /tmp directory as it's the only writable location
-const uploadsDir = process.env.NODE_ENV === 'production' 
-    ? '/tmp/uploads' 
-    : path.join(__dirname, 'uploads');
+const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }

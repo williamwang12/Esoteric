@@ -14,7 +14,7 @@
   "containerDefinitions": [
     {
       "name": "esoteric-backend",
-      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v18",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v20",
       "essential": true,
       "portMappings": [
         {
@@ -38,6 +38,38 @@
         {
           "name": "JWT_SECRET",
           "value": "vLIiV8Wc4zduhXH0tuVhWWJhs7W8stv1Dc3Mks/YCGo="
+        },
+        {
+          "name": "FRONTEND_URL",
+          "value": "http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com"
+        },
+        {
+          "name": "DOCUSIGN_INTEGRATION_KEY",
+          "value": "36199215-2892-4e91-94e7-bc7aa3ce0e50"
+        },
+        {
+          "name": "DOCUSIGN_CLIENT_SECRET",
+          "value": "39110a4d-81f4-4867-ace5-572ef64d0dea"
+        },
+        {
+          "name": "DOCUSIGN_USER_ID",
+          "value": "33a9927e-c89f-4f1c-a5f0-7e3bdbe6043e"
+        },
+        {
+          "name": "DOCUSIGN_ACCOUNT_ID",
+          "value": "43132555"
+        },
+        {
+          "name": "DOCUSIGN_PRIVATE_KEY_PATH",
+          "value": "./keys/docusign_private_key.pem"
+        },
+        {
+          "name": "DOCUSIGN_ENVIRONMENT",
+          "value": "demo"
+        },
+        {
+          "name": "DOCUSIGN_REDIRECT_URI",
+          "value": "https://developers.docusign.com/platform/auth/consent"
         }
       ],
       "logConfiguration": {
