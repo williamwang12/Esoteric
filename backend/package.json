@@ -25,7 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.919.0",
+    "@aws-sdk/client-s3": "^3.922.0",
     "@aws-sdk/s3-request-presigner": "^3.919.0",
     "@vendia/serverless-express": "^4.12.6",
     "axios": "^1.11.0",

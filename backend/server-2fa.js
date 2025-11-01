@@ -54,6 +54,12 @@ const { generalRateLimit, authRateLimit, sensitiveRateLimit, uploadRateLimit, ad
 // Import services
 const meetingService = require('./services/meetingService');
 
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+
+// Initialize S3 client (add after other initializations)
+const s3Client = new S3Client({ region: 'us-east-1' });
+
 // Apply rate limiting
 app.use('/api/', generalRateLimit); // General rate limit for all API endpoints
 
@@ -901,48 +907,66 @@ app.post('/api/admin/create-loan', adminRateLimit, authenticateAdmin, [
     }
 });
 
-// Admin route - Upload document for user
 app.post('/api/admin/documents/upload', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('document'), async (req, res) => {
-    try {
-        const { title, category, userId } = req.body;
+  try {
+      const { title, category, userId } = req.body;
 
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
+      if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded' });
+      }
 
-        if (!title || !category || !userId) {
-            return res.status(400).json({ error: 'Title, category, and userId are required' });
-        }
+      if (!title || !category || !userId) {
+          return res.status(400).json({ error: 'Title, category, and userId are required' });
+      }
 
-        // Verify user exists
-        const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
-        if (userResult.rows.length === 0) {
-            // Delete the uploaded file if user doesn't exist
-            if (req.file) {
-                fs.unlinkSync(req.file.path);
-            }
-            return res.status(404).json({ error: 'User not found' });
-        }
+      // Verify user exists
+      const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+      if (userResult.rows.length === 0) {
+          // Delete the uploaded file if user doesn't exist
+          if (req.file) {
+              fs.unlinkSync(req.file.path);
+          }
+          return res.status(404).json({ error: 'User not found' });
+      }
 
-        // Insert document
-        const result = await pool.query(
-            'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [userId, title, req.file.path, req.file.size, category]
-        );
+      // Upload to S3
+      const fileContent = fs.readFileSync(req.file.path);
+      const s3Key = `documents/${userId}/${Date.now()}-${req.file.originalname}`;
 
-        res.status(201).json({
-            message: 'Document uploaded successfully',
-            document: result.rows[0]
-        });
+      await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.S3_UPLOAD_BUCKET,
+          Key: s3Key,
+          Body: fileContent,
+          ContentType: req.file.mimetype,
+          Metadata: {
+              userId: userId.toString(),
+              title: title,
+              category: category
+          }
+      }));
 
-    } catch (error) {
-        console.error('Document upload error:', error);
-        // Delete the uploaded file if database insertion fails
-        if (req.file) {
-            fs.unlinkSync(req.file.path);
-        }
-        res.status(500).json({ error: 'Internal server error' });
-    }
+      // Delete local temp file after S3 upload
+      fs.unlinkSync(req.file.path);
+
+      // Insert document with S3 path
+      const result = await pool.query(
+          'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [userId, title, s3Key, req.file.size, category]
+      );
+
+      res.status(201).json({
+          message: 'Document uploaded successfully',
+          document: result.rows[0]
+      });
+
+  } catch (error) {
+      console.error('Document upload error:', error);
+      // Delete the uploaded file if operation fails
+      if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Admin route - Update loan account
@@ -1321,38 +1345,37 @@ app.get('/api/admin/users/:userId/documents', adminRateLimit, authenticateAdmin,
 
 // Download document (for regular users - must own the document)
 app.get('/api/documents/:documentId/download', authenticateToken, async (req, res) => {
-    try {
-        const { documentId } = req.params;
+  try {
+      const { documentId } = req.params;
 
-        // Get document and verify ownership
-        const result = await pool.query(
-            'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
-            [documentId, req.user.userId]
-        );
+      // Get document and verify ownership
+      const result = await pool.query(
+          'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+          [documentId, req.user.userId]
+      );
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Document not found' });
-        }
+      if (result.rows.length === 0) {
+          return res.status(404).json({ error: 'Document not found' });
+      }
 
-        const document = result.rows[0];
+      const document = result.rows[0];
 
-        // Check if file exists
-        if (!fs.existsSync(document.file_path)) {
-            return res.status(404).json({ error: 'File not found on server' });
-        }
+      // Generate presigned URL for S3 download (valid for 1 hour)
+      const command = new GetObjectCommand({
+          Bucket: process.env.S3_UPLOAD_BUCKET,
+          Key: document.file_path,
+          ResponseContentDisposition: `attachment; filename="${document.title}"`
+      });
 
-        // Set appropriate headers
-        res.setHeader('Content-Disposition', `attachment; filename="${document.title}"`);
-        res.setHeader('Content-Type', 'application/octet-stream');
+      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
-        // Stream the file
-        const fileStream = fs.createReadStream(document.file_path);
-        fileStream.pipe(res);
+      // Redirect to the presigned URL
+      res.redirect(signedUrl);
 
-    } catch (error) {
-        console.error('Document download error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+  } catch (error) {
+      console.error('Document download error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Admin document download (can download any document)

@@ -14,7 +14,7 @@
   "containerDefinitions": [
     {
       "name": "esoteric-backend",
-      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v20",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v23",
       "essential": true,
       "portMappings": [
         {
@@ -41,7 +41,11 @@
         },
         {
           "name": "FRONTEND_URL",
-          "value": "http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com"
+          "value": "http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com/dashboard"
+        },
+        {
+          "name": "S3_UPLOAD_BUCKET",
+          "value": "esoteric-uploads-1762017668"
         },
         {
           "name": "DOCUSIGN_INTEGRATION_KEY",
