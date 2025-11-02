@@ -209,6 +209,7 @@ const AdminDashboard: React.FC = () => {
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
+  const [userYieldDeposits, setUserYieldDeposits] = useState<any[]>([]);
   const [verificationRequests, setVerificationRequests] = useState<any[]>([]);
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
@@ -311,6 +312,15 @@ const AdminDashboard: React.FC = () => {
     severity: 'info'
   });
 
+  // Create yield deposit dialog state
+  const [createYieldDepositDialogOpen, setCreateYieldDepositDialogOpen] = useState(false);
+  const [createYieldDepositForm, setCreateYieldDepositForm] = useState({
+    principal_amount: '',
+    start_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
+  const [creatingYieldDeposit, setCreatingYieldDeposit] = useState(false);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     // If switching away from the users tab (index 0), clear the selected user details sub-tab
@@ -400,13 +410,15 @@ const AdminDashboard: React.FC = () => {
         setUserDocuments(cachedData.documents);
         setUserLoans(cachedData.loans);
         setUserTransactions(cachedData.transactions);
+        setUserYieldDeposits(cachedData.yieldDeposits || []);
         return;
       }
       
-      const [documentsData, loansData, transactionsData] = await Promise.all([
+      const [documentsData, loansData, transactionsData, yieldDepositsData] = await Promise.all([
         adminApi.getUserDocuments(userId),
         adminApi.getUserLoans(userId),
         adminApi.getUserTransactions(userId),
+        adminApi.getUserYieldDeposits(userId),
       ]);
       
       // Cache the results
@@ -416,6 +428,7 @@ const AdminDashboard: React.FC = () => {
         documents: documentsData.documents,
         loans: loansData.loans,
         transactions: transactionsData.transactions,
+        yieldDeposits: yieldDepositsData.deposits,
         timestamp: now
       });
       setUserCache(newCache);
@@ -424,6 +437,7 @@ const AdminDashboard: React.FC = () => {
       setUserDocuments(documentsData.documents);
       setUserLoans(loansData.loans);
       setUserTransactions(transactionsData.transactions);
+      setUserYieldDeposits(yieldDepositsData.deposits);
     } catch (err) {
       console.error('User details fetch error:', err);
     }
@@ -865,6 +879,63 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleCreateYieldDeposit = async () => {
+    if (!selectedUser || !createYieldDepositForm.principal_amount) {
+      setSnackbar({
+        open: true,
+        message: 'Please fill in all required fields',
+        severity: 'error'
+      });
+      return;
+    }
+
+    try {
+      setCreatingYieldDeposit(true);
+      await adminApi.createYieldDeposit({
+        user_id: selectedUser.id,
+        principal_amount: parseFloat(createYieldDepositForm.principal_amount),
+        start_date: createYieldDepositForm.start_date,
+        notes: createYieldDepositForm.notes || undefined
+      });
+      
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: `Yield deposit created successfully for ${selectedUser.firstName} ${selectedUser.lastName}`,
+        severity: 'success'
+      });
+      
+      // Refresh user details to show the new yield deposit
+      await fetchUserDetails(selectedUser.id, true);
+      
+      // Reset form and close dialog
+      setCreateYieldDepositForm({
+        principal_amount: '',
+        start_date: new Date().toISOString().split('T')[0],
+        notes: ''
+      });
+      setCreateYieldDepositDialogOpen(false);
+    } catch (error: any) {
+      console.error('Yield deposit creation error:', error);
+      
+      // Show error message with specific details
+      let errorMessage = 'Failed to create yield deposit';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+    } finally {
+      setCreatingYieldDeposit(false);
+    }
+  };
+
 
   useEffect(() => {
     fetchUsers();
@@ -1049,9 +1120,9 @@ const AdminDashboard: React.FC = () => {
             {/* Tab Content */}
             <TabPanel value={tabValue} index={0}>
               {/* Users Tab - Two Column Layout */}
-              <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 200px)', minHeight: '600px' }}>
+              <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 120px)', minHeight: '800px' }}>
                 {/* Left Column - Users List */}
-                <Card sx={{ flex: '0 0 40%', display: 'flex', flexDirection: 'column' }}>
+                <Card sx={{ flex: '0 0 45%', display: 'flex', flexDirection: 'column' }}>
                   <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 3 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                       <Typography variant="h6">
@@ -1183,6 +1254,116 @@ const AdminDashboard: React.FC = () => {
                           )}
                         </Box>
 
+                        {/* Loan Information Section - Most Important */}
+                        <Box sx={{ mb: 4 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                            <AccountBalance sx={{ fontSize: 32, color: '#6f5cf2' }} />
+                            <Typography variant="h5" sx={{ fontWeight: 700, color: '#e0e0e0' }}>
+                              Loan Account Information
+                            </Typography>
+                          </Box>
+                          
+                          {userLoans.length > 0 ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              {userLoans.map((loan) => (
+                                <Card key={loan.id} sx={{ 
+                                  background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                                  border: '2px solid rgba(111, 92, 242, 0.3)',
+                                  borderRadius: 3,
+                                  boxShadow: '0 8px 32px rgba(111, 92, 242, 0.2)',
+                                }}>
+                                  <CardContent sx={{ p: 3 }}>
+                                    <Box sx={{ mb: 3 }}>
+                                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#6f5cf2', mb: 1 }}>
+                                        Account: {loan.account_number}
+                                      </Typography>
+                                      <Typography variant="body2" sx={{ color: '#9ca3af', fontFamily: 'monospace' }}>
+                                        Account ID: {loan.id}
+                                      </Typography>
+                                    </Box>
+                                    
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 3 }}>
+                                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(111, 92, 242, 0.1)', borderRadius: 2, border: '1px solid rgba(111, 92, 242, 0.2)' }}>
+                                        <Typography variant="body2" sx={{ color: '#9ca3af', mb: 1, fontWeight: 600 }}>
+                                          Principal Amount
+                                        </Typography>
+                                        <Typography variant="h6" sx={{ color: '#6f5cf2', fontWeight: 700 }}>
+                                          {formatCurrency(loan.principal_amount)}
+                                        </Typography>
+                                      </Box>
+                                      
+                                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 2, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                        <Typography variant="body2" sx={{ color: '#9ca3af', mb: 1, fontWeight: 600 }}>
+                                          Current Balance
+                                        </Typography>
+                                        <Typography variant="h6" sx={{ color: '#10B981', fontWeight: 700 }}>
+                                          {formatCurrency(loan.current_balance)}
+                                        </Typography>
+                                      </Box>
+                                      
+                                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(96, 165, 250, 0.1)', borderRadius: 2, border: '1px solid rgba(96, 165, 250, 0.2)' }}>
+                                        <Typography variant="body2" sx={{ color: '#9ca3af', mb: 1, fontWeight: 600 }}>
+                                          Monthly Rate
+                                        </Typography>
+                                        <Chip 
+                                          label={`${(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%`}
+                                          sx={{ 
+                                            fontWeight: 700,
+                                            fontSize: '1rem',
+                                            height: 32,
+                                            backgroundColor: '#60A5FA',
+                                            color: 'white',
+                                            border: 'none'
+                                          }}
+                                        />
+                                      </Box>
+                                    </Box>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </Box>
+                          ) : (
+                            <Card sx={{ 
+                              background: 'linear-gradient(135deg, rgba(111, 92, 242, 0.05) 0%, rgba(111, 92, 242, 0.1) 100%)',
+                              border: '2px dashed rgba(111, 92, 242, 0.3)',
+                              borderRadius: 3,
+                              textAlign: 'center',
+                              py: 6
+                            }}>
+                              <CardContent>
+                                <AccountBalance sx={{ fontSize: 64, color: '#6f5cf2', mb: 2, opacity: 0.7 }} />
+                                <Typography variant="h5" sx={{ color: '#e0e0e0', mb: 2, fontWeight: 600 }}>
+                                  No Loan Account
+                                </Typography>
+                                <Typography variant="body1" sx={{ color: '#9ca3af', mb: 4 }}>
+                                  This user doesn't have a loan account yet. Create one to get started.
+                                </Typography>
+                                <Button
+                                  variant="contained"
+                                  startIcon={<Add />}
+                                  onClick={() => setCreateLoanDialogOpen(true)}
+                                  size="large"
+                                  sx={{ 
+                                    background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
+                                    boxShadow: '0 8px 32px rgba(111, 92, 242, 0.4)',
+                                    fontSize: '1.1rem',
+                                    px: 4,
+                                    py: 1.5,
+                                    '&:hover': {
+                                      background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
+                                      boxShadow: '0 12px 40px rgba(111, 92, 242, 0.6)',
+                                      transform: 'translateY(-2px)',
+                                    },
+                                    transition: 'all 0.3s'
+                                  }}
+                                >
+                                  Create Loan Account
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </Box>
+
                         {/* User Details Subtabs */}
                         <Box sx={{ mb: 3 }}>
                           <Tabs 
@@ -1204,13 +1385,13 @@ const AdminDashboard: React.FC = () => {
                             }}
                           >
                             <Tab 
-                              icon={<AccountBalance />} 
-                              label={`Loans (${userLoans.length})`}
+                              icon={<Receipt />} 
+                              label={`Transactions (${userTransactions.length})`}
                               id="user-tab-0"
                             />
                             <Tab 
-                              icon={<Receipt />} 
-                              label={`Transactions (${userTransactions.length})`}
+                              icon={<TrendingUp />} 
+                              label={`Yield Deposits (${userYieldDeposits.length})`}
                               id="user-tab-1"
                             />
                             <Tab 
@@ -1223,140 +1404,8 @@ const AdminDashboard: React.FC = () => {
 
                         {/* Tab Content */}
                         <Box sx={{ flex: 1, overflow: 'auto' }}>
-                          {/* User Loans Subtab */}
-                          {userDetailsTabValue === 0 && (
-                            <Box>
-                              {userLoans.length > 0 ? (
-                                <TableContainer sx={{ 
-                                  borderRadius: 2, 
-                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
-                                  backgroundColor: '#1a1a1a',
-                                  border: '1px solid #333',
-                                }}>
-                                  <Table size="small">
-                                    <TableHead>
-                                      <TableRow sx={{ backgroundColor: '#2d2d2d' }}>
-                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Account Number</TableCell>
-                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Principal</TableCell>
-                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Current Balance</TableCell>
-                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Monthly Rate</TableCell>
-                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Actions</TableCell>
-                                      </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                      {userLoans.map((loan) => (
-                                        <TableRow key={loan.id} hover sx={{ 
-                                          '&:hover': { backgroundColor: '#333' },
-                                          backgroundColor: '#1a1a1a'
-                                        }}>
-                                          <TableCell sx={{ 
-                                            fontFamily: 'monospace', 
-                                            fontWeight: 600, 
-                                            color: '#6f5cf2',
-                                            borderBottom: '1px solid #333'
-                                          }}>
-                                            {loan.account_number}
-                                          </TableCell>
-                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
-                                            {formatCurrency(loan.principal_amount)}
-                                          </TableCell>
-                                          <TableCell sx={{ fontWeight: 600, color: '#10B981', borderBottom: '1px solid #333' }}>
-                                            {formatCurrency(loan.current_balance)}
-                                          </TableCell>
-                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
-                                            <Chip 
-                                              label={`${(parseFloat(loan.monthly_rate) * 100).toFixed(1)}%`}
-                                              sx={{ 
-                                                fontWeight: 600,
-                                                backgroundColor: '#374151',
-                                                color: '#60A5FA',
-                                                border: '1px solid #4B5563'
-                                              }}
-                                              size="small"
-                                            />
-                                          </TableCell>
-                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
-                                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                              <IconButton
-                                                size="small"
-                                                onClick={() => handleEditLoan(loan)}
-                                                title="Edit Loan"
-                                                sx={{ 
-                                                  color: '#6f5cf2',
-                                                  '&:hover': { 
-                                                    backgroundColor: '#6f5cf2', 
-                                                    color: 'white',
-                                                    transform: 'scale(1.1)'
-                                                  },
-                                                  transition: 'all 0.2s'
-                                                }}
-                                              >
-                                                <Edit />
-                                              </IconButton>
-                                              <IconButton
-                                                size="small"
-                                                onClick={() => handleAddTransaction(loan)}
-                                                title="Add Transaction"
-                                                sx={{ 
-                                                  color: '#10B981',
-                                                  '&:hover': { 
-                                                    backgroundColor: '#10B981', 
-                                                    color: 'white',
-                                                    transform: 'scale(1.1)'
-                                                  },
-                                                  transition: 'all 0.2s'
-                                                }}
-                                              >
-                                                <Add />
-                                              </IconButton>
-                                            </Box>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </TableContainer>
-                              ) : (
-                                <Box sx={{ 
-                                  textAlign: 'center', 
-                                  py: 6,
-                                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
-                                  borderRadius: 2,
-                                  border: '2px dashed #444',
-                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
-                                }}>
-                                  <AccountBalance sx={{ fontSize: 48, color: '#6f5cf2', mb: 2 }} />
-                                  <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
-                                    No Loan Account
-                                  </Typography>
-                                  <Typography variant="body2" sx={{ color: '#9ca3af', mb: 3 }}>
-                                    This user doesn't have a loan account yet.
-                                  </Typography>
-                                  <Button
-                                    variant="contained"
-                                    startIcon={<Add />}
-                                    onClick={() => setCreateLoanDialogOpen(true)}
-                                    size="large"
-                                    sx={{ 
-                                      background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
-                                      boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
-                                      '&:hover': {
-                                        background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
-                                        boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
-                                        transform: 'translateY(-1px)',
-                                      },
-                                      transition: 'all 0.2s'
-                                    }}
-                                  >
-                                    Create Loan Account
-                                  </Button>
-                                </Box>
-                              )}
-                            </Box>
-                          )}
-
                           {/* User Transactions Subtab */}
-                          {userDetailsTabValue === 1 && (
+                          {userDetailsTabValue === 0 && (
                             <Box>
                               <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
                                 {userLoans.length > 0 && (
@@ -1463,6 +1512,120 @@ const AdminDashboard: React.FC = () => {
                                   </Typography>
                                   <Typography variant="body2" sx={{ color: '#9ca3af' }}>
                                     This user doesn't have a loan account yet, so there's no transaction history to display.
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                          )}
+
+                          {/* User Yield Deposits Subtab */}
+                          {userDetailsTabValue === 1 && (
+                            <Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+                                <Button
+                                  variant="contained"
+                                  startIcon={<Add />}
+                                  onClick={() => setCreateYieldDepositDialogOpen(true)}
+                                  sx={{ 
+                                    background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                                    boxShadow: '0 4px 12px rgb(16 185 129 / 0.4)',
+                                    '&:hover': {
+                                      background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                                      boxShadow: '0 6px 16px rgb(16 185 129 / 0.6)',
+                                      transform: 'translateY(-1px)',
+                                    },
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  Add Yield Deposit
+                                </Button>
+                              </Box>
+                              
+                              {userYieldDeposits.length > 0 ? (
+                                <TableContainer sx={{ 
+                                  borderRadius: 2, 
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
+                                  backgroundColor: '#1a1a1a',
+                                  border: '1px solid #333',
+                                }}>
+                                  <Table size="small">
+                                    <TableHead>
+                                      <TableRow sx={{ backgroundColor: '#2d2d2d' }}>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Principal</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Annual Rate</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Start Date</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Annual Payout</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Total Paid</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: '#e0e0e0', borderBottom: '1px solid #444' }}>Next Payout</TableCell>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {userYieldDeposits.map((deposit) => (
+                                        <TableRow key={deposit.id} hover sx={{ 
+                                          '&:hover': { backgroundColor: '#333' },
+                                          backgroundColor: '#1a1a1a'
+                                        }}>
+                                          <TableCell sx={{ fontWeight: 600, color: '#10B981', borderBottom: '1px solid #333' }}>
+                                            {formatCurrency(deposit.principal_amount)}
+                                          </TableCell>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
+                                            <Chip 
+                                              label={`${(parseFloat(deposit.annual_yield_rate) * 100).toFixed(1)}%`}
+                                              sx={{ 
+                                                fontWeight: 600,
+                                                backgroundColor: '#374151',
+                                                color: '#60A5FA',
+                                                border: '1px solid #4B5563'
+                                              }}
+                                              size="small"
+                                            />
+                                          </TableCell>
+                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
+                                            {new Date(deposit.start_date).toLocaleDateString()}
+                                          </TableCell>
+                                          <TableCell sx={{ borderBottom: '1px solid #333' }}>
+                                            <Chip 
+                                              label={deposit.status.toUpperCase()}
+                                              sx={{ 
+                                                fontWeight: 600,
+                                                backgroundColor: deposit.status === 'active' ? '#14532D' : '#7F1D1D',
+                                                color: deposit.status === 'active' ? '#86EFAC' : '#FCA5A5',
+                                                border: '1px solid',
+                                                borderColor: deposit.status === 'active' ? '#166534' : '#991B1B'
+                                              }}
+                                              size="small"
+                                            />
+                                          </TableCell>
+                                          <TableCell sx={{ fontWeight: 600, color: '#10B981', borderBottom: '1px solid #333' }}>
+                                            {formatCurrency(deposit.annual_payout)}
+                                          </TableCell>
+                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
+                                            {formatCurrency(deposit.total_paid_out || 0)}
+                                          </TableCell>
+                                          <TableCell sx={{ fontWeight: 500, color: '#e0e0e0', borderBottom: '1px solid #333' }}>
+                                            {deposit.next_payout_date ? new Date(deposit.next_payout_date).toLocaleDateString() : 'N/A'}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </TableContainer>
+                              ) : (
+                                <Box sx={{ 
+                                  textAlign: 'center', 
+                                  py: 6,
+                                  background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
+                                  borderRadius: 2,
+                                  border: '2px dashed #444',
+                                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)'
+                                }}>
+                                  <TrendingUp sx={{ fontSize: 48, color: '#10B981', mb: 2 }} />
+                                  <Typography variant="h6" sx={{ color: '#e0e0e0', mb: 1 }}>
+                                    No Yield Deposits
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                                    This user doesn't have any yield deposits yet.
                                   </Typography>
                                 </Box>
                               )}
@@ -2942,6 +3105,91 @@ const AdminDashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Create Yield Deposit Dialog */}
+      <Dialog 
+        open={createYieldDepositDialogOpen} 
+        onClose={() => setCreateYieldDepositDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: { 
+            backgroundColor: '#424242',
+            backgroundImage: 'none',
+            opacity: 1
+          }
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+        }}
+      >
+        <DialogTitle>
+          Create Yield Deposit for {selectedUser?.firstName} {selectedUser?.lastName}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="Principal Amount"
+                type="number"
+                required
+                value={createYieldDepositForm.principal_amount}
+                onChange={(e) => setCreateYieldDepositForm(prev => ({ 
+                  ...prev, 
+                  principal_amount: e.target.value
+                }))}
+                InputProps={{
+                  startAdornment: '$'
+                }}
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                label="Start Date"
+                type="date"
+                required
+                value={createYieldDepositForm.start_date}
+                onChange={(e) => setCreateYieldDepositForm(prev => ({ ...prev, start_date: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                sx={{ flex: 1 }}
+              />
+            </Box>
+            <Alert severity="info">
+              <strong>12% Annual Yield</strong> - This deposit will pay{' '}
+              <strong>
+                {createYieldDepositForm.principal_amount 
+                  ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+                      .format(parseFloat(createYieldDepositForm.principal_amount) * 0.12)
+                  : '$0.00'
+                }
+              </strong> annually
+            </Alert>
+            <TextField
+              label="Notes"
+              multiline
+              rows={3}
+              value={createYieldDepositForm.notes}
+              onChange={(e) => setCreateYieldDepositForm(prev => ({ ...prev, notes: e.target.value }))}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateYieldDepositDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateYieldDeposit} 
+            variant="contained"
+            disabled={creatingYieldDeposit}
+            sx={{ 
+              background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+              }
+            }}
+          >
+            {creatingYieldDeposit ? <CircularProgress size={20} /> : 'Create Deposit'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Success/Error Snackbar */}
       <Snackbar

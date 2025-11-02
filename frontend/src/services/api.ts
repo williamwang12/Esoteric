@@ -186,6 +186,11 @@ export const adminApi = {
     return response.data;
   },
 
+  getUserYieldDeposits: async (userId: string) => {
+    const response = await api.get(`/admin/users/${userId}/yield-deposits`);
+    return response.data;
+  },
+
   uploadDocument: async (formData: FormData) => {
     const response = await api.post('/admin/documents/upload', formData, {
       headers: {

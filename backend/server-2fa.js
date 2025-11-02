@@ -735,13 +735,15 @@ app.post('/api/admin/withdrawal-requests/:requestId/complete', adminRateLimit, a
         await pool.query('BEGIN');
 
         try {
-            // Subtract amount from loan account
+            // Subtract amount from loan account balance and principal
             const newBalance = currentBalance - withdrawalAmount;
             await pool.query(`
                 UPDATE loan_accounts 
-                SET current_balance = $1 
-                WHERE id = $2
-            `, [newBalance, withdrawal.loan_account_id]);
+                SET current_balance = $1,
+                    principal_amount = principal_amount - $2,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $3
+            `, [newBalance, withdrawalAmount, withdrawal.loan_account_id]);
 
             // Update withdrawal request to processed
             await pool.query(`
@@ -1471,6 +1473,66 @@ app.get('/api/admin/users/:userId/transactions', adminRateLimit, authenticateAdm
 
     } catch (error) {
         console.error('Admin user transactions error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Admin route - Get user's yield deposits
+app.get('/api/admin/users/:userId/yield-deposits', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Verify user exists
+        const userCheck = await pool.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userCheck.rows[0];
+
+        // Get yield deposits for the user
+        const depositsResult = await pool.query(`
+            SELECT 
+                yd.*,
+                COALESCE(user_balances.total_balance, 0) as account_balance
+            FROM yield_deposits yd
+            LEFT JOIN (
+                SELECT user_id, SUM(current_balance) as total_balance
+                FROM loan_accounts 
+                GROUP BY user_id
+            ) user_balances ON user_balances.user_id = yd.user_id
+            WHERE yd.user_id = $1
+            ORDER BY yd.created_at DESC
+        `, [userId]);
+
+        // Calculate next payout dates and amounts for each deposit
+        const deposits = depositsResult.rows.map(deposit => {
+            const nextPayoutDate = calculateNextPayoutDate(deposit.start_date, deposit.last_payout_date);
+            const annualPayout = parseFloat(deposit.principal_amount) * parseFloat(deposit.annual_yield_rate);
+            
+            return {
+                ...deposit,
+                next_payout_date: nextPayoutDate,
+                annual_payout: annualPayout.toFixed(2)
+            };
+        });
+
+        res.json({
+            user: {
+                id: user.id,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                email: user.email
+            },
+            deposits: deposits
+        });
+
+    } catch (error) {
+        console.error('Admin user yield deposits error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -2919,10 +2981,12 @@ app.post('/api/admin/clients/excel-onboarding', uploadRateLimit, adminRateLimit,
                         });
                     }
 
-                    // Add total deposit amount to user's account balance
+                    // Add total deposit amount to user's account balance AND principal amount
                     const accountResult = await client.query(`
                         UPDATE loan_accounts 
-                        SET current_balance = current_balance + $1
+                        SET current_balance = current_balance + $1,
+                            principal_amount = principal_amount + $1,
+                            updated_at = CURRENT_TIMESTAMP
                         WHERE user_id = $2
                         RETURNING id
                     `, [totalDepositAmount, userId]);
@@ -3326,10 +3390,12 @@ app.post('/api/admin/transactions/excel-import', uploadRateLimit, adminRateLimit
                             transaction.description || `Deposit from transaction import (${transaction.transaction_date})`
                         ]);
 
-                        // Add to account balance
+                        // Add to account balance AND principal amount
                         await client.query(`
                             UPDATE loan_accounts 
-                            SET current_balance = current_balance + $1
+                            SET current_balance = current_balance + $1,
+                                principal_amount = principal_amount + $1,
+                                updated_at = CURRENT_TIMESTAMP
                             WHERE id = $2
                         `, [transaction.amount, user.loan_account_id]);
 
@@ -3366,10 +3432,12 @@ app.post('/api/admin/transactions/excel-import', uploadRateLimit, adminRateLimit
                         if (currentBalance < transaction.amount) {
                             results.warnings.push(`Row ${transaction.row_number}: Insufficient balance. Current: $${currentBalance.toFixed(2)}, Requested: $${transaction.amount.toFixed(2)}. Withdrawal not processed.`);
                         } else {
-                            // Subtract from account balance only - DO NOT touch deposit principal amounts
+                            // Subtract from account balance and principal amount
                             await client.query(`
                                 UPDATE loan_accounts 
-                                SET current_balance = current_balance - $1
+                                SET current_balance = current_balance - $1,
+                                    principal_amount = principal_amount - $1,
+                                    updated_at = CURRENT_TIMESTAMP
                                 WHERE id = $2
                             `, [transaction.amount, user.loan_account_id]);
 
@@ -3381,7 +3449,7 @@ app.post('/api/admin/transactions/excel-import', uploadRateLimit, adminRateLimit
                             `, [
                                 user.loan_account_id, 
                                 -transaction.amount, 
-                                transaction.description || `Withdrawal - Balance reduced only (12% yield base unchanged)`,
+                                transaction.description || `Withdrawal - Balance and principal reduced`,
                                 transaction.transaction_date
                             ]);
 
@@ -3390,7 +3458,7 @@ app.post('/api/admin/transactions/excel-import', uploadRateLimit, adminRateLimit
                                 requested_amount: transaction.amount,
                                 actual_amount: transaction.amount,
                                 date: transaction.transaction_date,
-                                note: 'Withdrawal processed - 12% yield base unchanged until year refresh'
+                                note: 'Withdrawal processed - Balance and principal reduced'
                             });
                         }
                     }
@@ -3661,10 +3729,12 @@ app.post('/api/admin/yield-deposits', adminRateLimit, authenticateAdmin, async (
             
             deposit = insertResult.rows[0];
             
-            // Add principal amount to user's account balance
+            // Add principal amount to user's account balance AND principal amount
             await client.query(`
                 UPDATE loan_accounts 
-                SET current_balance = current_balance + $1
+                SET current_balance = current_balance + $1,
+                    principal_amount = principal_amount + $1,
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE user_id = $2
             `, [principal_amount, user_id]);
             
