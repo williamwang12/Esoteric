@@ -4222,110 +4222,124 @@ async function processYieldPayout(depositId, payoutDate, processedBy) {
 // NEW DAILY YIELD PAYMENT SYSTEM
 // Process daily yield payments for all active deposits
 async function processDailyYieldPayments(targetDate = null, processedBy = null) {
-    const paymentDate = targetDate || new Date().toISOString().split('T')[0];
-    
-    try {
-        await pool.query('BEGIN');
-        
-        console.log(`🏦 Processing daily yield payments for ${paymentDate}...`);
-        
-        // Get all active deposits
-        const depositsResult = await pool.query(`
-            SELECT yd.id, yd.user_id, yd.principal_amount, yd.annual_yield_rate, yd.start_date,
-                   u.email, la.id as loan_account_id
-            FROM yield_deposits yd
-            JOIN users u ON yd.user_id = u.id
-            JOIN loan_accounts la ON la.user_id = u.id
-            WHERE yd.status = 'active' 
-              AND yd.start_date <= $1
-            ORDER BY yd.id
-        `, [paymentDate]);
-        
-        let totalPayments = 0;
-        let totalAmount = 0;
-        const processedDeposits = [];
-        
-        for (const deposit of depositsResult.rows) {
-            // Check if payment already exists for this date
-            const existingPayment = await pool.query(`
-                SELECT id FROM yield_payouts 
-                WHERE deposit_id = $1 AND payout_date = $2
-            `, [deposit.id, paymentDate]);
-            
-            if (existingPayment.rows.length > 0) {
-                console.log(`⏭️  Skipping deposit ${deposit.id} - payment already exists for ${paymentDate}`);
-                continue;
-            }
-            
-            // Calculate daily yield: 12% / 365 days
-            const dailyYieldRate = parseFloat(deposit.annual_yield_rate) / 365;
-            const dailyPayment = parseFloat(deposit.principal_amount) * dailyYieldRate;
-            
-            // Create yield payout record
-            const payoutResult = await pool.query(`
-                INSERT INTO yield_payouts (
-                    deposit_id, amount, payout_date, processed_by, created_at
-                ) VALUES ($1, $2, $3, $4, NOW())
-                RETURNING id
-            `, [deposit.id, dailyPayment, paymentDate, processedBy]);
-            
-            // Create transaction record
-            await pool.query(`
-                INSERT INTO loan_transactions (
-                    loan_account_id, amount, transaction_type, description, 
-                    transaction_date, created_at
-                ) VALUES ($1, $2, 'daily_yield', $3, $4, NOW())
-            `, [
-                deposit.loan_account_id,
-                dailyPayment,
-                `Daily yield payment (${(dailyYieldRate * 100).toFixed(6)}%) for deposit #${deposit.id}`,
-                paymentDate
-            ]);
-            
-            // Update loan account balance
-            await pool.query(`
-                UPDATE loan_accounts 
-                SET current_balance = current_balance + $1
-                WHERE id = $2
-            `, [dailyPayment, deposit.loan_account_id]);
-            
-            // Update deposit's total paid out
-            await pool.query(`
-                UPDATE yield_deposits 
-                SET last_payout_date = $1, total_paid_out = COALESCE(total_paid_out, 0) + $2
-                WHERE id = $3
-            `, [paymentDate, dailyPayment, deposit.id]);
-            
-            totalPayments++;
-            totalAmount += dailyPayment;
-            
-            processedDeposits.push({
-                deposit_id: deposit.id,
-                email: deposit.email,
-                principal: parseFloat(deposit.principal_amount),
-                daily_payment: dailyPayment,
-                payout_id: payoutResult.rows[0].id
-            });
-        }
-        
-        await pool.query('COMMIT');
-        
-        console.log(`✅ Daily yield processing complete: ${totalPayments} payments totaling $${totalAmount.toFixed(2)}`);
-        
-        return {
-            success: true,
-            date: paymentDate,
-            total_payments: totalPayments,
-            total_amount: totalAmount,
-            processed_deposits: processedDeposits
-        };
-        
-    } catch (error) {
-        await pool.query('ROLLBACK');
-        console.error('Error processing daily yield payments:', error);
-        throw error;
-    }
+  const paymentDate = targetDate || new Date().toISOString().split('T')[0];
+  
+  try {
+      await pool.query('BEGIN');
+      
+      console.log(`🏦 Processing daily yield payments for ${paymentDate}...`);
+      
+      // Get all active deposits
+      const depositsResult = await pool.query(`
+          SELECT yd.id, yd.user_id, yd.principal_amount, yd.annual_yield_rate, yd.start_date,
+                 u.email, la.id as loan_account_id
+          FROM yield_deposits yd
+          JOIN users u ON yd.user_id = u.id
+          JOIN loan_accounts la ON la.user_id = u.id
+          WHERE yd.status = 'active' 
+            AND yd.start_date <= $1
+          ORDER BY yd.id
+      `, [paymentDate]);
+      
+      let totalPayments = 0;
+      let totalAmount = 0;
+      const processedDeposits = [];
+      
+      for (const deposit of depositsResult.rows) {
+          // Check if payment already exists for this date
+          const existingPayment = await pool.query(`
+              SELECT id FROM yield_payouts 
+              WHERE deposit_id = $1 AND payout_date = $2
+          `, [deposit.id, paymentDate]);
+          
+          if (existingPayment.rows.length > 0) {
+              console.log(`⏭️  Skipping deposit ${deposit.id} - payment already exists for ${paymentDate}`);
+              continue;
+          }
+          
+          // Calculate daily yield: annual_rate / 365 days
+          const dailyYieldRate = parseFloat(deposit.annual_yield_rate) / 365;
+          const dailyPayment = parseFloat(deposit.principal_amount) * dailyYieldRate;
+          
+          // Create transaction record FIRST to get transaction_id
+          const transactionResult = await pool.query(`
+              INSERT INTO loan_transactions (
+                  loan_account_id, amount, transaction_type, description, 
+                  transaction_date, created_at
+              ) VALUES ($1, $2, 'daily_yield', $3, $4, NOW())
+              RETURNING id
+          `, [
+              deposit.loan_account_id,
+              dailyPayment,
+              `Daily yield payment (${(dailyYieldRate * 100).toFixed(6)}%) for deposit #${deposit.id}`,
+              paymentDate
+          ]);
+          
+          // Create yield payout record with transaction_id
+          const payoutResult = await pool.query(`
+              INSERT INTO yield_payouts (
+                  deposit_id, amount, payout_date, processed_by, transaction_id, created_at
+              ) VALUES ($1, $2, $3, $4, $5, NOW())
+              RETURNING id
+          `, [deposit.id, dailyPayment, paymentDate, processedBy, transactionResult.rows[0].id]);
+          
+          // Update loan account balance
+          await pool.query(`
+              UPDATE loan_accounts 
+              SET current_balance = current_balance + $1
+              WHERE id = $2
+          `, [dailyPayment, deposit.loan_account_id]);
+          
+          // Update deposit's last payout date and total
+          await pool.query(`
+              UPDATE yield_deposits 
+              SET last_payout_date = $1, total_paid_out = COALESCE(total_paid_out, 0) + $2
+              WHERE id = $3
+          `, [paymentDate, dailyPayment, deposit.id]);
+          
+          totalPayments++;
+          totalAmount += dailyPayment;
+          
+          processedDeposits.push({
+              deposit_id: deposit.id,
+              email: deposit.email,
+              principal: parseFloat(deposit.principal_amount),
+              daily_payment: dailyPayment,
+              payout_id: payoutResult.rows[0].id,
+              transaction_id: transactionResult.rows[0].id
+          });
+      }
+      
+      await pool.query('COMMIT');
+      
+      console.log(`✅ Daily yield processing complete: ${totalPayments} payments totaling $${totalAmount.toFixed(2)}`);
+      
+      return {
+          success: true,
+          date: paymentDate,
+          total_payments: totalPayments,
+          total_amount: totalAmount,
+          processed_deposits: processedDeposits
+      };
+      
+  } catch (error) {
+      await pool.query('ROLLBACK');
+      console.error('Error processing daily yield payments:', error);
+      throw error;
+  }
 }
+
+
+const cron = require('node-cron');
+
+cron.schedule('0 0 * * *', async () => {
+    console.log('🕐 Running scheduled daily yield payout...');
+    try {
+        await processDailyYieldPayments();
+    } catch (error) {
+        console.error('Scheduled yield payout failed:', error);
+    }
+});
 
 
 // Error handling middleware

@@ -548,7 +548,7 @@ CREATE TABLE public.yield_payouts (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     processed_by integer,
     notes text,
-    CONSTRAINT yield_payouts_amount_check CHECK ((amount > (0)::numeric))
+    CONSTRAINT yield_payouts_amount_check CHECK ((amount >= (0)::numeric))
 );
 
 
