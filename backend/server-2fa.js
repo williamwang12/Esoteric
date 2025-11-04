@@ -57,8 +57,8 @@ const meetingService = require('./services/meetingService');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-// Initialize S3 client (add after other initializations)
-const s3Client = new S3Client({ region: 'us-east-1' });
+const useS3 = process.env.USE_S3 === 'true';
+const s3Client = useS3 ? new S3Client({ region: 'us-east-1' }) : null;
 
 // Apply rate limiting
 app.use('/api/', generalRateLimit); // General rate limit for all API endpoints
@@ -4663,128 +4663,148 @@ app.get('/api/docusign/envelopes', authenticateToken, async (req, res) => {
     }
 });
 
-// Create embedded signing URL for direct client signing
 app.post('/api/docusign/create-embedded-envelope', authenticateToken, async (req, res) => {
-    try {
-        const { documentId, documentTitle } = req.body;
-        
-        await getDocuSignAccessToken();
-        
-        // Get the document from the database
-        const documentResult = await pool.query(
-            'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
-            [documentId, req.user.userId]
-        );
-        
-        if (documentResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Document not found' });
-        }
-        
-        const document = documentResult.rows[0];
-        
-        // Read the document file
-        const documentPath = path.resolve(document.file_path);
-        const documentBase64 = fs.readFileSync(documentPath, { encoding: 'base64' });
-        
-        // Create the envelope definition
-        const envelopeDefinition = new docusign.EnvelopeDefinition();
-        envelopeDefinition.emailSubject = `Please sign: ${document.title}`;
-        envelopeDefinition.status = 'sent';
-        
-        // Create the document
-        const doc = new docusign.Document();
-        doc.documentBase64 = documentBase64;
-        doc.name = document.title;
-        doc.fileExtension = 'pdf';
-        doc.documentId = '1';
-        envelopeDefinition.documents = [doc];
-        
-        // Create the signer (the current user)
-        const signer = new docusign.Signer();
-        signer.email = req.user.email;
-        signer.name = `${req.user.firstName} ${req.user.lastName}`;
-        signer.recipientId = '1';
-        signer.clientUserId = req.user.userId.toString(); // This makes it embedded
-        
-        // Add signature tab
-        const signHere = new docusign.SignHere();
-        signHere.anchorString = 'Signature:';
-        signHere.anchorUnits = 'pixels';
-        signHere.anchorXOffset = '100';
-        signHere.anchorYOffset = '0';
-        
-        // If no anchor found, place signature at bottom of page
-        const signHereDefault = new docusign.SignHere();
-        signHereDefault.documentId = '1';
-        signHereDefault.pageNumber = '1';
-        signHereDefault.xPosition = '100';
-        signHereDefault.yPosition = '650';
-        
-        // Add date tab next to signature
-        const dateTab = new docusign.DateSigned();
-        dateTab.anchorString = 'Date:';
-        dateTab.anchorUnits = 'pixels';
-        dateTab.anchorXOffset = '100';
-        dateTab.anchorYOffset = '0';
-        
-        const dateTabDefault = new docusign.DateSigned();
-        dateTabDefault.documentId = '1';
-        dateTabDefault.pageNumber = '1';
-        dateTabDefault.xPosition = '350';
-        dateTabDefault.yPosition = '650';
-        
-        const tabs = new docusign.Tabs();
-        tabs.signHereTabs = [signHere, signHereDefault];
-        tabs.dateSignedTabs = [dateTab, dateTabDefault];
-        signer.tabs = tabs;
-        
-        // Add recipients to envelope
-        const recipients = new docusign.Recipients();
-        recipients.signers = [signer];
-        envelopeDefinition.recipients = recipients;
-        
-        // Create the envelope
-        const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
-        const envelopeResults = await envelopesApi.createEnvelope(docuSignConfig.accountId, {
-            envelopeDefinition: envelopeDefinition
-        });
-        
-        const envelopeId = envelopeResults.envelopeId;
-        
-        // Create the recipient view (embedded signing URL)
-        const recipientViewRequest = new docusign.RecipientViewRequest();
-        recipientViewRequest.authenticationMethod = 'none';
-        recipientViewRequest.email = req.user.email;
-        recipientViewRequest.userName = `${req.user.firstName} ${req.user.lastName}`;
-        recipientViewRequest.clientUserId = req.user.userId.toString();
-        recipientViewRequest.returnUrl = `${process.env.FRONTEND_URL}/documents?signed=true`;
-        
-        const viewResults = await envelopesApi.createRecipientView(
-            docuSignConfig.accountId, 
-            envelopeId, 
-            { recipientViewRequest: recipientViewRequest }
-        );
-        
-        // Update document with envelope ID
-        await pool.query(
-            'UPDATE documents SET docusign_envelope_id = $1, docusign_status = $2 WHERE id = $3',
-            [envelopeId, 'sent', documentId]
-        );
-        
-        res.json({
-            success: true,
-            envelopeId: envelopeId,
-            signingUrl: viewResults.url,
-            message: 'Embedded signing session created successfully'
-        });
-        
-    } catch (error) {
-        console.error('DocuSign embedded signing error:', error);
-        res.status(500).json({ 
-            error: 'Failed to create embedded signing session',
-            details: error.message 
-        });
-    }
+  try {
+      const { documentId, documentTitle } = req.body;
+      
+      await getDocuSignAccessToken();
+      
+      // Get the document from the database
+      const documentResult = await pool.query(
+          'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+          [documentId, req.user.userId]
+      );
+      
+      if (documentResult.rows.length === 0) {
+          return res.status(404).json({ error: 'Document not found' });
+      }
+      
+      const document = documentResult.rows[0];
+      
+      // Read the document file - handle both S3 and local
+      let documentBase64;
+      
+      if (useS3 && process.env.S3_UPLOAD_BUCKET) {
+          // Fetch from S3
+          const command = new GetObjectCommand({
+              Bucket: process.env.S3_UPLOAD_BUCKET,
+              Key: document.file_path
+          });
+          
+          const s3Response = await s3Client.send(command);
+          
+          // Convert stream to buffer, then to base64
+          const chunks = [];
+          for await (const chunk of s3Response.Body) {
+              chunks.push(chunk);
+          }
+          const documentBuffer = Buffer.concat(chunks);
+          documentBase64 = documentBuffer.toString('base64');
+      } else {
+          // Read from local filesystem
+          const documentPath = path.resolve(document.file_path);
+          documentBase64 = fs.readFileSync(documentPath, { encoding: 'base64' });
+      }
+      
+      // Create the envelope definition
+      const envelopeDefinition = new docusign.EnvelopeDefinition();
+      envelopeDefinition.emailSubject = `Please sign: ${document.title}`;
+      envelopeDefinition.status = 'sent';
+      
+      // Create the document
+      const doc = new docusign.Document();
+      doc.documentBase64 = documentBase64;
+      doc.name = document.title;
+      doc.fileExtension = 'pdf';
+      doc.documentId = '1';
+      envelopeDefinition.documents = [doc];
+      
+      // Create the signer (the current user)
+      const signer = new docusign.Signer();
+      signer.email = req.user.email;
+      signer.name = `${req.user.firstName} ${req.user.lastName}`;
+      signer.recipientId = '1';
+      signer.clientUserId = req.user.userId.toString(); // This makes it embedded
+      
+      // Add signature tab
+      const signHere = new docusign.SignHere();
+      signHere.anchorString = 'Signature:';
+      signHere.anchorUnits = 'pixels';
+      signHere.anchorXOffset = '100';
+      signHere.anchorYOffset = '0';
+      
+      // If no anchor found, place signature at bottom of page
+      const signHereDefault = new docusign.SignHere();
+      signHereDefault.documentId = '1';
+      signHereDefault.pageNumber = '1';
+      signHereDefault.xPosition = '100';
+      signHereDefault.yPosition = '650';
+      
+      // Add date tab next to signature
+      const dateTab = new docusign.DateSigned();
+      dateTab.anchorString = 'Date:';
+      dateTab.anchorUnits = 'pixels';
+      dateTab.anchorXOffset = '100';
+      dateTab.anchorYOffset = '0';
+      
+      const dateTabDefault = new docusign.DateSigned();
+      dateTabDefault.documentId = '1';
+      dateTabDefault.pageNumber = '1';
+      dateTabDefault.xPosition = '350';
+      dateTabDefault.yPosition = '650';
+      
+      const tabs = new docusign.Tabs();
+      tabs.signHereTabs = [signHere, signHereDefault];
+      tabs.dateSignedTabs = [dateTab, dateTabDefault];
+      signer.tabs = tabs;
+      
+      // Add recipients to envelope
+      const recipients = new docusign.Recipients();
+      recipients.signers = [signer];
+      envelopeDefinition.recipients = recipients;
+      
+      // Create the envelope
+      const envelopesApi = new docusign.EnvelopesApi(dsApiClient);
+      const envelopeResults = await envelopesApi.createEnvelope(docuSignConfig.accountId, {
+          envelopeDefinition: envelopeDefinition
+      });
+      
+      const envelopeId = envelopeResults.envelopeId;
+      
+      // Create the recipient view (embedded signing URL)
+      const recipientViewRequest = new docusign.RecipientViewRequest();
+      recipientViewRequest.authenticationMethod = 'none';
+      recipientViewRequest.email = req.user.email;
+      recipientViewRequest.userName = `${req.user.firstName} ${req.user.lastName}`;
+      recipientViewRequest.clientUserId = req.user.userId.toString();
+      recipientViewRequest.returnUrl = `${process.env.FRONTEND_URL}/documents?signed=true`;
+      
+      const viewResults = await envelopesApi.createRecipientView(
+          docuSignConfig.accountId, 
+          envelopeId, 
+          { recipientViewRequest: recipientViewRequest }
+      );
+      
+      // Update document with envelope ID
+      await pool.query(
+          'UPDATE documents SET docusign_envelope_id = $1, docusign_status = $2 WHERE id = $3',
+          [envelopeId, 'sent', documentId]
+      );
+      
+      res.json({
+          success: true,
+          envelopeId: envelopeId,
+          signingUrl: viewResults.url,
+          message: 'Embedded signing session created successfully'
+      });
+      
+  } catch (error) {
+      console.error('DocuSign embedded signing error:', error);
+      res.status(500).json({ 
+          error: 'Failed to create embedded signing session',
+          details: error.message 
+      });
+  }
 });
 
 // Get signing URL for existing envelope (if user needs to re-sign)

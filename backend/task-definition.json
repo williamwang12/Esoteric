@@ -11,10 +11,11 @@
     "operatingSystemFamily": "LINUX"
   },
   "executionRoleArn": "arn:aws:iam::484069698162:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::484069698162:role/EsotericTaskRole",
   "containerDefinitions": [
     {
       "name": "esoteric-backend",
-      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v23",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v25",
       "essential": true,
       "portMappings": [
         {
@@ -32,6 +33,10 @@
           "value": "8080"
         },
         {
+          "name": "USE_S3",
+          "value": "true"
+        },
+        {
           "name": "DATABASE_URL",
           "value": "postgresql://dbadmin:EsotericDB2025%23Secure@esoteric-rds-db.cg38ykumokco.us-east-1.rds.amazonaws.com:5432/esoteric_loans"
         },
@@ -41,7 +46,7 @@
         },
         {
           "name": "FRONTEND_URL",
-          "value": "http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com/dashboard"
+          "value": "http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com"
         },
         {
           "name": "S3_UPLOAD_BUCKET",
