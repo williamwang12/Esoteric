@@ -523,15 +523,31 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteDocument = async (documentId: string) => {
+    if (!window.confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       await adminApi.deleteDocument(documentId);
       
-      // Refresh data
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: 'Document deleted successfully',
+        severity: 'success'
+      });
+      
+      // Force refresh data to bypass cache
       if (selectedUser) {
-        await fetchUserDetails(selectedUser.id);
+        await fetchUserDetails(selectedUser.id, true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete error:', err);
+      setSnackbar({
+        open: true,
+        message: `Error deleting document: ${err.response?.data?.message || err.message || 'Unknown error'}`,
+        severity: 'error'
+      });
     }
   };
 
@@ -1435,6 +1451,21 @@ const AdminDashboard: React.FC = () => {
                                   boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
                                   backgroundColor: '#1a1a1a',
                                   border: '1px solid #333',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px',
+                                    height: '6px',
+                                  },
+                                  '&::-webkit-scrollbar-track': {
+                                    backgroundColor: '#2d2d2d',
+                                    borderRadius: '3px',
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: '#555',
+                                    borderRadius: '3px',
+                                    '&:hover': {
+                                      backgroundColor: '#777',
+                                    },
+                                  },
                                 }}>
                                   <Table size="small">
                                     <TableHead>
@@ -1547,6 +1578,21 @@ const AdminDashboard: React.FC = () => {
                                   boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
                                   backgroundColor: '#1a1a1a',
                                   border: '1px solid #333',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px',
+                                    height: '6px',
+                                  },
+                                  '&::-webkit-scrollbar-track': {
+                                    backgroundColor: '#2d2d2d',
+                                    borderRadius: '3px',
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: '#555',
+                                    borderRadius: '3px',
+                                    '&:hover': {
+                                      backgroundColor: '#777',
+                                    },
+                                  },
                                 }}>
                                   <Table size="small">
                                     <TableHead>
@@ -1664,6 +1710,21 @@ const AdminDashboard: React.FC = () => {
                                   boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.1)',
                                   backgroundColor: '#1a1a1a',
                                   border: '1px solid #333',
+                                  '&::-webkit-scrollbar': {
+                                    width: '6px',
+                                    height: '6px',
+                                  },
+                                  '&::-webkit-scrollbar-track': {
+                                    backgroundColor: '#2d2d2d',
+                                    borderRadius: '3px',
+                                  },
+                                  '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: '#555',
+                                    borderRadius: '3px',
+                                    '&:hover': {
+                                      backgroundColor: '#777',
+                                    },
+                                  },
                                 }}>
                                   <Table size="small">
                                     <TableHead>

@@ -54,7 +54,7 @@ const { generalRateLimit, authRateLimit, sensitiveRateLimit, uploadRateLimit, ad
 // Import services
 const meetingService = require('./services/meetingService');
 
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const useS3 = process.env.USE_S3 === 'true';
@@ -1423,6 +1423,54 @@ app.get('/api/admin/documents/:documentId/download', adminRateLimit, authenticat
         console.error('Admin document download error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
+});
+
+app.delete('/api/admin/documents/:documentId', adminRateLimit, authenticateAdmin, async (req, res) => {
+  try {
+      const { documentId } = req.params;
+
+      // Get document details first
+      const documentResult = await pool.query(
+          'SELECT * FROM documents WHERE id = $1',
+          [documentId]
+      );
+
+      if (documentResult.rows.length === 0) {
+          return res.status(404).json({ error: 'Document not found' });
+      }
+
+      const document = documentResult.rows[0];
+
+      // Delete the physical file
+      if (useS3 && process.env.S3_UPLOAD_BUCKET) {
+          // Delete from S3
+          const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+          await s3Client.send(new DeleteObjectCommand({
+              Bucket: process.env.S3_UPLOAD_BUCKET,
+              Key: document.file_path
+          }));
+      } else {
+          // Delete from local filesystem
+          if (fs.existsSync(document.file_path)) {
+              fs.unlinkSync(document.file_path);
+          }
+      }
+
+      // Delete the database record
+      await pool.query(
+          'DELETE FROM documents WHERE id = $1',
+          [documentId]
+      );
+
+      res.json({ 
+          success: true, 
+          message: 'Document deleted successfully' 
+      });
+
+  } catch (error) {
+      console.error('Delete document error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Admin route - Get all transactions for a specific user
