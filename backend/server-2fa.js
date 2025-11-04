@@ -931,29 +931,38 @@ app.post('/api/admin/documents/upload', uploadRateLimit, adminRateLimit, authent
           return res.status(404).json({ error: 'User not found' });
       }
 
-      // Upload to S3
-      const fileContent = fs.readFileSync(req.file.path);
-      const s3Key = `documents/${userId}/${Date.now()}-${req.file.originalname}`;
+      let filePath;
 
-      await s3Client.send(new PutObjectCommand({
-          Bucket: process.env.S3_UPLOAD_BUCKET,
-          Key: s3Key,
-          Body: fileContent,
-          ContentType: req.file.mimetype,
-          Metadata: {
-              userId: userId.toString(),
-              title: title,
-              category: category
-          }
-      }));
+      // Use S3 in production, local filesystem in development
+      if (useS3 && process.env.S3_UPLOAD_BUCKET) {
+          // Upload to S3
+          const fileContent = fs.readFileSync(req.file.path);
+          const s3Key = `documents/${userId}/${Date.now()}-${req.file.originalname}`;
 
-      // Delete local temp file after S3 upload
-      fs.unlinkSync(req.file.path);
+          await s3Client.send(new PutObjectCommand({
+              Bucket: process.env.S3_UPLOAD_BUCKET,
+              Key: s3Key,
+              Body: fileContent,
+              ContentType: req.file.mimetype,
+              Metadata: {
+                  userId: userId.toString(),
+                  title: title,
+                  category: category
+              }
+          }));
+
+          // Delete local temp file after S3 upload
+          fs.unlinkSync(req.file.path);
+          filePath = s3Key;
+      } else {
+          // Local filesystem - keep the uploaded file
+          filePath = req.file.path;
+      }
 
       // Insert document with S3 path
       const result = await pool.query(
-          'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [userId, title, s3Key, req.file.size, category]
+        'INSERT INTO documents (user_id, title, file_path, file_size, category) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [userId, title, filePath, req.file.size, category]  // Use filePath here
       );
 
       res.status(201).json({
