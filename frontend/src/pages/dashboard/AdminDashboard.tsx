@@ -1414,11 +1414,11 @@ const AdminDashboard: React.FC = () => {
                                     startIcon={<Add />}
                                     onClick={() => handleAddTransaction(userLoans[0])}
                                     sx={{ 
-                                      background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
-                                      boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
+                                      background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                                      boxShadow: '0 4px 12px rgb(16 185 129 / 0.4)',
                                       '&:hover': {
-                                        background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
-                                        boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
+                                        background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                                        boxShadow: '0 6px 16px rgb(16 185 129 / 0.6)',
                                         transform: 'translateY(-1px)',
                                       },
                                       transition: 'all 0.2s'
@@ -1644,11 +1644,11 @@ const AdminDashboard: React.FC = () => {
                                     setUploadDialogOpen(true);
                                   }}
                                   sx={{ 
-                                    background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
-                                    boxShadow: '0 4px 12px rgb(107 70 193 / 0.4)',
+                                    background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
+                                    boxShadow: '0 4px 12px rgb(16 185 129 / 0.4)',
                                     '&:hover': {
-                                      background: 'linear-gradient(135deg, #5a4cd8 0%, #7C2D92 100%)',
-                                      boxShadow: '0 6px 16px rgb(107 70 193 / 0.6)',
+                                      background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                                      boxShadow: '0 6px 16px rgb(16 185 129 / 0.6)',
                                       transform: 'translateY(-1px)',
                                     },
                                     transition: 'all 0.2s'
@@ -2310,38 +2310,94 @@ const AdminDashboard: React.FC = () => {
         maxWidth="sm" 
         fullWidth
         PaperProps={{
-          sx: {
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #333',
-            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          sx: { 
+            backgroundColor: '#424242',
+            backgroundImage: 'none',
+            opacity: 1
           }
         }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+        }}
       >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #6f5cf2 0%, #6f5cf2 100%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <Upload />
+        <DialogTitle>
           Upload Document
         </DialogTitle>
-        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
+        <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
             <TextField
               label="Document Title"
               value={uploadForm.title}
               onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
               fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#2d2d2d',
+                  '& fieldset': {
+                    borderColor: '#444',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#10B981',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: '#9ca3af',
+                  '&.Mui-focused': {
+                    color: '#10B981',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: '#e0e0e0',
+                },
+              }}
             />
             
             <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
+              <InputLabel sx={{ color: '#9ca3af', '&.Mui-focused': { color: '#10B981' } }}>
+                Category
+              </InputLabel>
               <Select
                 value={uploadForm.category}
                 label="Category"
                 onChange={(e) => setUploadForm(prev => ({ ...prev, category: e.target.value }))}
+                sx={{
+                  backgroundColor: '#2d2d2d',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#444',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                  },
+                  '& .MuiSelect-select': {
+                    color: '#e0e0e0',
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: '#2d2d2d',
+                      border: '1px solid #444',
+                      '& .MuiMenuItem-root': {
+                        color: '#e0e0e0',
+                        '&:hover': {
+                          backgroundColor: '#3d3d3d',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: '#10B981',
+                          '&:hover': {
+                            backgroundColor: '#059669',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
               >
                 <MenuItem value="statement">Statement</MenuItem>
                 <MenuItem value="contract">Contract</MenuItem>
@@ -2352,11 +2408,48 @@ const AdminDashboard: React.FC = () => {
             </FormControl>
 
             <FormControl fullWidth>
-              <InputLabel>User</InputLabel>
+              <InputLabel sx={{ color: '#9ca3af', '&.Mui-focused': { color: '#10B981' } }}>
+                User
+              </InputLabel>
               <Select
                 value={uploadForm.userId}
                 label="User"
                 onChange={(e) => setUploadForm(prev => ({ ...prev, userId: e.target.value }))}
+                sx={{
+                  backgroundColor: '#2d2d2d',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#444',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#10B981',
+                  },
+                  '& .MuiSelect-select': {
+                    color: '#e0e0e0',
+                  },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: '#2d2d2d',
+                      border: '1px solid #444',
+                      '& .MuiMenuItem-root': {
+                        color: '#e0e0e0',
+                        '&:hover': {
+                          backgroundColor: '#3d3d3d',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: '#10B981',
+                          '&:hover': {
+                            backgroundColor: '#059669',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
               >
                 {users.map((user) => (
                   <MenuItem key={user.id} value={user.id}>
@@ -2387,8 +2480,13 @@ const AdminDashboard: React.FC = () => {
             </Button>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ backgroundColor: '#1a1a1a', borderTop: '1px solid #333' }}>
+          <Button 
+            onClick={() => setUploadDialogOpen(false)}
+            sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#2d2d2d' } }}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleUploadDocument}
             variant="contained"
@@ -2509,24 +2607,20 @@ const AdminDashboard: React.FC = () => {
         maxWidth="sm" 
         fullWidth
         PaperProps={{
-          sx: {
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #333',
-            boxShadow: '0 8px 32px 0 rgb(0 0 0 / 0.37)',
+          sx: { 
+            backgroundColor: '#424242',
+            backgroundImage: 'none',
+            opacity: 1
           }
         }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+        }}
       >
-        <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #10B981 0%, #34D399 100%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <AttachMoney />
+        <DialogTitle>
           Add Transaction
         </DialogTitle>
-        <DialogContent sx={{ backgroundColor: '#1a1a1a' }}>
+        <DialogContent>
           {selectedLoanForTransaction && (
             <Box sx={{ mb: 2, p: 2, backgroundColor: '#2d2d2d', borderRadius: 1, border: '1px solid #444' }}>
               <Typography variant="h6" gutterBottom sx={{ color: '#e0e0e0' }}>
@@ -3138,9 +3232,32 @@ const AdminDashboard: React.FC = () => {
                   principal_amount: e.target.value
                 }))}
                 InputProps={{
-                  startAdornment: '$'
+                  startAdornment: <Typography sx={{ mr: 1, color: '#9ca3af' }}>$</Typography>
                 }}
-                sx={{ flex: 1 }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#2d2d2d',
+                    '& fieldset': {
+                      borderColor: '#444',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#10B981',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#10B981',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#9ca3af',
+                    '&.Mui-focused': {
+                      color: '#10B981',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#e0e0e0',
+                  },
+                }}
               />
               <TextField
                 label="Start Date"
@@ -3149,7 +3266,30 @@ const AdminDashboard: React.FC = () => {
                 value={createYieldDepositForm.start_date}
                 onChange={(e) => setCreateYieldDepositForm(prev => ({ ...prev, start_date: e.target.value }))}
                 InputLabelProps={{ shrink: true }}
-                sx={{ flex: 1 }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#2d2d2d',
+                    '& fieldset': {
+                      borderColor: '#444',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#10B981',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#10B981',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: '#9ca3af',
+                    '&.Mui-focused': {
+                      color: '#10B981',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#e0e0e0',
+                  },
+                }}
               />
             </Box>
             <Alert severity="info">
@@ -3168,11 +3308,37 @@ const AdminDashboard: React.FC = () => {
               rows={3}
               value={createYieldDepositForm.notes}
               onChange={(e) => setCreateYieldDepositForm(prev => ({ ...prev, notes: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#2d2d2d',
+                  '& fieldset': {
+                    borderColor: '#444',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#10B981',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#10B981',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: '#9ca3af',
+                  '&.Mui-focused': {
+                    color: '#10B981',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: '#e0e0e0',
+                },
+              }}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateYieldDepositDialogOpen(false)}>
+        <DialogActions sx={{ backgroundColor: '#1a1a1a', borderTop: '1px solid #333' }}>
+          <Button 
+            onClick={() => setCreateYieldDepositDialogOpen(false)}
+            sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#2d2d2d' } }}
+          >
             Cancel
           </Button>
           <Button 
