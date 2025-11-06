@@ -60,6 +60,19 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const useS3 = process.env.USE_S3 === 'true';
 const s3Client = useS3 ? new S3Client({ region: 'us-east-1' }) : null;
 
+const cron = require('node-cron');
+
+console.log('📅 Scheduling daily yield payout cron job...');
+
+cron.schedule('0 0 * * *', async () => {
+    console.log('🕐 Running scheduled daily yield payout...');
+    try {
+        await processDailyYieldPayments();
+    } catch (error) {
+        console.error('Scheduled yield payout failed:', error);
+    }
+});
+
 // Apply rate limiting
 app.use('/api/', generalRateLimit); // General rate limit for all API endpoints
 
@@ -4328,18 +4341,6 @@ async function processDailyYieldPayments(targetDate = null, processedBy = null) 
       throw error;
   }
 }
-
-
-const cron = require('node-cron');
-
-cron.schedule('0 0 * * *', async () => {
-    console.log('🕐 Running scheduled daily yield payout...');
-    try {
-        await processDailyYieldPayments();
-    } catch (error) {
-        console.error('Scheduled yield payout failed:', error);
-    }
-});
 
 
 // Error handling middleware
