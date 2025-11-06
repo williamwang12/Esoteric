@@ -1,0 +1,13 @@
+{
+  "Name": "AllViewerWithAuth",
+  "Comment": "Forward all headers including Authorization",
+  "HeadersConfig": {
+    "HeaderBehavior": "allViewer"
+  },
+  "CookiesConfig": {
+    "CookieBehavior": "all"
+  },
+  "QueryStringsConfig": {
+    "QueryStringBehavior": "all"
+  }
+}

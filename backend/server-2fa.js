@@ -39,8 +39,19 @@ app.use(helmet({
 
 // CORS middleware
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5003',
+      'http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com',
+      'https://d3jclgxyamk6z.cloudfront.net'
+  ],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Body parsing middleware
