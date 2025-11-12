@@ -119,6 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Check if 2FA is required
       if (response.requires_2fa) {
         // Return 2FA data without storing anything yet
+        setIsLoading(false);
         return {
           requires2FA: true,
           sessionToken: response.session_token,
