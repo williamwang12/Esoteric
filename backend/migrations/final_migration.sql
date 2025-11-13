@@ -552,6 +552,18 @@ CREATE TABLE public.yield_payouts (
 );
 
 
+CREATE TABLE IF NOT EXISTS deposit_principal_adjustments (
+    id SERIAL PRIMARY KEY,
+    deposit_id INTEGER NOT NULL REFERENCES yield_deposits(id) ON DELETE CASCADE,
+    reduction_amount DECIMAL(15, 2) NOT NULL CHECK (reduction_amount > 0),
+    adjustment_date DATE NOT NULL,
+    effective_date DATE NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_deposit_adjustments_deposit_id ON deposit_principal_adjustments(deposit_id);
+CREATE INDEX idx_deposit_adjustments_effective_date ON deposit_principal_adjustments(effective_date);
 
 --
 --

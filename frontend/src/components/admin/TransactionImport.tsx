@@ -285,7 +285,7 @@ const TransactionImport: React.FC = () => {
       )}
 
       {/* Success Results */}
-      {uploadResult && (
+      {uploadResult && uploadResult.results && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box display="flex" alignItems="center" mb={2}>
@@ -295,7 +295,7 @@ const TransactionImport: React.FC = () => {
 
             <Alert severity="success" sx={{ mb: 3 }}>
               {uploadResult.message}
-              {uploadResult.results.created_users.length > 0 && (
+              {uploadResult.results?.created_users?.length > 0 && (
                 <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
                   ⚠️ Important: {uploadResult.results.created_users.length} temporary passwords generated. 
                   Click "Show Passwords" below to view and copy them.
@@ -371,7 +371,7 @@ const TransactionImport: React.FC = () => {
               <Divider sx={{ mb: 2 }} />
 
               {/* Created Users */}
-              {uploadResult.results.created_users.length > 0 && (
+              {uploadResult.results?.created_users?.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                     <Typography variant="h6">
@@ -413,7 +413,7 @@ const TransactionImport: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {uploadResult.results.created_users.map((user) => (
+                        {uploadResult.results.created_users?.map((user) => (
                           <TableRow key={user.user_id}>
                             <TableCell>{user.email}</TableCell>
                             <TableCell align="right">
@@ -444,7 +444,7 @@ const TransactionImport: React.FC = () => {
               )}
 
               {/* Transaction Summary */}
-              {uploadResult.results.transaction_summary.length > 0 && (
+              {uploadResult.results?.transaction_summary?.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="h6" mb={2}>
                     <SwapHoriz sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -464,7 +464,7 @@ const TransactionImport: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {uploadResult.results.transaction_summary.map((summary) => (
+                        {uploadResult.results.transaction_summary?.map((summary) => (
                           <TableRow key={summary.email}>
                             <TableCell>{summary.email}</TableCell>
                             <TableCell align="center">
@@ -494,7 +494,7 @@ const TransactionImport: React.FC = () => {
               )}
 
               {/* Processing Log */}
-              {uploadResult.results.processing_log.length > 0 && (
+              {uploadResult.results?.processing_log?.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                     <Typography variant="h6">
@@ -524,7 +524,7 @@ const TransactionImport: React.FC = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {uploadResult.results.processing_log.map((log, index) => (
+                          {uploadResult.results.processing_log?.map((log, index) => (
                             <TableRow key={index}>
                               <TableCell>{new Date(log.transaction_date).toLocaleDateString()}</TableCell>
                               <TableCell>{log.email}</TableCell>
@@ -560,14 +560,14 @@ const TransactionImport: React.FC = () => {
               )}
 
               {/* Warnings */}
-              {uploadResult.results.warnings.length > 0 && (
+              {uploadResult.results?.warnings?.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="h6" mb={2}>
                     <Warning sx={{ mr: 1, verticalAlign: 'middle', color: 'warning.main' }} />
                     Warnings
                   </Typography>
                   <List>
-                    {uploadResult.results.warnings.map((warning, index) => (
+                    {uploadResult.results.warnings?.map((warning, index) => (
                       <ListItem key={index}>
                         <ListItemIcon>
                           <Warning color="warning" />
@@ -580,14 +580,14 @@ const TransactionImport: React.FC = () => {
               )}
 
               {/* Errors */}
-              {uploadResult.results.errors.length > 0 && (
+              {uploadResult.results?.errors?.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="h6" mb={2}>
                     <Error sx={{ mr: 1, verticalAlign: 'middle', color: 'error.main' }} />
                     Errors
                   </Typography>
                   <List>
-                    {uploadResult.results.errors.map((error, index) => (
+                    {uploadResult.results.errors?.map((error, index) => (
                       <ListItem key={index}>
                         <ListItemIcon>
                           <Error color="error" />

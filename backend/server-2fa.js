@@ -3231,361 +3231,574 @@ app.get('/api/admin/transactions/excel-import-template', adminRateLimit, authent
     }
 });
 
-// Comprehensive Transaction Import Processing
-app.post('/api/admin/transactions/excel-import', uploadRateLimit, adminRateLimit, authenticateAdmin, upload.single('excel'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No Excel file uploaded' });
-        }
+function calculateRetroactiveYield(depositStartDate, principalAmount, withdrawalAdjustments, endDate = new Date()) {
+  const ANNUAL_RATE = 0.12;
+  const start = new Date(depositStartDate);
+  const end = new Date(endDate);
+  
+  let totalYield = 0;
+  let currentYear = start.getFullYear();
+  let currentPrincipal = principalAmount;
+  
+  const sortedAdjustments = withdrawalAdjustments
+      .filter(adj => new Date(adj.effective_date) <= end)
+      .sort((a, b) => new Date(a.effective_date) - new Date(b.effective_date));
+  
+  let adjustmentIndex = 0;
+  let periodStart = new Date(start);
+  
+  while (periodStart < end) {
+      let nextAdjustmentDate = null;
+      let principalReduction = 0;
+      
+      if (adjustmentIndex < sortedAdjustments.length) {
+          const nextAdj = sortedAdjustments[adjustmentIndex];
+          nextAdjustmentDate = new Date(nextAdj.effective_date);
+          principalReduction = nextAdj.reduction_amount;
+      }
+      
+      const yearEnd = new Date(currentYear + 1, 0, 1);
+      const periodEnd = nextAdjustmentDate && nextAdjustmentDate < yearEnd && nextAdjustmentDate < end
+          ? nextAdjustmentDate
+          : (yearEnd < end ? yearEnd : end);
+      
+      const periodDays = Math.ceil((periodEnd - periodStart) / (1000 * 60 * 60 * 24));
+      const yearDays = isLeapYear(currentYear) ? 366 : 365;
+      
+      const periodYield = (currentPrincipal * ANNUAL_RATE * periodDays) / yearDays;
+      totalYield += periodYield;
+      
+      if (nextAdjustmentDate && periodEnd.getTime() === nextAdjustmentDate.getTime()) {
+          currentPrincipal -= principalReduction;
+          adjustmentIndex++;
+      }
+      
+      periodStart = new Date(periodEnd);
+      if (periodEnd.getTime() === yearEnd.getTime()) {
+          currentYear++;
+      }
+  }
+  
+  return totalYield;
+}
 
-        // Validate file extension
-        const fileExtension = path.extname(req.file.originalname).toLowerCase();
-        if (!['.xlsx', '.xls'].includes(fileExtension)) {
-            fs.unlinkSync(req.file.path);
-            return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are allowed' });
-        }
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
 
-        console.log('📊 Processing transaction import Excel file:', req.file.originalname);
+async function processWithdrawalLIFO(client, userId, withdrawalAmount, withdrawalDate) {
+  const depositsResult = await client.query(`
+      SELECT id, principal_amount, start_date,
+             COALESCE((SELECT SUM(reduction_amount) 
+                      FROM deposit_principal_adjustments 
+                      WHERE deposit_id = yield_deposits.id), 0) as total_reductions
+      FROM yield_deposits
+      WHERE user_id = $1 AND status = 'active'
+      ORDER BY start_date DESC
+  `, [userId]);
+  
+  const deposits = depositsResult.rows;
+  const adjustments = [];
+  let remainingWithdrawal = withdrawalAmount;
+  
+  const withdrawalDateObj = new Date(withdrawalDate);
+  const nextYear = withdrawalDateObj.getFullYear() + 1;
+  const effectiveDate = new Date(nextYear, 0, 1);
+  
+  for (const deposit of deposits) {
+      if (remainingWithdrawal <= 0) break;
+      
+      const availablePrincipal = deposit.principal_amount - deposit.total_reductions;
+      
+      if (availablePrincipal <= 0) continue;
+      
+      const reductionAmount = Math.min(remainingWithdrawal, availablePrincipal);
+      
+      await client.query(`
+          INSERT INTO deposit_principal_adjustments (
+              deposit_id, reduction_amount, adjustment_date, effective_date, reason
+          ) VALUES ($1, $2, $3, $4, $5)
+      `, [
+          deposit.id,
+          reductionAmount,
+          withdrawalDate,
+          effectiveDate.toISOString().split('T')[0],
+          'Withdrawal - LIFO allocation'
+      ]);
+      
+      adjustments.push({
+          deposit_id: deposit.id,
+          reduction_amount: reductionAmount,
+          effective_date: effectiveDate.toISOString().split('T')[0]
+      });
+      
+      remainingWithdrawal -= reductionAmount;
+      
+      if (availablePrincipal - reductionAmount <= 0) {
+          await client.query(`
+              UPDATE yield_deposits 
+              SET status = 'closed', updated_at = CURRENT_TIMESTAMP
+              WHERE id = $1
+          `, [deposit.id]);
+      }
+  }
+  
+  return {
+      adjustments,
+      amountProcessed: withdrawalAmount - remainingWithdrawal,
+      remainingDeficit: remainingWithdrawal
+  };
+}
 
-        // Read the Excel file
-        const workbook = XLSX.readFile(req.file.path);
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        // Convert to JSON
-        const data = XLSX.utils.sheet_to_json(worksheet);
-        
-        console.log('📋 Parsed Excel data:', data.length, 'rows');
 
-        // Validate required columns
-        const requiredColumns = ['email', 'transaction_type', 'amount', 'transaction_date'];
-        const processedTransactions = [];
-        const errors = [];
-        const warnings = [];
+app.post('/api/admin/transactions/excel-import', 
+  uploadRateLimit, 
+  adminRateLimit, 
+  authenticateAdmin, 
+  upload.single('excel'), 
+  async (req, res) => {
+  try {
+      if (!req.file) {
+          return res.status(400).json({ error: 'No Excel file uploaded' });
+      }
 
-        for (let i = 0; i < data.length; i++) {
-            const row = data[i];
-            const rowNumber = i + 2; // Excel rows start at 1, header is row 1
+      // Validate file extension
+      const fileExtension = path.extname(req.file.originalname).toLowerCase();
+      if (!['.xlsx', '.xls'].includes(fileExtension)) {
+          fs.unlinkSync(req.file.path);
+          return res.status(400).json({ error: 'Only Excel files (.xlsx, .xls) are allowed' });
+      }
 
-            // Check required columns
-            const missingColumns = requiredColumns.filter(col => !row.hasOwnProperty(col));
-            if (missingColumns.length > 0) {
-                errors.push(`Row ${rowNumber}: Missing required columns: ${missingColumns.join(', ')}`);
-                continue;
-            }
+      console.log('📊 Processing transaction import Excel file:', req.file.originalname);
 
-            // Validate email
-            if (!row.email || typeof row.email !== 'string') {
-                errors.push(`Row ${rowNumber}: Invalid email`);
-                continue;
-            }
+      // Read the Excel file
+      const workbook = XLSX.readFile(req.file.path);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convert to JSON
+      const data = XLSX.utils.sheet_to_json(worksheet);
+      
+      console.log('📋 Parsed Excel data:', data.length, 'rows');
 
-            // Basic email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(row.email)) {
-                errors.push(`Row ${rowNumber}: Invalid email format`);
-                continue;
-            }
+      // [VALIDATION LOGIC - SAME AS BEFORE]
+      const requiredColumns = ['email', 'transaction_type', 'amount', 'transaction_date'];
+      const processedTransactions = [];
+      const errors = [];
+      const warnings = [];
 
-            // Validate transaction type
-            const transactionType = row.transaction_type?.toString().toLowerCase();
-            if (!['deposit', 'withdrawal'].includes(transactionType)) {
-                errors.push(`Row ${rowNumber}: Transaction type must be "deposit" or "withdrawal"`);
-                continue;
-            }
+      for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          const rowNumber = i + 2;
 
-            // Validate amount
-            const amount = parseFloat(row.amount);
-            if (isNaN(amount) || amount <= 0) {
-                errors.push(`Row ${rowNumber}: Amount must be a positive number`);
-                continue;
-            }
+          const missingColumns = requiredColumns.filter(col => !row.hasOwnProperty(col));
+          if (missingColumns.length > 0) {
+              errors.push(`Row ${rowNumber}: Missing required columns: ${missingColumns.join(', ')}`);
+              continue;
+          }
 
-            // Validate transaction date
-            let transactionDate;
-            if (row.transaction_date) {
-                let parsedDate;
-                
-                // Handle different date formats from Excel
-                if (typeof row.transaction_date === 'number') {
-                    // Excel serial date number
-                    parsedDate = new Date((row.transaction_date - 25569) * 86400 * 1000);
-                } else if (typeof row.transaction_date === 'string') {
-                    // String date - try parsing directly
-                    parsedDate = new Date(row.transaction_date);
-                } else {
-                    // Already a Date object
-                    parsedDate = row.transaction_date;
-                }
-                
-                if (isNaN(parsedDate.getTime())) {
-                    errors.push(`Row ${rowNumber}: Invalid transaction date format. Use YYYY-MM-DD`);
-                    continue;
-                }
-                
-                transactionDate = parsedDate.toISOString().split('T')[0];
-            } else {
-                errors.push(`Row ${rowNumber}: Transaction date is required`);
-                continue;
-            }
+          if (!row.email || typeof row.email !== 'string') {
+              errors.push(`Row ${rowNumber}: Invalid email`);
+              continue;
+          }
 
-            processedTransactions.push({
-                email: row.email.toLowerCase().trim(),
-                transaction_type: transactionType,
-                amount: amount,
-                transaction_date: transactionDate,
-                description: row.description?.trim() || '',
-                first_name: row.first_name?.trim() || '',
-                last_name: row.last_name?.trim() || '',
-                phone: row.phone?.trim() || '',
-                row_number: rowNumber
-            });
-        }
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(row.email)) {
+              errors.push(`Row ${rowNumber}: Invalid email format`);
+              continue;
+          }
 
-        // Clean up uploaded file
-        fs.unlinkSync(req.file.path);
+          const transactionType = row.transaction_type?.toString().toLowerCase();
+          if (!['deposit', 'withdrawal'].includes(transactionType)) {
+              errors.push(`Row ${rowNumber}: Transaction type must be "deposit" or "withdrawal"`);
+              continue;
+          }
 
-        if (errors.length > 0) {
-            return res.status(400).json({ 
-                error: 'Validation errors found', 
-                errors: errors,
-                warnings: warnings
-            });
-        }
+          const amount = parseFloat(row.amount);
+          if (isNaN(amount) || amount <= 0) {
+              errors.push(`Row ${rowNumber}: Amount must be a positive number`);
+              continue;
+          }
 
-        if (processedTransactions.length === 0) {
-            return res.status(400).json({ error: 'No valid transaction data found' });
-        }
+          let transactionDate;
+          if (row.transaction_date) {
+              let parsedDate;
+              
+              if (typeof row.transaction_date === 'number') {
+                  parsedDate = new Date((row.transaction_date - 25569) * 86400 * 1000);
+              } else if (typeof row.transaction_date === 'string') {
+                  parsedDate = new Date(row.transaction_date);
+              } else {
+                  parsedDate = row.transaction_date;
+              }
+              
+              if (isNaN(parsedDate.getTime())) {
+                  errors.push(`Row ${rowNumber}: Invalid transaction date format. Use YYYY-MM-DD`);
+                  continue;
+              }
+              
+              transactionDate = parsedDate.toISOString().split('T')[0];
+          } else {
+              errors.push(`Row ${rowNumber}: Transaction date is required`);
+              continue;
+          }
 
-        // Sort transactions by date to process chronologically
-        processedTransactions.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
+          processedTransactions.push({
+              email: row.email.toLowerCase().trim(),
+              transaction_type: transactionType,
+              amount: amount,
+              transaction_date: transactionDate,
+              description: row.description?.trim() || '',
+              first_name: row.first_name?.trim() || '',
+              last_name: row.last_name?.trim() || '',
+              phone: row.phone?.trim() || '',
+              row_number: rowNumber
+          });
+      }
 
-        // Group by email to track user creation
-        const userEmails = new Set(processedTransactions.map(t => t.email));
-        const newUsers = new Map();
+      fs.unlinkSync(req.file.path);
 
-        // Check which users exist
-        for (const email of userEmails) {
-            const existingUser = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
-            if (existingUser.rows.length === 0) {
-                // Find first transaction for this email to get user info
-                const firstTransaction = processedTransactions.find(t => t.email === email);
-                newUsers.set(email, {
-                    email: email,
-                    first_name: firstTransaction.first_name || 'New',
-                    last_name: firstTransaction.last_name || 'Client',
-                    phone: firstTransaction.phone || ''
-                });
-            }
-        }
+      if (errors.length > 0) {
+          return res.status(400).json({ 
+              error: 'Validation errors found', 
+              errors: errors,
+              warnings: warnings
+          });
+      }
 
-        // Process the transactions
-        const results = {
-            created_users: [],
-            processed_transactions: [],
-            created_deposits: [],
-            processed_withdrawals: [],
-            errors: [],
-            warnings: warnings
-        };
+      if (processedTransactions.length === 0) {
+          return res.status(400).json({ error: 'No valid transaction data found' });
+      }
 
-        const client = await pool.connect();
-        
-        try {
-            await client.query('BEGIN');
+      // Sort transactions by date to process chronologically
+      processedTransactions.sort((a, b) => new Date(a.transaction_date) - new Date(b.transaction_date));
 
-            // Create new users first
-            for (const [email, userData] of newUsers) {
-                try {
-                    // Generate temporary password
-                    const tempPassword = Math.random().toString(36).slice(-12);
-                    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      // Group by email to track user creation
+      const userEmails = new Set(processedTransactions.map(t => t.email));
+      const newUsers = new Map();
 
-                    // Create new user
-                    const userResult = await client.query(`
-                        INSERT INTO users (
-                            email, password_hash, first_name, last_name, phone, 
-                            email_verified, account_verified, role, temp_password
-                        ) VALUES ($1, $2, $3, $4, $5, true, false, 'user', $6)
-                        RETURNING id, email
-                    `, [
-                        email, 
-                        hashedPassword, 
-                        userData.first_name, 
-                        userData.last_name, 
-                        userData.phone,
-                        tempPassword
-                    ]);
+      // Check which users exist
+      for (const email of userEmails) {
+          const existingUser = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+          if (existingUser.rows.length === 0) {
+              const firstTransaction = processedTransactions.find(t => t.email === email);
+              newUsers.set(email, {
+                  email: email,
+                  first_name: firstTransaction.first_name || 'New',
+                  last_name: firstTransaction.last_name || 'Client',
+                  phone: firstTransaction.phone || ''
+              });
+          }
+      }
 
-                    const userId = userResult.rows[0].id;
-                    results.created_users.push({
-                        email: email,
-                        user_id: userId,
-                        temp_password: tempPassword
-                    });
+      // Process the transactions
+      const results = {
+          created_users: [],
+          processed_transactions: [],
+          created_deposits: [],
+          processed_withdrawals: [],
+          errors: [],
+          warnings: warnings
+      };
 
-                    // Create loan account for new user
-                    await client.query(`
-                        INSERT INTO loan_accounts (
-                            user_id, account_number, principal_amount, current_balance
-                        ) VALUES ($1, $2, 0, 0)
-                    `, [userId, `ACC${userId.toString().padStart(8, '0')}`]);
+      const client = await pool.connect();
+      
+      try {
+          await client.query('BEGIN');
 
-                } catch (error) {
-                    console.error(`Error creating user ${email}:`, error);
-                    results.errors.push(`Failed to create user ${email}: ${error.message}`);
-                }
-            }
+          // Create new users first
+          for (const [email, userData] of newUsers) {
+              try {
+                  const tempPassword = Math.random().toString(36).slice(-12);
+                  const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-            // Process transactions chronologically
-            for (const transaction of processedTransactions) {
-                try {
-                    // Get user info
-                    const userResult = await client.query(`
-                        SELECT u.id, u.email, la.id as loan_account_id
-                        FROM users u
-                        JOIN loan_accounts la ON u.id = la.user_id
-                        WHERE u.email = $1
-                    `, [transaction.email]);
+                  const userResult = await client.query(`
+                      INSERT INTO users (
+                          email, password_hash, first_name, last_name, phone, 
+                          email_verified, account_verified, role, temp_password
+                      ) VALUES ($1, $2, $3, $4, $5, true, false, 'user', $6)
+                      RETURNING id, email
+                  `, [
+                      email, 
+                      hashedPassword, 
+                      userData.first_name, 
+                      userData.last_name, 
+                      userData.phone,
+                      tempPassword
+                  ]);
 
-                    if (userResult.rows.length === 0) {
-                        results.errors.push(`Row ${transaction.row_number}: User ${transaction.email} not found`);
-                        continue;
-                    }
+                  const userId = userResult.rows[0].id;
+                  results.created_users.push({
+                      email: email,
+                      user_id: userId,
+                      temp_password: tempPassword
+                  });
 
-                    const user = userResult.rows[0];
+                  await client.query(`
+                      INSERT INTO loan_accounts (
+                          user_id, account_number, principal_amount, current_balance
+                      ) VALUES ($1, $2, 0, 0)
+                  `, [userId, `ACC${userId.toString().padStart(8, '0')}`]);
 
-                    if (transaction.transaction_type === 'deposit') {
-                        // Create yield deposit
-                        const depositResult = await client.query(`
-                            INSERT INTO yield_deposits (
-                                user_id, principal_amount, annual_yield_rate, start_date, 
-                                created_by, notes, status
-                            ) VALUES ($1, $2, 0.12, $3, $4, $5, 'active')
-                            RETURNING *
-                        `, [
-                            user.id, 
-                            transaction.amount, 
-                            transaction.transaction_date,
-                            req.user.id, 
-                            transaction.description || `Deposit from transaction import (${transaction.transaction_date})`
-                        ]);
+              } catch (error) {
+                  console.error(`Error creating user ${email}:`, error);
+                  results.errors.push(`Failed to create user ${email}: ${error.message}`);
+              }
+          }
 
-                        // Add to account balance AND principal amount
-                        await client.query(`
-                            UPDATE loan_accounts 
-                            SET current_balance = current_balance + $1,
-                                principal_amount = principal_amount + $1,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE id = $2
-                        `, [transaction.amount, user.loan_account_id]);
+          // ========== PASS 1: Create deposits and process withdrawals ==========
+          console.log('📝 PASS 1: Creating deposits and processing withdrawals...');
 
-                        // Create transaction record
-                        await client.query(`
-                            INSERT INTO loan_transactions (
-                                loan_account_id, amount, transaction_type, description, transaction_date
-                            ) VALUES ($1, $2, 'yield_deposit', $3, $4)
-                        `, [
-                            user.loan_account_id, 
-                            transaction.amount, 
-                            transaction.description || `Deposit - 12% annual yield`,
-                            transaction.transaction_date
-                        ]);
+          for (const transaction of processedTransactions) {
+              try {
+                  const userResult = await client.query(`
+                      SELECT u.id, u.email, la.id as loan_account_id
+                      FROM users u
+                      JOIN loan_accounts la ON u.id = la.user_id
+                      WHERE u.email = $1
+                  `, [transaction.email]);
 
-                        results.created_deposits.push({
-                            email: transaction.email,
-                            deposit_id: depositResult.rows[0].id,
-                            amount: transaction.amount,
-                            date: transaction.transaction_date
-                        });
+                  if (userResult.rows.length === 0) {
+                      results.errors.push(`Row ${transaction.row_number}: User ${transaction.email} not found`);
+                      continue;
+                  }
 
-                    } else if (transaction.transaction_type === 'withdrawal') {
-                        // NEW POLICY: Withdrawals subtract from cumulative sum but don't affect 12% yield base until year refresh
-                        // Simply check balance and subtract - do NOT reduce deposit principal amounts
-                        
-                        // Get current account balance
-                        const balanceResult = await client.query(`
-                            SELECT current_balance FROM loan_accounts WHERE id = $1
-                        `, [user.loan_account_id]);
-                        
-                        const currentBalance = parseFloat(balanceResult.rows[0].current_balance || 0);
-                        
-                        if (currentBalance < transaction.amount) {
-                            results.warnings.push(`Row ${transaction.row_number}: Insufficient balance. Current: $${currentBalance.toFixed(2)}, Requested: $${transaction.amount.toFixed(2)}. Withdrawal not processed.`);
-                        } else {
-                            // Subtract from account balance and principal amount
-                            await client.query(`
-                                UPDATE loan_accounts 
-                                SET current_balance = current_balance - $1,
-                                    principal_amount = principal_amount - $1,
-                                    updated_at = CURRENT_TIMESTAMP
-                                WHERE id = $2
-                            `, [transaction.amount, user.loan_account_id]);
+                  const user = userResult.rows[0];
 
-                            // Create transaction record for audit trail
-                            await client.query(`
-                                INSERT INTO loan_transactions (
-                                    loan_account_id, amount, transaction_type, description, transaction_date
-                                ) VALUES ($1, $2, 'withdrawal', $3, $4)
-                            `, [
-                                user.loan_account_id, 
-                                -transaction.amount, 
-                                transaction.description || `Withdrawal - Balance and principal reduced`,
-                                transaction.transaction_date
-                            ]);
+                  if (transaction.transaction_type === 'deposit') {
+                      // Create yield deposit WITHOUT calculating retroactive yield yet
+                      const depositResult = await client.query(`
+                          INSERT INTO yield_deposits (
+                              user_id, principal_amount, annual_yield_rate, start_date, 
+                              created_by, notes, status
+                          ) VALUES ($1, $2, 0.12, $3, $4, $5, 'active')
+                          RETURNING *
+                      `, [
+                          user.id, 
+                          transaction.amount, 
+                          transaction.transaction_date,
+                          req.user.id, 
+                          transaction.description || `Deposit from transaction import (${transaction.transaction_date})`
+                      ]);
 
-                            results.processed_withdrawals.push({
-                                email: transaction.email,
-                                requested_amount: transaction.amount,
-                                actual_amount: transaction.amount,
-                                date: transaction.transaction_date,
-                                note: 'Withdrawal processed - Balance and principal reduced'
-                            });
-                        }
-                    }
+                      // Add principal to account (but not yield yet)
+                      await client.query(`
+                        UPDATE loan_accounts 
+                        SET principal_amount = principal_amount + $1,
+                            current_balance = current_balance + $1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = $2
+                    `, [transaction.amount, user.loan_account_id]);
 
-                    results.processed_transactions.push({
-                        email: transaction.email,
-                        type: transaction.transaction_type,
-                        amount: transaction.amount,
-                        date: transaction.transaction_date,
-                        description: transaction.description
-                    });
+                      // Create transaction record for deposit
+                      await client.query(`
+                          INSERT INTO loan_transactions (
+                              loan_account_id, amount, transaction_type, description, transaction_date
+                          ) VALUES ($1, $2, 'yield_deposit', $3, $4)
+                      `, [
+                          user.loan_account_id, 
+                          transaction.amount, 
+                          transaction.description || `Deposit - 12% annual yield`,
+                          transaction.transaction_date
+                      ]);
 
-                } catch (error) {
-                    console.error(`Error processing transaction for ${transaction.email}:`, error);
-                    results.errors.push(`Row ${transaction.row_number}: Failed to process ${transaction.transaction_type} for ${transaction.email} - ${error.message}`);
-                }
-            }
+                      results.created_deposits.push({
+                          email: transaction.email,
+                          deposit_id: depositResult.rows[0].id,
+                          amount: transaction.amount,
+                          date: transaction.transaction_date,
+                          user_id: user.id,
+                          loan_account_id: user.loan_account_id
+                      });
 
-            await client.query('COMMIT');
+                  } else if (transaction.transaction_type === 'withdrawal') {
+                      const balanceResult = await client.query(`
+                          SELECT current_balance FROM loan_accounts WHERE id = $1
+                      `, [user.loan_account_id]);
+                      
+                      const currentBalance = parseFloat(balanceResult.rows[0].current_balance || 0);
+                      
+                      if (currentBalance < transaction.amount) {
+                          results.warnings.push(
+                              `Row ${transaction.row_number}: Insufficient balance. ` +
+                              `Current: $${currentBalance.toFixed(2)}, Requested: $${transaction.amount.toFixed(2)}. ` +
+                              `Withdrawal not processed.`
+                          );
+                          continue;
+                      }
 
-        } catch (error) {
-            await client.query('ROLLBACK');
-            throw error;
-        } finally {
-            client.release();
-        }
+                      // Process withdrawal with LIFO allocation
+                      const withdrawalResult = await processWithdrawalLIFO(
+                          client,
+                          user.id,
+                          transaction.amount,
+                          transaction.transaction_date
+                      );
 
-        console.log(`✅ Transaction import completed: ${results.created_users.length} users, ${results.processed_transactions.length} transactions`);
+                      if (withdrawalResult.remainingDeficit > 0) {
+                          results.warnings.push(
+                              `Row ${transaction.row_number}: Partial withdrawal. ` +
+                              `Processed: $${withdrawalResult.amountProcessed.toFixed(2)}, ` +
+                              `Insufficient deposits for: $${withdrawalResult.remainingDeficit.toFixed(2)}`
+                          );
+                      }
 
-        res.json({
-            message: 'Transaction import completed successfully',
-            summary: {
-                total_transactions_processed: processedTransactions.length,
-                users_created: results.created_users.length,
-                deposits_created: results.created_deposits.length,
-                withdrawals_processed: results.processed_withdrawals.length,
-                errors: results.errors.length,
-                warnings: results.warnings.length
-            },
-            results: results
-        });
+                      // Subtract from account balance
+                      await client.query(`
+                          UPDATE loan_accounts 
+                          SET current_balance = current_balance - $1,
+                              updated_at = CURRENT_TIMESTAMP
+                          WHERE id = $2
+                      `, [withdrawalResult.amountProcessed, user.loan_account_id]);
 
-    } catch (error) {
-        console.error('Transaction import error:', error);
-        res.status(500).json({ error: 'Failed to process transaction import' });
-    }
+                      // Create transaction record
+                      await client.query(`
+                          INSERT INTO loan_transactions (
+                              loan_account_id, amount, transaction_type, description, transaction_date
+                          ) VALUES ($1, $2, 'withdrawal', $3, $4)
+                      `, [
+                          user.loan_account_id, 
+                          -withdrawalResult.amountProcessed, 
+                          transaction.description || `Withdrawal - LIFO allocation, effective next year`,
+                          transaction.transaction_date
+                      ]);
+
+                      results.processed_withdrawals.push({
+                          email: transaction.email,
+                          requested_amount: transaction.amount,
+                          actual_amount: withdrawalResult.amountProcessed,
+                          date: transaction.transaction_date,
+                          deposit_adjustments: withdrawalResult.adjustments
+                      });
+                  }
+
+                  results.processed_transactions.push({
+                      email: transaction.email,
+                      type: transaction.transaction_type,
+                      amount: transaction.amount,
+                      date: transaction.transaction_date
+                  });
+
+              } catch (error) {
+                  console.error(`Error processing transaction for ${transaction.email}:`, error);
+                  results.errors.push(
+                      `Row ${transaction.row_number}: Failed to process ${transaction.transaction_type} ` +
+                      `for ${transaction.email} - ${error.message}`
+                  );
+              }
+          }
+
+          console.log(`✅ PASS 1 Complete: ${results.created_deposits.length} deposits, ${results.processed_withdrawals.length} withdrawals`);
+
+          // ========== PASS 2: Calculate and apply retroactive yield ==========
+          console.log('💰 PASS 2: Calculating retroactive yield for all deposits...');
+          
+          // Group deposits by user
+          const depositsByUser = results.created_deposits.reduce((acc, deposit) => {
+              if (!acc[deposit.user_id]) acc[deposit.user_id] = [];
+              acc[deposit.user_id].push(deposit);
+              return acc;
+          }, {});
+
+          for (const [userId, userDeposits] of Object.entries(depositsByUser)) {
+              // Get all deposits for this user from database
+              const depositsResult = await client.query(`
+                  SELECT id, principal_amount, start_date
+                  FROM yield_deposits
+                  WHERE user_id = $1
+                  ORDER BY start_date
+              `, [parseInt(userId)]);
+
+              let totalYieldForUser = 0;
+              const loanAccountId = userDeposits[0].loan_account_id;
+
+              for (const deposit of depositsResult.rows) {
+                  // Get adjustments for this deposit (NOW they exist!)
+                  const adjustmentsResult = await client.query(`
+                      SELECT reduction_amount, effective_date
+                      FROM deposit_principal_adjustments
+                      WHERE deposit_id = $1
+                      ORDER BY effective_date
+                  `, [deposit.id]);
+
+                  // Calculate retroactive yield with adjustments
+                  const retroactiveYield = calculateRetroactiveYield(
+                      deposit.start_date,
+                      deposit.principal_amount,
+                      adjustmentsResult.rows,
+                      new Date()
+                  );
+
+                  console.log(`   Deposit ${deposit.id} ($${deposit.principal_amount} from ${deposit.start_date}): $${retroactiveYield.toFixed(2)} yield`);
+
+                  if (retroactiveYield > 0) {
+                      totalYieldForUser += retroactiveYield;
+
+                      // Create yield payment transaction
+                      await client.query(`
+                          INSERT INTO loan_transactions (
+                              loan_account_id, amount, transaction_type, description, transaction_date
+                          ) VALUES ($1, $2, 'yield_payment', $3, CURRENT_DATE)
+                      `, [
+                          loanAccountId, 
+                          retroactiveYield, 
+                          `Retroactive yield from ${deposit.start_date} to ${new Date().toISOString().split('T')[0]}`
+                      ]);
+                  }
+
+                  // Update result object with yield amount
+                  const resultDeposit = results.created_deposits.find(d => d.deposit_id === deposit.id);
+                  if (resultDeposit) {
+                      resultDeposit.retroactive_yield = retroactiveYield;
+                  }
+              }
+
+              // Add total yield to account balance
+              if (totalYieldForUser > 0) {
+                  await client.query(`
+                      UPDATE loan_accounts 
+                      SET current_balance = current_balance + $1,
+                          updated_at = CURRENT_TIMESTAMP
+                      WHERE id = $2
+                  `, [totalYieldForUser, loanAccountId]);
+              }
+
+              console.log(`   User ${userId}: Total yield = $${totalYieldForUser.toFixed(2)}`);
+          }
+
+          console.log(`✅ PASS 2 Complete`);
+
+          await client.query('COMMIT');
+
+      } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+      } finally {
+          client.release();
+      }
+
+      console.log(
+          `✅ Transaction import completed: ${results.created_users.length} users, ` +
+          `${results.processed_transactions.length} transactions`
+      );
+
+      res.json({
+          message: 'Transaction import completed successfully',
+          summary: {
+              total_transactions_processed: processedTransactions.length,
+              users_created: results.created_users.length,
+              deposits_created: results.created_deposits.length,
+              withdrawals_processed: results.processed_withdrawals.length,
+              errors: results.errors.length,
+              warnings: results.warnings.length
+          },
+          results: results
+      });
+
+  } catch (error) {
+      console.error('Transaction import error:', error);
+      res.status(500).json({ error: 'Failed to process transaction import' });
+  }
 });
 
 // Admin route - Update meeting request status
