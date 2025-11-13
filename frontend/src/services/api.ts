@@ -70,6 +70,15 @@ export const authApi = {
     const response = await api.post('/auth/logout');
     return response.data;
   },
+
+  changePassword: async (passwordData: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
+    const response = await api.post('/auth/change-password', passwordData);
+    return response.data;
+  },
 };
 
 // 2FA API

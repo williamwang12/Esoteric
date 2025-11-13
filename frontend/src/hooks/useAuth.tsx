@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  requiresPasswordChange: boolean;
   login: (email: string, password: string) => Promise<any>;
   complete2FALogin: (sessionToken: string, totpToken: string) => Promise<any>;
   register: (userData: {
@@ -21,6 +22,11 @@ interface AuthContextType {
     firstName: string;
     lastName: string;
     phone?: string;
+  }) => Promise<void>;
+  changePassword: (passwordData: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
   }) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -37,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
   const [logoutTimer, setLogoutTimer] = useState<NodeJS.Timeout | null>(null);
 
   const setupAutoLogout = () => {
@@ -122,13 +129,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(false);
         return {
           requires2FA: true,
+          requiresPasswordChange: response.requires_password_change || false,
           sessionToken: response.session_token,
           user: response.user
         };
       }
       
       // Direct login (no 2FA)
-      const { user: userData, token: authToken } = response;
+      const { user: userData, token: authToken, requires_password_change } = response;
       
       // Store in localStorage with timestamp
       localStorage.setItem('authToken', authToken);
@@ -138,12 +146,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update state
       setToken(authToken);
       setUser(userData);
+      setRequiresPasswordChange(requires_password_change || false);
       
       // Setup auto-logout timer
       setupAutoLogout();
       
       setIsLoading(false);
-      return { requires2FA: false };
+      return { 
+        requires2FA: false, 
+        requiresPasswordChange: requires_password_change || false 
+      };
     } catch (error) {
       setIsLoading(false);
       throw error;
@@ -158,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         totp_token: totpToken
       });
       
-      const { user: userData, token: authToken } = response;
+      const { user: userData, token: authToken, requires_password_change } = response;
       
       // Store in localStorage with timestamp
       localStorage.setItem('authToken', authToken);
@@ -168,12 +180,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update state
       setToken(authToken);
       setUser(userData);
+      setRequiresPasswordChange(requires_password_change || false);
       
       // Setup auto-logout timer
       setupAutoLogout();
       
       setIsLoading(false);
-      return response;
+      return { ...response, requiresPasswordChange: requires_password_change || false };
     } catch (error) {
       setIsLoading(false);
       throw error;
@@ -260,6 +273,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const changePassword = async (passwordData: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
+    try {
+      setIsLoading(true);
+      const response = await authApi.changePassword(passwordData);
+      
+      // Password change successful - clear the requirement
+      setRequiresPasswordChange(false);
+      
+      console.log('[AUTH] Password changed successfully');
+      setIsLoading(false);
+      
+    } catch (error) {
+      console.error('[AUTH] Password change error:', error);
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
   const logout = () => {
     // Clear auto-logout timer
     clearAutoLogout();
@@ -272,6 +307,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear state
     setToken(null);
     setUser(null);
+    setRequiresPasswordChange(false);
     
     // Optional: Call API to invalidate token on server
     try {
@@ -299,9 +335,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     token,
     isLoading,
+    requiresPasswordChange,
     login,
     complete2FALogin,
     register,
+    changePassword,
     logout,
     updateUser,
     isAuthenticated,

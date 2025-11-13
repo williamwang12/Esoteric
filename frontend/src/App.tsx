@@ -7,6 +7,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import PasswordChangePage from './pages/PasswordChangePage';
 import Dashboard from './pages/dashboard/Dashboard';
 import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Profile from './pages/dashboard/Profile';
@@ -38,6 +39,16 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            
+            {/* Password Change Route - Special Protected Route */}
+            <Route
+              path="/change-password"
+              element={
+                <ProtectedRoute allowPasswordChange={true}>
+                  <PasswordChangePage />
+                </ProtectedRoute>
+              }
+            />
             
             {/* Protected Routes */}
             <Route
