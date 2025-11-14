@@ -728,6 +728,126 @@ app.put('/api/admin/users/:userId/clear-temp-password', adminRateLimit, authenti
     }
 });
 
+// Admin route - Delete user and all associated data
+app.delete('/api/admin/users/:userId', adminRateLimit, authenticateAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        console.log(`🗑️  Starting user deletion process for user ID: ${userId}`);
+        
+        // Start transaction for atomic deletion
+        await pool.query('BEGIN');
+        
+        // Get user info before deletion
+        const userResult = await pool.query(`
+            SELECT id, email, first_name, last_name FROM users WHERE id = $1
+        `, [userId]);
+        
+        if (userResult.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const user = userResult.rows[0];
+        console.log(`🗑️  Deleting user: ${user.email} (${user.first_name} ${user.last_name})`);
+        
+        // 1. Delete yield payouts for user's deposits
+        const yieldPayoutsResult = await pool.query(`
+            DELETE FROM yield_payouts 
+            WHERE deposit_id IN (SELECT id FROM yield_deposits WHERE user_id = $1)
+        `, [userId]);
+        console.log(`🗑️  Deleted ${yieldPayoutsResult.rowCount} yield payouts`);
+        
+        // 2. Delete deposit principal adjustments for user's deposits
+        const adjustmentsResult = await pool.query(`
+            DELETE FROM deposit_principal_adjustments 
+            WHERE deposit_id IN (SELECT id FROM yield_deposits WHERE user_id = $1)
+        `, [userId]);
+        console.log(`🗑️  Deleted ${adjustmentsResult.rowCount} deposit adjustments`);
+        
+        // 3. Delete yield deposits
+        const yieldDepositsResult = await pool.query(`
+            DELETE FROM yield_deposits WHERE user_id = $1
+        `, [userId]);
+        console.log(`🗑️  Deleted ${yieldDepositsResult.rowCount} yield deposits`);
+        
+        // 4. Delete loan transactions for user's loan accounts
+        const transactionsResult = await pool.query(`
+            DELETE FROM loan_transactions 
+            WHERE loan_account_id IN (SELECT id FROM loan_accounts WHERE user_id = $1)
+        `, [userId]);
+        console.log(`🗑️  Deleted ${transactionsResult.rowCount} loan transactions`);
+        
+        // 5. Delete monthly balances for user's loan accounts
+        const monthlyBalancesResult = await pool.query(`
+            DELETE FROM monthly_balances 
+            WHERE loan_account_id IN (SELECT id FROM loan_accounts WHERE user_id = $1)
+        `, [userId]);
+        console.log(`🗑️  Deleted ${monthlyBalancesResult.rowCount} monthly balances`);
+        
+        // 6. Delete payment schedule for user's loan accounts
+        const paymentScheduleResult = await pool.query(`
+            DELETE FROM payment_schedule 
+            WHERE loan_account_id IN (SELECT id FROM loan_accounts WHERE user_id = $1)
+        `, [userId]);
+        console.log(`🗑️  Deleted ${paymentScheduleResult.rowCount} payment schedule entries`);
+        
+        // 7. Delete loan accounts
+        const loanAccountsResult = await pool.query(`
+            DELETE FROM loan_accounts WHERE user_id = $1
+        `, [userId]);
+        console.log(`🗑️  Deleted ${loanAccountsResult.rowCount} loan accounts`);
+        
+        // 8. Delete documents
+        const documentsResult = await pool.query(`
+            DELETE FROM documents WHERE user_id = $1
+        `, [userId]);
+        console.log(`🗑️  Deleted ${documentsResult.rowCount} documents`);
+        
+        // 9. Delete user sessions
+        const sessionsResult = await pool.query(`
+            DELETE FROM user_sessions WHERE user_id = $1
+        `, [userId]);
+        console.log(`🗑️  Deleted ${sessionsResult.rowCount} user sessions`);
+        
+        // 10. Delete user 2FA settings
+        const user2faResult = await pool.query(`
+            DELETE FROM user_2fa WHERE user_id = $1
+        `, [userId]);
+        console.log(`🗑️  Deleted ${user2faResult.rowCount} 2FA settings`);
+        
+        // 11. Finally, delete the user (CASCADE will handle other tables)
+        const finalResult = await pool.query(`
+            DELETE FROM users WHERE id = $1
+        `, [userId]);
+        
+        if (finalResult.rowCount === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(500).json({ error: 'Failed to delete user' });
+        }
+        
+        // Commit the transaction
+        await pool.query('COMMIT');
+        
+        console.log(`🗑️  User ${user.email} (ID: ${userId}) and all associated data deleted successfully`);
+        
+        res.json({
+            message: 'User and all associated data deleted successfully',
+            deletedUser: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name
+            }
+        });
+        
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('User deletion error:', error);
+        res.status(500).json({ error: 'Failed to delete user and associated data' });
+    }
+});
+
 // Complete withdrawal request (subtract from balance and mark as completed)
 app.post('/api/admin/withdrawal-requests/:requestId/complete', adminRateLimit, authenticateAdmin, async (req, res) => {
     try {

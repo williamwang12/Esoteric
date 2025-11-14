@@ -206,6 +206,8 @@ const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [userDocuments, setUserDocuments] = useState<any[]>([]);
   const [userLoans, setUserLoans] = useState<any[]>([]);
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
@@ -471,6 +473,42 @@ const AdminDashboard: React.FC = () => {
       console.log('Temporary password cleared successfully');
     } catch (error) {
       console.error('Failed to clear temporary password:', error);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      setDeletingUser(true);
+      
+      await adminApi.deleteUser(selectedUser.id.toString());
+      
+      // Remove user from users list
+      setUsers(prev => prev.filter(user => user.id !== selectedUser.id));
+      
+      // Clear selected user
+      setSelectedUser(null);
+      
+      // Close dialog
+      setDeleteUserDialogOpen(false);
+      
+      setSnackbar({
+        open: true,
+        message: `User ${selectedUser.firstName} ${selectedUser.lastName} has been permanently deleted`,
+        severity: 'success'
+      });
+      
+      console.log(`User ${selectedUser.email} deleted successfully`);
+    } catch (error: any) {
+      console.error('Failed to delete user:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to delete user: ${error.response?.data?.error || error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -1229,12 +1267,26 @@ const AdminDashboard: React.FC = () => {
                       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                         {/* User Header */}
                         <Box sx={{ mb: 3 }}>
-                          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
-                            {selectedUser.firstName} {selectedUser.lastName}
-                          </Typography>
-                          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                            {selectedUser.email}
-                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                            <Box>
+                              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
+                                {selectedUser.firstName} {selectedUser.lastName}
+                              </Typography>
+                              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                                {selectedUser.email}
+                              </Typography>
+                            </Box>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              startIcon={<Delete />}
+                              onClick={() => setDeleteUserDialogOpen(true)}
+                              sx={{ ml: 2 }}
+                            >
+                              Delete User
+                            </Button>
+                          </Box>
                           
                           {/* Temporary Password Section */}
                           {selectedUser.temp_password && (
@@ -3414,6 +3466,104 @@ const AdminDashboard: React.FC = () => {
             }}
           >
             {creatingYieldDeposit ? <CircularProgress size={20} /> : 'Create Deposit'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog 
+        open={deleteUserDialogOpen} 
+        onClose={() => {
+          if (!deletingUser) {
+            setDeleteUserDialogOpen(false);
+          }
+        }}
+        maxWidth="sm" 
+        fullWidth
+        PaperProps={{
+          sx: { 
+            backgroundColor: '#424242',
+            backgroundImage: 'none',
+            opacity: 1
+          }
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+        }}
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Delete color="error" />
+            Delete User - Permanent Action
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedUser && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+              {/* User Info Box - styled like transaction dialog */}
+              <Box sx={{ mb: 2, p: 2, backgroundColor: '#2d2d2d', borderRadius: 1, border: '1px solid #444' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#ff6b6b' }}>
+                  User to be deleted:
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
+                  {selectedUser.firstName} {selectedUser.lastName}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                  {selectedUser.email}
+                </Typography>
+              </Box>
+
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                <Typography variant="body1" gutterBottom>
+                  <strong>WARNING: This action cannot be undone!</strong>
+                </Typography>
+                <Typography variant="body2">
+                  This will permanently delete the user and ALL associated data including:
+                </Typography>
+              </Alert>
+              
+              <Typography variant="body2" sx={{ color: '#9ca3af' }} gutterBottom>
+                <strong>Data that will be permanently deleted:</strong>
+              </Typography>
+              <Box component="ul" sx={{ pl: 3, mb: 2 }}>
+                <Typography component="li" variant="body2" sx={{ color: '#9ca3af' }}>All loan accounts and transaction history</Typography>
+                <Typography component="li" variant="body2" sx={{ color: '#9ca3af' }}>All yield deposits and payout records</Typography>
+                <Typography component="li" variant="body2" sx={{ color: '#9ca3af' }}>All uploaded documents</Typography>
+                <Typography component="li" variant="body2" sx={{ color: '#9ca3af' }}>All user sessions and authentication data</Typography>
+                <Typography component="li" variant="body2" sx={{ color: '#9ca3af' }}>All meeting and withdrawal requests</Typography>
+              </Box>
+              
+              <Alert severity="error">
+                <Typography variant="body2">
+                  This action is irreversible. Click "Delete User Permanently" to confirm.
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ backgroundColor: '#1a1a1a', borderTop: '1px solid #333' }}>
+          <Button 
+            onClick={() => setDeleteUserDialogOpen(false)}
+            disabled={deletingUser}
+            sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#2d2d2d' } }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteUser}
+            disabled={deletingUser}
+            variant="contained"
+            startIcon={deletingUser ? <CircularProgress size={16} /> : <Delete />}
+            sx={{
+              backgroundColor: '#dc2626',
+              '&:hover': { backgroundColor: '#b91c1c' },
+              '&:disabled': { 
+                backgroundColor: '#374151',
+                color: '#6b7280'
+              }
+            }}
+          >
+            {deletingUser ? 'Deleting...' : 'Delete User Permanently'}
           </Button>
         </DialogActions>
       </Dialog>

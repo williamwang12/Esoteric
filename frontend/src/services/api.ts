@@ -413,6 +413,10 @@ export const adminApi = {
     const response = await api.put(`/admin/users/${userId}/clear-temp-password`);
     return response.data;
   },
+  deleteUser: async (userId: string) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data;
+  },
 
   // Comprehensive Transaction Import
   uploadTransactionImport: async (formData: FormData) => {
