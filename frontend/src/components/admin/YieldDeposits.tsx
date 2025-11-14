@@ -268,24 +268,6 @@ const YieldDeposits: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Process Overview */}
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          <strong>Deposits Process:</strong>
-        </Typography>
-        <Typography variant="body2" component="div">
-          • When creating a deposit, the <strong>principal amount is immediately added</strong> to the client's account balance
-          <br />
-          • Each year on the anniversary date, <strong>12% of the current principal</strong> is automatically paid out
-          <br />
-          • When clients withdraw funds, the withdrawal <strong>reduces deposits in LIFO order</strong> (newest first)
-          <br />
-          • Future payouts are automatically <strong>adjusted based on the reduced principal amounts</strong>
-          <br />
-          • Payouts continue annually until the deposit is fully withdrawn or marked inactive
-        </Typography>
-      </Alert>
-
       {/* Summary Cards */}
       <Box display="flex" gap={3} mb={3} flexWrap="wrap">
         <Card sx={{ flex: '1 1 300px' }}>
@@ -334,61 +316,6 @@ const YieldDeposits: React.FC = () => {
           </CardContent>
         </Card>
       </Box>
-
-      {/* Daily Yield Payment Section */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Daily Yield Payments (12% ÷ 365 = 0.0329% daily)
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Process daily yield payments for all active deposits. Payments are calculated as 12% annual yield divided by 365 days.
-          </Typography>
-          
-          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
-            <Box sx={{ minWidth: 200 }}>
-              <TextField
-                label="Payment Date"
-                type="date"
-                value={selectedPaymentDate}
-                onChange={(e) => setSelectedPaymentDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
-            </Box>
-            <Box sx={{ minWidth: 200 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleProcessDailyYield}
-                disabled={processingDailyYield}
-                fullWidth
-              >
-                {processingDailyYield ? <CircularProgress size={20} /> : 'Process Daily Payments'}
-              </Button>
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 300 }}>
-              {dailyYieldStatus && (
-                <Box>
-                  <Typography variant="body2">
-                    <strong>Status for {dailyYieldStatus.date}:</strong>
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Processed: {dailyYieldStatus.payments_processed.count} payments 
-                    ({formatCurrency(dailyYieldStatus.payments_processed.amount)})
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Pending: {dailyYieldStatus.pending_payments} deposits
-                  </Typography>
-                  {dailyYieldStatus.is_complete && (
-                    <Chip label="All payments complete" color="success" size="small" sx={{ mt: 1 }} />
-                  )}
-                </Box>
-              )}
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
 
       {/* Filters */}
       <Box mb={3}>

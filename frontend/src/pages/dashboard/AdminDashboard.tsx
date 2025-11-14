@@ -65,7 +65,6 @@ import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../services/api';
 import AppNavigation from '../../components/common/AppNavigation';
 import ExcelUpload from '../../components/admin/ExcelUpload';
-import ClientOnboarding from '../../components/admin/ClientOnboarding';
 import TransactionImport from '../../components/admin/TransactionImport';
 import YieldDeposits from '../../components/admin/YieldDeposits';
 
@@ -1145,28 +1144,16 @@ const AdminDashboard: React.FC = () => {
                   aria-controls="admin-tabpanel-2"
                 />
                 <Tab 
-                  icon={<TableChart />} 
-                  label="Excel Upload" 
+                  icon={<SwapHoriz />} 
+                  label="Client Onboarding" 
                   id="admin-tab-3"
                   aria-controls="admin-tabpanel-3"
                 />
                 <Tab 
-                  icon={<PersonAdd />} 
-                  label="Client Onboarding" 
-                  id="admin-tab-4"
-                  aria-controls="admin-tabpanel-4"
-                />
-                <Tab 
-                  icon={<SwapHoriz />} 
-                  label="Transaction Import" 
-                  id="admin-tab-5"
-                  aria-controls="admin-tabpanel-5"
-                />
-                <Tab 
                   icon={<TrendingUp />} 
                   label="Deposits" 
-                  id="admin-tab-6"
-                  aria-controls="admin-tabpanel-6"
+                  id="admin-tab-4"
+                  aria-controls="admin-tabpanel-4"
                 />
               </Tabs>
             </Box>
@@ -2390,22 +2377,19 @@ const AdminDashboard: React.FC = () => {
             </TabPanel>
 
 
-            {/* Excel Upload Tab */}
+            {/* Excel Upload Tab - COMMENTED OUT FOR POTENTIAL FUTURE USE */}
+            {/* 
             <TabPanel value={tabValue} index={3}>
               <ExcelUpload onUploadComplete={() => fetchUsers(true)} />
             </TabPanel>
+            */}
 
             {/* Client Onboarding Tab */}
-            <TabPanel value={tabValue} index={4}>
-              <ClientOnboarding />
-            </TabPanel>
-
-            {/* Transaction Import Tab */}
-            <TabPanel value={tabValue} index={5}>
+            <TabPanel value={tabValue} index={3}>
               <TransactionImport />
             </TabPanel>
             {/* Deposits Tab */}
-            <TabPanel value={tabValue} index={6}>
+            <TabPanel value={tabValue} index={4}>
               <YieldDeposits />
             </TabPanel>
 
