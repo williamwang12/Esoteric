@@ -73,16 +73,21 @@ const s3Client = useS3 ? new S3Client({ region: 'us-east-1' }) : null;
 
 const cron = require('node-cron');
 
-console.log('📅 Scheduling daily yield payout cron job...');
-
-cron.schedule('0 0 * * *', async () => {
-    console.log('🕐 Running scheduled daily yield payout...');
-    try {
-        await processDailyYieldPayments();
-    } catch (error) {
-        console.error('Scheduled yield payout failed:', error);
-    }
-});
+// Only schedule cron job in production, not during testing
+if (process.env.NODE_ENV !== 'test') {
+    console.log('📅 Scheduling daily yield payout cron job...');
+    
+    cron.schedule('0 0 * * *', async () => {
+        console.log('🕐 Running scheduled daily yield payout...');
+        try {
+            await processDailyYieldPayments();
+        } catch (error) {
+            console.error('Scheduled yield payout failed:', error);
+        }
+    });
+} else {
+    console.log('🧪 Skipping cron job setup during testing');
+}
 
 // Apply rate limiting
 app.use('/api/', generalRateLimit); // General rate limit for all API endpoints

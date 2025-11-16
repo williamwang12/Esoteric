@@ -73,7 +73,6 @@ const uploadRateLimit = rateLimit({
 const adminRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 200, // 200 requests per windowMs per IP
-    trustProxy: true,
     message: {
         error: 'Too many admin requests, please try again later.',
         retryAfter: '15 minutes'

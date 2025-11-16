@@ -57,6 +57,7 @@
     "@types/speakeasy": "^2.0.10",
     "esbuild": "^0.25.11",
     "jest": "^30.0.5",
+    "nock": "^14.0.10",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4"
   }
