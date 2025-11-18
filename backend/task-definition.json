@@ -15,7 +15,7 @@
   "containerDefinitions": [
     {
       "name": "esoteric-backend",
-      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v1763019709",
+      "image": "484069698162.dkr.ecr.us-east-1.amazonaws.com/backend:v1763420478",
       "essential": true,
       "portMappings": [
         {

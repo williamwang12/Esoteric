@@ -44,7 +44,9 @@ app.use(cors({
       'http://localhost:3001',
       'http://localhost:5003',
       'http://esoteric-frontend-1761810133.s3-website-us-east-1.amazonaws.com',
-      'https://d3jclgxyamk6z.cloudfront.net'
+      'https://d3jclgxyamk6z.cloudfront.net',
+      'https://www.esotericenterprises.com',
+      'https://esotericenterprises.com'
   ],
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
