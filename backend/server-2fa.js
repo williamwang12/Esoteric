@@ -1021,38 +1021,80 @@ app.post('/api/admin/create-loan', adminRateLimit, authenticateAdmin, [
         // Generate unique account number
         const accountNumber = `LOAN-${Date.now()}-${userId}`;
 
-        // Create loan account
-        const loanResult = await pool.query(
-            `INSERT INTO loan_accounts (user_id, account_number, principal_amount, current_balance, monthly_rate)
-             VALUES ($1, $2, $3, $3, $4) RETURNING *`,
-            [userId, accountNumber, principalAmount, monthlyRate]
-        );
+        // Start transaction for atomic operation
+        await pool.query('BEGIN');
 
-        const loanAccount = loanResult.rows[0];
+        try {
+            // Create loan account
+            const loanResult = await pool.query(
+                `INSERT INTO loan_accounts (user_id, account_number, principal_amount, current_balance, monthly_rate)
+                 VALUES ($1, $2, $3, $3, $4) RETURNING *`,
+                [userId, accountNumber, principalAmount, monthlyRate]
+            );
 
-        // Create initial loan transaction
-        await pool.query(
-            `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
-             VALUES ($1, $2, 'loan', 'Initial loan amount', NOW(), NOW())`,
-            [loanAccount.id, principalAmount]
-        );
+            const loanAccount = loanResult.rows[0];
 
-        res.status(201).json({
-            message: 'Loan account created successfully',
-            loanAccount: {
-                id: loanAccount.id,
-                accountNumber: loanAccount.account_number,
-                principalAmount: parseFloat(loanAccount.principal_amount),
-                currentBalance: parseFloat(loanAccount.current_balance),
-                monthlyRate: parseFloat(loanAccount.monthly_rate),
-                user: {
-                    id: user.id,
-                    firstName: user.first_name,
-                    lastName: user.last_name,
-                    email: user.email
+            // Create initial loan transaction
+            await pool.query(
+                `INSERT INTO loan_transactions (loan_account_id, amount, transaction_type, description, transaction_date, created_at)
+                 VALUES ($1, $2, 'loan', 'Initial loan amount', NOW(), NOW())`,
+                [loanAccount.id, principalAmount]
+            );
+
+            // Create corresponding yield deposit for the loan amount
+            const yieldDepositResult = await pool.query(
+                `INSERT INTO yield_deposits (
+                    user_id, 
+                    principal_amount, 
+                    annual_yield_rate, 
+                    start_date, 
+                    created_by, 
+                    notes, 
+                    status
+                ) VALUES ($1, $2, 0.12, CURRENT_DATE, $3, $4, 'active')
+                RETURNING *`,
+                [
+                    userId, 
+                    principalAmount, 
+                    req.adminUser.id,
+                    `Yield deposit created with loan account ${accountNumber}`
+                ]
+            );
+
+            const yieldDeposit = yieldDepositResult.rows[0];
+
+            // Commit the transaction
+            await pool.query('COMMIT');
+
+            console.log(`✅ Loan account ${accountNumber} created with corresponding yield deposit #${yieldDeposit.id}`);
+
+            res.status(201).json({
+                message: 'Loan account and yield deposit created successfully',
+                loanAccount: {
+                    id: loanAccount.id,
+                    accountNumber: loanAccount.account_number,
+                    principalAmount: parseFloat(loanAccount.principal_amount),
+                    currentBalance: parseFloat(loanAccount.current_balance),
+                    monthlyRate: parseFloat(loanAccount.monthly_rate),
+                    user: {
+                        id: user.id,
+                        firstName: user.first_name,
+                        lastName: user.last_name,
+                        email: user.email
+                    }
+                },
+                yieldDeposit: {
+                    id: yieldDeposit.id,
+                    principalAmount: parseFloat(yieldDeposit.principal_amount),
+                    annualYieldRate: parseFloat(yieldDeposit.annual_yield_rate),
+                    startDate: yieldDeposit.start_date
                 }
-            }
-        });
+            });
+        } catch (error) {
+            // Rollback on any error
+            await pool.query('ROLLBACK');
+            throw error;
+        }
 
     } catch (error) {
         console.error('Loan creation error:', error);
