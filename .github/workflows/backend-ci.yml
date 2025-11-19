@@ -298,7 +298,7 @@ jobs:
 
       - name: Upload test coverage
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: backend/coverage/
@@ -386,7 +386,7 @@ jobs:
             .
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-build-${{ github.sha }}
           path: backend-${{ github.sha }}.tar.gz
