@@ -172,4 +172,4 @@ If you encounter any issues:
 
 ---
 
-**🎉 Congratulations!** Your comprehensive CI/CD pipeline is now live and ready to ensure the reliability and security of your Esoteric backend application.
+**🎉 Congratulations!** Your comprehensive CI/CD pipeline is now live and ready to ensure the reliability and security of your Esoteric backend application.# CI/CD Pipeline Active 🚀
