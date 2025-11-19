@@ -258,8 +258,8 @@ jobs:
 
       - name: Run unit tests
         run: |
-          # Run all tests
-          npm test -- --coverage --maxWorkers=2 --forceExit
+          # Run all tests with coverage
+          npm run test:ci
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-key-for-github-ci
@@ -272,8 +272,7 @@ jobs:
       - name: Run Priority 1 tests
         run: |
           # Run Priority 1 endpoint tests specifically
-          npx jest final-tests/documents.test.js final-tests/withdrawal-requests.test.js final-tests/meeting-requests.test.js \
-            --verbose --maxWorkers=1 --detectOpenHandles --forceExit
+          npm run test:priority1
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-key-for-github-ci
@@ -286,7 +285,7 @@ jobs:
       - name: Run 2FA tests
         run: |
           # Run 2FA tests
-          npx jest final-tests/2fa.test.js --verbose --maxWorkers=1 --detectOpenHandles --forceExit
+          npm run test:2fa-final
         env:
           NODE_ENV: test
           JWT_SECRET: test-secret-key-for-github-ci
