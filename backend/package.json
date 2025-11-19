@@ -19,7 +19,12 @@
     "test:simple-requests": "jest tests/requests-simple.test.js --detectOpenHandles --forceExit",
     "test:all": "./run-tests.sh all",
     "test:runner": "./run-tests.sh",
-    "test:comprehensive-suite": "NODE_ENV=test jest tests/auth-enhanced.test.js tests/user-profile.test.js tests/loans-basic.test.js tests/robust-api.test.js --detectOpenHandles --forceExit --runInBand"
+    "test:comprehensive-suite": "NODE_ENV=test jest tests/auth-enhanced.test.js tests/user-profile.test.js tests/loans-basic.test.js tests/robust-api.test.js --detectOpenHandles --forceExit --runInBand",
+    "test:ci": "jest --config=jest.config.ci.js",
+    "test:priority1": "jest final-tests/documents.test.js final-tests/withdrawal-requests.test.js final-tests/meeting-requests.test.js --maxWorkers=1 --detectOpenHandles --forceExit",
+    "test:2fa-final": "jest final-tests/2fa.test.js --maxWorkers=1 --detectOpenHandles --forceExit",
+    "test:lint": "eslint . --ext .js,.jsx --format stylish",
+    "test:audit": "npm audit --audit-level=moderate"
   },
   "keywords": [],
   "author": "",
@@ -57,6 +62,7 @@
     "@types/speakeasy": "^2.0.10",
     "esbuild": "^0.25.11",
     "jest": "^30.0.5",
+    "jest-junit": "^16.0.0",
     "nock": "^14.0.10",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4"

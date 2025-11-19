@@ -428,6 +428,10 @@ app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
     try {
         const { loanId } = req.params;
         const { period = '24' } = req.query; // months
+        
+        // Validate and sanitize period parameter
+        const periodMonths = parseInt(period);
+        const validPeriod = (periodMonths && periodMonths > 0 && periodMonths <= 120) ? periodMonths : 24;
 
         // Verify the loan belongs to the user
         const loanCheck = await pool.query(
@@ -459,7 +463,7 @@ app.get('/api/loans/:loanId/analytics', authenticateToken, async (req, res) => {
                 total_bonuses
             FROM monthly_balances 
             WHERE loan_account_id = $1 
-                AND month_end_date >= NOW() - INTERVAL '${parseInt(period)} months'
+                AND month_end_date >= NOW() - INTERVAL '${validPeriod} months'
             ORDER BY month_end_date ASC
         `;
 
