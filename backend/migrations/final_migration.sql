@@ -448,6 +448,24 @@ CREATE SEQUENCE public.users_id_seq
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
+--
+-- Set DEFAULT values for auto-incrementing ID columns
+--
+
+ALTER TABLE ONLY public.account_verification_requests ALTER COLUMN id SET DEFAULT nextval('public.account_verification_requests_id_seq'::regclass);
+ALTER TABLE ONLY public.documents ALTER COLUMN id SET DEFAULT nextval('public.documents_id_seq'::regclass);
+ALTER TABLE ONLY public.loan_accounts ALTER COLUMN id SET DEFAULT nextval('public.loan_accounts_id_seq'::regclass);
+ALTER TABLE ONLY public.loan_transactions ALTER COLUMN id SET DEFAULT nextval('public.loan_transactions_id_seq'::regclass);
+ALTER TABLE ONLY public.meeting_requests ALTER COLUMN id SET DEFAULT nextval('public.meeting_requests_id_seq'::regclass);
+ALTER TABLE ONLY public.monthly_balances ALTER COLUMN id SET DEFAULT nextval('public.monthly_balances_id_seq'::regclass);
+ALTER TABLE ONLY public.payment_schedule ALTER COLUMN id SET DEFAULT nextval('public.payment_schedule_id_seq'::regclass);
+ALTER TABLE ONLY public.user_2fa ALTER COLUMN id SET DEFAULT nextval('public.user_2fa_id_seq'::regclass);
+ALTER TABLE ONLY public.user_2fa_attempts ALTER COLUMN id SET DEFAULT nextval('public.user_2fa_attempts_id_seq'::regclass);
+ALTER TABLE ONLY public.user_sessions ALTER COLUMN id SET DEFAULT nextval('public.user_sessions_id_seq'::regclass);
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+ALTER TABLE ONLY public.withdrawal_requests ALTER COLUMN id SET DEFAULT nextval('public.withdrawal_requests_id_seq'::regclass);
+ALTER TABLE ONLY public.yield_deposits ALTER COLUMN id SET DEFAULT nextval('public.yield_deposits_id_seq'::regclass);
+ALTER TABLE ONLY public.yield_payouts ALTER COLUMN id SET DEFAULT nextval('public.yield_payouts_id_seq'::regclass);
 
 --
 -- Name: withdrawal_requests; Type: TABLE; Schema: public; Owner: postgres
