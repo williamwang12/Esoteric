@@ -85,22 +85,16 @@ jobs:
           psql -h localhost -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'esoteric_loans_test'" | grep -q 1 || \
           psql -h localhost -U postgres -c "CREATE DATABASE esoteric_loans_test"
           
-          # Debug: Check what files are available
-          echo "🔍 Checking repository structure..."
-          ls -la
-          echo "🔍 Checking backend directory..."
-          ls -la backend/
-          echo "🔍 Checking backend/migrations directory..."
-          ls -la backend/migrations/ || echo "❌ backend/migrations directory not found"
-          
           # Run database migrations using the actual schema
           if [ -f "backend/migrations/final_migration.sql" ]; then
             echo "✅ Found final_migration.sql, applying schema..."
             psql -h localhost -U postgres -d esoteric_loans_test -f backend/migrations/final_migration.sql
           else
             echo "❌ Error: final_migration.sql not found!"
-            echo "Available files in backend/migrations:"
+            echo "Available files in backend/migrations directory:"
             ls -la backend/migrations/ || echo "Directory does not exist"
+            echo "Available files in root directory:"
+            ls -la .
             exit 1
           fi
           
