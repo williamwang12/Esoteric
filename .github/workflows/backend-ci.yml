@@ -86,14 +86,16 @@ jobs:
           psql -h localhost -U postgres -c "CREATE DATABASE esoteric_loans_test"
           
           # Run database migrations using the actual schema
-          if [ -f "backend/migrations/final_migration.sql" ]; then
+          if [ -f "migrations/final_migration.sql" ]; then
             echo "✅ Found final_migration.sql, applying schema..."
-            psql -h localhost -U postgres -d esoteric_loans_test -f backend/migrations/final_migration.sql
+            psql -h localhost -U postgres -d esoteric_loans_test -f migrations/final_migration.sql
           else
             echo "❌ Error: final_migration.sql not found!"
-            echo "Available files in backend/migrations directory:"
-            ls -la backend/migrations/ || echo "Directory does not exist"
-            echo "Available files in root directory:"
+            echo "Current working directory:"
+            pwd
+            echo "Available files in migrations directory:"
+            ls -la migrations/ || echo "migrations directory does not exist"
+            echo "Available files in current directory:"
             ls -la .
             exit 1
           fi
